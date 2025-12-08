@@ -1,0 +1,140 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+
+const WalletRequests = () => {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async () => {
+    try {
+      const response = await fetch('/api/user/admin/wallet-requests');
+      const data = await response.json();
+      if (data.success) {
+        setRequests(data.requests);
+      }
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async (requestId) => {
+    try {
+      const response = await fetch('/api/user/admin/wallet/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestId,
+          adminId: user._id,
+          note: 'Approved by admin'
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        fetchRequests();
+        alert('Request approved successfully!');
+      }
+    } catch (error) {
+      alert('Error approving request');
+    }
+  };
+
+  const handleReject = async (requestId) => {
+    const note = prompt('Enter rejection reason:');
+    if (!note) return;
+
+    try {
+      const response = await fetch('/api/user/admin/wallet/reject', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestId,
+          adminId: user._id,
+          note
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        fetchRequests();
+        alert('Request rejected successfully!');
+      }
+    } catch (error) {
+      alert('Error rejecting request');
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Wallet Requests</h1>
+      
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {requests.map((request) => (
+              <tr key={request._id}>
+                <td className="px-6 py-4">
+                  <div>
+                    <div className="font-medium">{request.userId?.name}</div>
+                    <div className="text-sm text-gray-500">{request.userId?.email}</div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 font-semibold">₹{request.amount}</td>
+                <td className="px-6 py-4">
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {request.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-500">
+                  {new Date(request.requestedAt).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4">
+                  {request.status === 'pending' && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleApprove(request._id)}
+                        className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleReject(request._id)}
+                        className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default WalletRequests;

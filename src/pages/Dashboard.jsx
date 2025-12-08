@@ -1,0 +1,215 @@
+import { useState, useEffect } from "react";
+import api from '../services/api';
+
+export default function Dashboard() {
+  const [messageReports, setMessageReports] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(5)
+  const [stats, setStats] = useState({
+    totalMessages: 0,
+    sentMessages: 0,
+    pendingMessages: 0,
+    failedMessages: 0,
+    totalTemplates: 0
+  })
+
+  useEffect(() => {
+    fetchMessageReports()
+  }, [])
+
+  const fetchMessageReports = async () => {
+    try {
+      setLoading(true)
+      const [reportsData, templatesData] = await Promise.all([
+        api.getMessageReports(),
+        api.getTemplates()
+      ])
+      
+      
+      const report = reportsData.report || {}
+      setMessageReports(report.recentMessages || [])
+      setStats({
+        totalMessages: report.totalMessages || 0,
+        sentMessages: report.successfulMessages || 0,
+        pendingMessages: 0,
+        failedMessages: report?.failedMessages || 0,
+        totalTemplates: templatesData?.data?.length || 0
+      })
+    } catch (err) {
+      console.error('Error fetching data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="w-full overflow-hidden">
+      {/* Stats Cards */}
+      <div className="p-2 sm:p-3 md:p-4 lg:p-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <p className="text-xs text-gray-500 mb-2">Devices</p>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">📱</span>
+              <span className="text-2xl font-bold text-gray-900">{loading ? '...' : '1'}</span>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <p className="text-xs text-gray-500 mb-2">Welcome Message</p>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">😊</span>
+              <span className="text-2xl font-bold text-gray-900">{loading ? '...' : '0'}</span>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <p className="text-xs text-gray-500 mb-2">Templates</p>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">📄</span>
+              <span className="text-2xl font-bold text-gray-900">{loading ? '...' : stats.totalTemplates}</span>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <p className="text-xs text-gray-500 mb-2">Total Campaigns</p>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">💬</span>
+              <span className="text-2xl font-bold text-gray-900">{loading ? '...' : stats.totalMessages}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-2 sm:px-3 md:px-4 lg:px-6">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-3xl font-bold text-gray-900">{loading ? '...' : stats.totalMessages}</span>
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600">Total Messages</p>
+          </div>
+          
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-3xl font-bold text-gray-900">{loading ? '...' : stats.pendingMessages}</span>
+              <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600">Pending Messages</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-3xl font-bold text-gray-900">{loading ? '...' : stats.sentMessages}</span>
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600">Message Sent</p>
+          </div>
+          
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-3xl font-bold text-gray-900">{loading ? '...' : stats.failedMessages}</span>
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600">Failed Messages</p>
+          </div>
+        </div>
+        
+        {/* Recent Messages Section */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Messages</h2>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            </div>
+          ) : messageReports.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No recent messages found</p>
+          ) : (
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">ID</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Type</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Recipients</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Success/Failed</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {messageReports.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((message, idx) => (
+                      <tr key={message._id} className="border-t hover:bg-gray-50">
+                        <td className="py-3 px-4 text-sm">#{(currentPage - 1) * itemsPerPage + idx + 1}</td>
+                        <td className="py-3 px-4 text-sm">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full capitalize">
+                            {message.type}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm">{message.phoneNumbers?.length || 0}</td>
+                        <td className="py-3 px-4 text-sm">
+                          <span className="text-green-600">{message.results?.filter(r => !r.error).length || 0}</span>
+                          <span className="text-gray-400 mx-1">/</span>
+                          <span className="text-red-600">{message.results?.filter(r => r.error).length || 0}</span>
+                        </td>
+                        <td className="py-3 px-4 text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            message.results?.some(r => !r.error) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {message.results?.some(r => !r.error) ? 'Success' : 'Failed'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-500">
+                          {new Date(message.createdAt).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {messageReports.length > itemsPerPage && (
+                <div className="px-4 py-3 bg-gray-50 border-t flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, messageReports.length)} of {messageReports.length} messages
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                    >
+                      Previous
+                    </button>
+                    <span className="px-3 py-1 text-sm">
+                      Page {currentPage} of {Math.ceil(messageReports.length / itemsPerPage)}
+                    </span>
+                    <button 
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(messageReports.length / itemsPerPage)))}
+                      disabled={currentPage === Math.ceil(messageReports.length / itemsPerPage)}
+                      className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+}
