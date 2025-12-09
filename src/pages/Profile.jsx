@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { FiUser, FiCreditCard, FiPlus, FiEdit2, FiRefreshCw, FiCheck, FiX } from 'react-icons/fi';
+import apiService from '../services/api';
 
 const Profile = () => {
   const { user, refreshUser } = useAuth();
@@ -26,8 +27,7 @@ const Profile = () => {
   const fetchUserStats = async () => {
     if (user?._id) {
       try {
-        const response = await fetch(`/api/user/messages/${user._id}`);
-        const data = await response.json();
+        const data = await apiService.getUserMessages(user._id);
         if (data.success) {
           const messages = data.messages;
           const totalMessages = messages.reduce((sum, msg) => sum + (msg.phoneNumbers?.length || 0), 0);
@@ -43,18 +43,10 @@ const Profile = () => {
   const handleAddMoney = async () => {
     if (addAmount && parseFloat(addAmount) > 0) {
       try {
-        const response = await fetch('/api/user/wallet/request', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            amount: parseFloat(addAmount),
-            userId: user._id
-          })
+        const data = await apiService.addWalletRequest({
+          amount: parseFloat(addAmount),
+          userId: user._id
         });
-        
-        const data = await response.json();
         
         if (data.success) {
           setResultData({ 

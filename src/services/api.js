@@ -82,6 +82,16 @@ class ApiService {
     const { data } = await api.delete(`/api/v1/templates/${id}`);
     return data;
   }
+
+  async getUserMessages(userId) {
+    const { data } = await api.get(`/api/v1/user/messages/${userId}`);
+    return data;
+  }
+
+  async addWalletRequest(requestData) {
+    const { data } = await api.post("/api/v1/user/wallet/request", requestData);
+    return data;
+  }
 }
 
 export default new ApiService();
