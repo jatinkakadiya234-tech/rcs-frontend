@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://rcssender.com/api/v1";
+const API_BASE_URL = "https://rcssender.com/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,37 +11,37 @@ const api = axios.create({
 
 class ApiService {
   async registerUser(userData) {
-    const { data } = await api.post("/user/register", userData);
+    const { data } = await api.post("/api/v1/user/register", userData);
     return data;
   }
 
   async loginUser(credentials) {
-    const { data } = await api.post("/user/login", credentials);
+    const { data } = await api.post("/api/v1/user/login", credentials);
     return data;
   }
 
   async getTemplates() {
-    const { data } = await api.get("/templates");
+    const { data } = await api.get("/api/v1/templates");
     return data;
   }
 
   async getTemplateById(id) {
-    const { data } = await api.get(`/templates/${id}`);
+    const { data } = await api.get(`/api/v1/templates/${id}`);
     return data;
   }
 
   async sendMessage(campaignData) {
-    return await api.post("/user/sendMessage", campaignData);
+    return await api.post("/api/v1/user/sendMessage", campaignData);
   }
   async chackcapebalNumber(phoneNumbers) {
-    return await api.post("/user/checkAvablityNumber", { phoneNumbers });
+    return await api.post("/api/v1/user/checkAvablityNumber", { phoneNumbers });
   }
 
   async uploadFile(file) {
     const formData = new FormData();
     formData.append("file", file);
 
-    const { data } = await api.post("/user/uploadFile", formData, {
+    const { data } = await api.post("/api/v1/user/uploadFile", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -50,36 +50,36 @@ class ApiService {
   }
 
   async getMessageReportsall() {
-    const { data } = await api.get("/message-reports/alls");
+    const { data } = await api.get("/api/v1/message-reports/alls");
     return data;
   }
 
   async getMessageById(phoneNumber) {
-    const { data } = await api.get(`/message-reports/check/${phoneNumber}`);
+    const { data } = await api.get(`/api/v1/message-reports/check/${phoneNumber}`);
     return data;
   }
   async getMessageReports() {
-    const { data } = await api.get("/message-reports/report");
+    const { data } = await api.get("/api/v1/message-reports/report");
     return data;
   }
 
   async deleteMessageReport(id) {
-    const { data } = await api.delete(`/message-reports/${id}`);
+    const { data } = await api.delete(`/api/v1/message-reports/${id}`);
     return data;
   }
 
   async createTemplate(templateData) {
-    const { data } = await api.post("/templates", templateData);
+    const { data } = await api.post("/api/v1/templates", templateData);
     return data;
   }
 
   async updateTemplate(id, templateData) {
-    const { data } = await api.put(`/templates/${id}`, templateData);
+    const { data } = await api.put(`/api/v1/templates/${id}`, templateData);
     return data;
   }
 
   async deleteTemplate(id) {
-    const { data } = await api.delete(`/templates/${id}`);
+    const { data } = await api.delete(`/api/v1/templates/${id}`);
     return data;
   }
 }
