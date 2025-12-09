@@ -26,7 +26,7 @@ const WalletRequests = () => {
 
   const handleApprove = async (requestId) => {
     try {
-      const response = await fetch('/api/user/admin/wallet/approve', {
+      const response = await fetch('/api/api/v1/user/admin/wallet/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -51,7 +51,7 @@ const WalletRequests = () => {
     if (!note) return;
 
     try {
-      const response = await fetch('/api/user/admin/wallet/reject', {
+      const response = await fetch('/api/api/v1/user/admin/wallet/reject', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
