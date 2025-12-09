@@ -16,8 +16,8 @@ const AdminDashboard = () => {
   const fetchStats = async () => {
     try {
       const [usersRes, requestsRes] = await Promise.all([
-        fetch('/api/user/admin/users'),
-        fetch('/api/user/admin/wallet-requests')
+        fetch('/api/api/v1/user/admin/users'),
+        fetch('/api/api/v1/user/admin/wallet-requests')
       ]);
 
       const usersData = await usersRes.json();

@@ -12,7 +12,7 @@ const WalletRequests = () => {
 
   const fetchRequests = async () => {
     try {
-      const response = await fetch('/api/user/admin/wallet-requests');
+      const response = await fetch('/api/api/v1/user/admin/wallet-requests');
       const data = await response.json();
       if (data.success) {
         setRequests(data.requests);

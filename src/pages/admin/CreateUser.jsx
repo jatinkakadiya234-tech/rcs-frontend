@@ -15,7 +15,7 @@ const CreateUser = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/user/admin/create-user', {
+      const response = await fetch('/api/api/v1/user/admin/create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
