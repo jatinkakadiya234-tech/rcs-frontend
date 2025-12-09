@@ -16,7 +16,8 @@ const Reports = () => {
 
   const fetchReports = async () => {
     try {
-      const response = await fetch(`/api/api/v1/user/messages/${user._id}`);
+      let userId = user?._id;
+      const response = await fetch(`/api/api/v1/user/messages/${userId}`);
       const data = await response.json();
       if (data.success) {
         const messages = data.messages;
