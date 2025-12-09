@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://rcssender.com/api";
+const API_BASE_URL = "https://rcssender.com";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -8,7 +8,6 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
-
 
 class ApiService {
   async registerUser(userData) {
