@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://rcssender.com";
+const API_BASE_URL = "https://rcssender.com/api/v1";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
