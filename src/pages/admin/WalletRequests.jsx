@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { FiX } from 'react-icons/fi';
 
 const WalletRequests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -46,18 +50,20 @@ const WalletRequests = () => {
     }
   };
 
-  const handleReject = async (requestId) => {
-    const note = prompt('Enter rejection reason:');
-    if (!note) return;
+  const handleReject = async () => {
+    if (!rejectReason.trim()) {
+      alert('Please enter rejection reason');
+      return;
+    }
 
     try {
       const response = await fetch('/api/api/v1/user/admin/wallet/reject', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requestId,
+          requestId: selectedRequestId,
           adminId: user._id,
-          note
+          note: rejectReason
         })
       });
 
@@ -65,10 +71,18 @@ const WalletRequests = () => {
       if (data.success) {
         fetchRequests();
         alert('Request rejected successfully!');
+        setShowRejectModal(false);
+        setRejectReason('');
+        setSelectedRequestId(null);
       }
     } catch (error) {
       alert('Error rejecting request');
     }
+  };
+
+  const openRejectModal = (requestId) => {
+    setSelectedRequestId(requestId);
+    setShowRejectModal(true);
   };
 
   if (loading) return <div>Loading...</div>;
@@ -120,7 +134,7 @@ const WalletRequests = () => {
                         Approve
                       </button>
                       <button
-                        onClick={() => handleReject(request._id)}
+                        onClick={() => openRejectModal(request._id)}
                         className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
                       >
                         Reject
@@ -133,6 +147,61 @@ const WalletRequests = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Reject Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-96 max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Reject Request</h3>
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason('');
+                  setSelectedRequestId(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <FiX className="text-xl" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Rejection Reason *
+                </label>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Enter reason for rejection..."
+                  rows="4"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowRejectModal(false);
+                    setRejectReason('');
+                    setSelectedRequestId(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReject}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  Reject Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
