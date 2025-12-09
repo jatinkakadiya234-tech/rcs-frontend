@@ -47,6 +47,9 @@ export default function SendMessageClean() {
   const [sending, setSending] = useState(false)
   const [showResultModal, setShowResultModal] = useState(false)
   const [resultData, setResultData] = useState(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [showAddMoney, setShowAddMoney] = useState(false)
+  const [addAmount, setAddAmount] = useState('')
 
   useEffect(() => {
     loadTemplates()
@@ -821,13 +824,29 @@ export default function SendMessageClean() {
               <p className="text-gray-600">Create and send RCS messages to your contacts</p>
             </div>
             <div className="flex gap-3">
-              <div className="flex items-center gap-2 text-sm md:text-base">
-                <span className="text-gray-600">Balance: ₹{user?.Wallet || 0}</span>
-                <button className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 text-sm md:text-base">Balance: ₹{user?.Wallet?.toFixed(2) || '0.00'}</span>
+                <button 
+                  onClick={() => setShowAddMoney(true)}
+                  className="px-2 md:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base"
+                >
                   Add Money
                 </button>
-                <button className="px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600">
-                  Refresh
+                <button 
+                  onClick={async () => {
+                    setRefreshing(true)
+                    await refreshUser()
+                    setRefreshing(false)
+                  }}
+                  disabled={refreshing}
+                  className="px-2 md:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 flex items-center gap-1 text-sm md:text-base"
+                >
+                  {refreshing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span className="hidden md:inline">Refreshing</span>
+                    </>
+                  ) : 'Refresh'}
                 </button>
               </div>
               <button onClick={() => setShowPreview(!showPreview)} className="px-2 md:px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-1 md:gap-2 text-sm md:text-base">
@@ -985,6 +1004,83 @@ export default function SendMessageClean() {
           </div>
         </div>
       </div>
+
+      {/* Add Money Modal */}
+      {showAddMoney && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-96 max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Add Money to Wallet</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                <input
+                  type="number"
+                  value={addAmount}
+                  onChange={(e) => setAddAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2">
+                {[100, 500, 1000].map(amount => (
+                  <button
+                    key={amount}
+                    onClick={() => setAddAmount(amount.toString())}
+                    className="px-3 py-2 border border-purple-200 text-purple-600 rounded-lg hover:bg-purple-50"
+                  >
+                    ₹{amount}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowAddMoney(false)
+                    setAddAmount('')
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (addAmount && parseFloat(addAmount) > 0) {
+                      try {
+                        const data = await api.addWalletRequest({
+                          amount: parseFloat(addAmount),
+                          userId: user._id
+                        })
+                        
+                        if (data.success) {
+                          setResultData({ 
+                            success: true, 
+                            message: `Wallet recharge request of ₹${addAmount} submitted for admin approval!` 
+                          })
+                          setAddAmount('')
+                          setShowAddMoney(false)
+                          await refreshUser()
+                        } else {
+                          setResultData({ success: false, message: 'Failed to submit request: ' + data.message })
+                        }
+                        setShowResultModal(true)
+                      } catch (error) {
+                        setResultData({ success: false, message: 'Error submitting request: ' + error.message })
+                        setShowResultModal(true)
+                      }
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  Add Money
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Result Modal */}
       {showResultModal && (
