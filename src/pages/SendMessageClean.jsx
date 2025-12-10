@@ -387,6 +387,17 @@ export default function SendMessageClean() {
     }
   }
 
+  const downloadDemoExcel = () => {
+    const demoData = [
+      ['Index', 'Number'],
+      ['1', '7201000140']
+    ]
+    const ws = XLSX.utils.aoa_to_sheet(demoData)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Contacts')
+    XLSX.writeFile(wb, 'demo_contacts.xlsx')
+  }
+
   const addButton = () => {
     setButtons([...buttons, { id: Date.now(), type: 'URL Button', title: '', value: '' }])
   }
@@ -1004,6 +1015,12 @@ export default function SendMessageClean() {
                       <span className="hidden md:inline">Refreshing</span>
                     </>
                   ) : 'Refresh'}
+                </button>
+                <button 
+                  onClick={downloadDemoExcel}
+                  className="px-2 md:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-1 text-sm md:text-base"
+                >
+                  <FiUpload /> Demo
                 </button>
               </div>
               <button onClick={() => setShowPreview(!showPreview)} className="px-2 md:px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-1 md:gap-2 text-sm md:text-base">
