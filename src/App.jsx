@@ -9,6 +9,7 @@ import Tapletepate from './pages/Tapletepate.jsx'
 import Orders from './pages/Orders.jsx'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import AuthChecker from './components/AuthChecker'
 import SendMessage from './pages/SendMessageClean.jsx'
 import Reports from './pages/Reports.jsx'
 import Profile from './pages/Profile.jsx'
@@ -22,6 +23,7 @@ import RoleBasedRoute from './components/RoleBasedRoute.jsx'
 function App() {
   return (
     <AuthProvider>
+      <AuthChecker />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/ragister" element={<Ragister />} />

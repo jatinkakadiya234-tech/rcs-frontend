@@ -1,12 +1,24 @@
 import axios from "axios";
+import { getCookie } from "../utils/cookieUtils";
 
 const API_BASE_URL = "https://rcssender.com/api";
+// const API_BASE_URL = "http://localhost:8888";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
+});
+
+// Add token to requests
+api.interceptors.request.use((config) => {
+  const token = getCookie('jio_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 class ApiService {
@@ -33,8 +45,8 @@ class ApiService {
   async sendMessage(campaignData) {
     return await api.post("/api/v1/user/sendMessage", campaignData);
   }
-  async chackcapebalNumber(phoneNumbers) {
-    return await api.post("/api/v1/user/checkAvablityNumber", { phoneNumbers });
+  async chackcapebalNumber(phoneNumbers, userId) {
+    return await api.post("/api/v1/user/checkAvablityNumber", { phoneNumbers,userId });
   }
 
   async uploadFile(file) {

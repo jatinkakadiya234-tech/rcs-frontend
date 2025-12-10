@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { setCookie, getCookie, deleteCookie, isTokenExpired } from '../utils/cookieUtils'
 
 const AuthContext = createContext()
 
@@ -15,24 +16,32 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user')
-    const token = localStorage.getItem('jio_token')
-    
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser))
-    }
-    setLoading(false)
+    checkAuthStatus()
   }, [])
 
+  const checkAuthStatus = () => {
+    const token = getCookie('jio_token')
+    const userData = getCookie('user_data')
+    
+    if (token && userData && !isTokenExpired()) {
+      setUser(JSON.parse(userData))
+    } else if (token) {
+      logout()
+    }
+    setLoading(false)
+  }
+
   const login = (userData, token) => {
-    localStorage.setItem('user', JSON.stringify(userData))
-    localStorage.setItem('jio_token', token)
+    setCookie('jio_token', token, 1)
+    setCookie('user_data', JSON.stringify(userData), 1)
+    setCookie('login_time', new Date().getTime().toString(), 1)
     setUser(userData)
   }
 
   const logout = () => {
-    localStorage.removeItem('user')
-    localStorage.removeItem('jio_token')
+    deleteCookie('jio_token')
+    deleteCookie('user_data')
+    deleteCookie('login_time')
     setUser(null)
     window.location.href = '/login'
   }
@@ -44,7 +53,7 @@ export const AuthProvider = ({ children }) => {
         const data = await response.json()
         if (data.success) {
           const updatedUser = data.user
-          localStorage.setItem('user', JSON.stringify(updatedUser))
+          setCookie('user_data', JSON.stringify(updatedUser), 1)
           setUser(updatedUser)
         }
       } catch (error) {
@@ -54,7 +63,8 @@ export const AuthProvider = ({ children }) => {
   }
 
   const isAuthenticated = () => {
-    return !!user && !!localStorage.getItem('jio_token')
+    const token = getCookie('jio_token')
+    return !!user && !!token && !isTokenExpired()
   }
 
   return (

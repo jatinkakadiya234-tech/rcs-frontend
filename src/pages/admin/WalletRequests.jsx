@@ -32,7 +32,7 @@ const WalletRequests = () => {
     try {
       const response = await fetch('/api/api/v1/user/admin/wallet/approve', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'app lication/json' },
         body: JSON.stringify({
           requestId,
           adminId: user._id,

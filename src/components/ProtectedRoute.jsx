@@ -1,8 +1,15 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { isTokenExpired } from '../utils/cookieUtils'
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading, logout } = useAuth()
+
+  useEffect(() => {
+    if (isTokenExpired()) {
+      logout()
+    }
+  }, [])
 
   if (loading) {
     return (

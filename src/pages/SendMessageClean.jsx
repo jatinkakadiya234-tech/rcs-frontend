@@ -464,7 +464,9 @@ export default function SendMessageClean() {
   const checkRcsCapability = async (numbers) => {
     try {
       const phoneNumbers  = numbers
-      const response = await api.chackcapebalNumber(phoneNumbers)
+      const userId = user._id
+
+      const response = await api.chackcapebalNumber(phoneNumbers,userId)
       return response.data
 
     } catch (error) {

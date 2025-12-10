@@ -4,7 +4,10 @@ import { BrowserRouter } from 'react-router-dom'
 import { applyInitialTheme } from './theme'
 import './index.css'
 import App from './App.jsx'
+import disableLocalStorage from './utils/disableLocalStorage.js'
 
+// Disable localStorage completely
+disableLocalStorage()
 applyInitialTheme()
 
 createRoot(document.getElementById('root')).render(

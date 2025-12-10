@@ -20,8 +20,11 @@ export default function Tapletepate() {
   const [actions, setActions] = useState([{ type: 'reply', title: '', payload: '' }])
   const [richCard, setRichCard] = useState({ title: '', subtitle: '', imageUrl: '', actions: [] })
   const [carouselItems, setCarouselItems] = useState([{ title: '', subtitle: '', imageUrl: '', actions: [] }])
+  const [carouselSuggestions, setCarouselSuggestions] = useState([])
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewData, setPreviewData] = useState(null)
+  const [importModalOpen, setImportModalOpen] = useState(false)
+  const [importJson, setImportJson] = useState('')
 
   useEffect(() => {
     fetchTemplates()
@@ -64,6 +67,8 @@ export default function Tapletepate() {
     setCarouselItems(carouselItems.filter((_, i) => i !== index))
   }
 
+
+
   const handlePreview = (template) => {
     setPreviewData(template)
     setPreviewOpen(true)
@@ -80,6 +85,7 @@ export default function Tapletepate() {
     setActions(template.actions || [])
     setRichCard(template.richCard || { title: '', subtitle: '', imageUrl: '', actions: [] })
     setCarouselItems(template.carouselItems || [])
+    setCarouselSuggestions(template.carouselSuggestions || [])
     setIsModalOpen(true)
   }
 
@@ -100,6 +106,7 @@ export default function Tapletepate() {
     setActions([{ type: 'reply', title: '', payload: '' }])
     setRichCard({ title: '', subtitle: '', imageUrl: '', actions: [] })
     setCarouselItems([{ title: '', subtitle: '', imageUrl: '', actions: [] }])
+    setCarouselSuggestions([])
     setEditingTemplate(null)
   }
 
@@ -131,7 +138,26 @@ export default function Tapletepate() {
         actions: richCard.actions.filter(a => a.title.trim())
       }
     } else if (messageType === 'carousel') {
-      templateData.carouselItems = carouselItems.filter(item => item.title.trim())
+      const validItems = carouselItems.filter(item => {
+        if (!item.title.trim()) return false
+        const validActions = (item.actions || []).filter(a => 
+          a.title.trim() && a.payload.trim() && (a.type !== 'url' || a.payload.startsWith('http'))
+        )
+        return validActions.length > 0
+      }).map(item => ({
+        ...item,
+        actions: item.actions.filter(a => 
+          a.title.trim() && a.payload.trim() && (a.type !== 'url' || a.payload.startsWith('http'))
+        )
+      }))
+      
+      if (validItems.length === 0) {
+        setError('Each carousel item must have at least one valid action with title and payload')
+        return
+      }
+      
+      templateData.carouselItems = validItems
+      templateData.carouselSuggestions = carouselSuggestions.filter(s => s.title.trim() && s.payload.trim())
     }
     
     try {
@@ -161,12 +187,15 @@ export default function Tapletepate() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Templates</h1>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-          >
-            Add Template
-          </button>
+          <div className="flex gap-2">
+          
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+            >
+              Add Template
+            </button>
+          </div>
         </div>
 
         {/* Table */}
@@ -444,6 +473,8 @@ export default function Tapletepate() {
         </div>
       )}
 
+      {/* Import RCS Modal */}
+     
       {/* Create Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -842,7 +873,7 @@ export default function Tapletepate() {
                               onClick={() => {
                                 const newItems = [...carouselItems]
                                 if (!newItems[index].actions) newItems[index].actions = []
-                                newItems[index].actions.push({ type: 'reply', title: '', payload: '' })
+                                newItems[index].actions.push({ type: 'url', title: '', payload: '' })
                                 setCarouselItems(newItems)
                               }}
                               className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
@@ -861,9 +892,7 @@ export default function Tapletepate() {
                                 }}
                                 className="px-2 py-1 border border-gray-300 rounded text-xs"
                               >
-                                <option value="reply">Reply</option>
                                 <option value="url">URL</option>
-                                <option value="call">Call</option>
                               </select>
                               <input
                                 type="text"
@@ -884,7 +913,7 @@ export default function Tapletepate() {
                                   newItems[index].actions[actionIndex].payload = e.target.value
                                   setCarouselItems(newItems)
                                 }}
-                                placeholder={action.type === 'reply' ? 'Payload' : action.type === 'url' ? 'URL' : 'Phone'}
+                                placeholder="URL"
                                 className="px-2 py-1 border border-gray-300 rounded text-xs"
                               />
                               <button
@@ -903,6 +932,52 @@ export default function Tapletepate() {
                         </div>
                       </div>
                     ))}
+                    
+                    <div className="mt-6 border-t pt-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-md font-semibold text-gray-900">Global Suggestions</h4>
+                        <button
+                          type="button"
+                          onClick={() => setCarouselSuggestions([...carouselSuggestions, { title: '', payload: '' }])}
+                          className="px-3 py-1 bg-indigo-500 text-white rounded text-sm hover:bg-indigo-600"
+                        >
+                          <FaPlus className="text-xs inline mr-1" /> Add Suggestion
+                        </button>
+                      </div>
+                      {carouselSuggestions.map((suggestion, index) => (
+                        <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2 p-3 bg-indigo-50 rounded-lg">
+                          <input
+                            type="text"
+                            value={suggestion.title}
+                            onChange={(e) => {
+                              const newSuggestions = [...carouselSuggestions]
+                              newSuggestions[index].title = e.target.value
+                              setCarouselSuggestions(newSuggestions)
+                            }}
+                            placeholder="Reply text"
+                            className="px-3 py-2 border border-gray-300 rounded text-sm"
+                          />
+                          <input
+                            type="text"
+                            value={suggestion.payload}
+                            onChange={(e) => {
+                              const newSuggestions = [...carouselSuggestions]
+                              newSuggestions[index].payload = e.target.value
+                              setCarouselSuggestions(newSuggestions)
+                            }}
+                            placeholder="Postback data"
+                            className="px-3 py-2 border border-gray-300 rounded text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setCarouselSuggestions(carouselSuggestions.filter((_, i) => i !== index))}
+                            className="px-3 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

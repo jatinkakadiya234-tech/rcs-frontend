@@ -6,7 +6,9 @@ const CreateUser = () => {
     email: '',
     password: '',
     phone: '',
-    role: 'user'
+    role: 'user',
+    jioId: '',
+    jioSecret: ''
   });
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +27,7 @@ const CreateUser = () => {
       
       if (data.success) {
         alert('User created successfully!');
-        setFormData({ name: '', email: '', password: '', phone: '', role: 'user' });
+        setFormData({ name: '', email: '', password: '', phone: '', role: 'user', jioId: '', jioSecret: '' });
       } else {
         alert('Error: ' + data.message);
       }
@@ -105,6 +107,30 @@ const CreateUser = () => {
               <option value="user">User</option>
               <option value="admin">Admin</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Jio Client ID</label>
+            <input
+              type="text"
+              name="jioId"
+              value={formData.jioId}
+              onChange={handleChange}
+              placeholder="Enter Jio Client ID (optional)"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Jio Client Secret</label>
+            <input
+              type="password"
+              name="jioSecret"
+              value={formData.jioSecret}
+              onChange={handleChange}
+              placeholder="Enter Jio Client Secret (optional)"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+            />
           </div>
 
           <button
