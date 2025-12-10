@@ -50,6 +50,7 @@ export default function SendMessageClean() {
   const [refreshing, setRefreshing] = useState(false)
   const [showAddMoney, setShowAddMoney] = useState(false)
   const [addAmount, setAddAmount] = useState('')
+  const [campaignName, setCampaignName] = useState('')
 
   useEffect(() => {
     loadTemplates()
@@ -60,7 +61,8 @@ export default function SendMessageClean() {
       const response = await api.getTemplates()
       setTemplates(response.data || [])
     } catch (error) {
-      console.error('Error loading templates:', error)
+      setResultData({ success: false, message: 'Error loading templates: ' + error.message })
+      setShowResultModal(true)
     }
   }
 
@@ -133,8 +135,8 @@ export default function SendMessageClean() {
         })))
       }
     } catch (error) {
-      console.error('Error loading template:', error)
-      alert('Failed to load template')
+      setResultData({ success: false, message: 'Failed to load template: ' + error.message })
+      setShowResultModal(true)
     }
   }
 
@@ -143,8 +145,8 @@ export default function SendMessageClean() {
       const result = await api.uploadFile(file)
       return result.url
     } catch (error) {
-      console.error('File upload error:', error)
-      alert('File upload failed')
+      setResultData({ success: false, message: 'File upload failed: ' + error.message })
+      setShowResultModal(true)
       return null
     }
   }
@@ -160,9 +162,10 @@ export default function SendMessageClean() {
       const phoneNumbers  = numbers
       const response = await api.chackcapebalNumber(phoneNumbers)
       return response.data
-      console.log(response.data);
+
     } catch (error) {
-      console.error('Error checking RCS capability:', error)
+      setResultData({ success: false, message: 'Error checking RCS capability: ' + error.message })
+      setShowResultModal(true)
       return null
     }
   }
@@ -264,15 +267,23 @@ export default function SendMessageClean() {
               console.log('Number not capable:', num)
             }
           } catch (error) {
-            console.error('Error checking capability for', num)
+            // Silent error for individual number checks
           }
         }
         
         if (capableNumbers.length > 0) {
           setContacts([...contacts, ...capableNumbers])
-          alert(`${capableNumbers.length} RCS capable numbers added out of ${imported.length} total`)
+          setResultData({ 
+            success: true, 
+            message: `${capableNumbers.length} RCS capable numbers added out of ${imported.length} total` 
+          })
+          setShowResultModal(true)
         } else {
-          alert('No RCS capable numbers found in the imported file')
+          setResultData({ 
+            success: false, 
+            message: 'No RCS capable numbers found in the imported file' 
+          })
+          setShowResultModal(true)
         }
         setCheckingCapability(false)
       }
@@ -283,6 +294,31 @@ export default function SendMessageClean() {
   const clearAllContacts = () => {
     if (confirm('Are you sure you want to clear all contacts?')) {
       setContacts([])
+    }
+  }
+
+  const removeDuplicates = () => {
+    const uniqueNumbers = new Map()
+    contacts.forEach(contact => {
+      if (contact.number && contact.number.length >= 13) {
+        uniqueNumbers.set(contact.number, contact)
+      }
+    })
+    const uniqueContacts = Array.from(uniqueNumbers.values())
+    const removedCount = contacts.length - uniqueContacts.length
+    setContacts(uniqueContacts)
+    if (removedCount > 0) {
+      setResultData({ 
+        success: true, 
+        message: `${removedCount} duplicate number(s) removed successfully!` 
+      })
+      setShowResultModal(true)
+    } else {
+      setResultData({ 
+        success: false, 
+        message: 'No duplicate numbers found' 
+      })
+      setShowResultModal(true)
     }
   }
 
@@ -329,6 +365,11 @@ export default function SendMessageClean() {
   }
 
   const handleSend = async () => {
+    if (!campaignName.trim()) {
+      setResultData({ success: false, message: 'Please enter campaign name' })
+      setShowResultModal(true)
+      return
+    }
     if (!message && messageType !== 'carousel') {
       setResultData({ success: false, message: 'Please enter a message' })
       setShowResultModal(true)
@@ -366,14 +407,18 @@ export default function SendMessageClean() {
     if (messageType === 'carousel') {
       if (carouselCards.length < 2) {
         setSending(false)
-        return alert('Carousel requires minimum 2 cards')
+        setResultData({ success: false, message: 'Carousel requires minimum 2 cards' })
+        setShowResultModal(true)
+        return
       }
       
       const validCards = carouselCards.filter(card => card.title && card.description && card.imageUrl)
       
       if (validCards.length < 2) {
         setSending(false)
-        return alert('At least 2 cards must have title, description and image')
+        setResultData({ success: false, message: 'At least 2 cards must have title, description and image' })
+        setShowResultModal(true)
+        return
       }
       
       payload.content = {
@@ -407,8 +452,18 @@ export default function SendMessageClean() {
         }
       }
     } else if (messageType === 'rcs') {
-      if (!mediaUrl || !mediaUrl.startsWith('http')) return alert('Please enter valid media URL starting with http/https')
-      if (buttons.length === 0) return alert('Please add at least one button for RCS message')
+      if (!mediaUrl || !mediaUrl.startsWith('http')) {
+        setSending(false)
+        setResultData({ success: false, message: 'Please upload a valid media file' })
+        setShowResultModal(true)
+        return
+      }
+      if (buttons.length === 0) {
+        setSending(false)
+        setResultData({ success: false, message: 'Please add at least one button for RCS message' })
+        setShowResultModal(true)
+        return
+      }
       
       const validButtons = buttons.filter(btn => {
         if (!btn.title || !btn.value) return false
@@ -417,7 +472,12 @@ export default function SendMessageClean() {
         return true
       })
       
-      if (validButtons.length === 0) return alert('Please add at least one valid button (URL or Call)')
+      if (validButtons.length === 0) {
+        setSending(false)
+        setResultData({ success: false, message: 'Please add at least one valid button (URL or Call)' })
+        setShowResultModal(true)
+        return
+      }
       
       payload.content = {
         richCardDetails: {
@@ -454,11 +514,21 @@ export default function SendMessageClean() {
         }
       }
     } else if (messageType === 'text-with-action') {
-      if (buttons.length === 0) return alert('Please add at least one button for text with action')
+      if (buttons.length === 0) {
+        setSending(false)
+        setResultData({ success: false, message: 'Please add at least one button for text with action' })
+        setShowResultModal(true)
+        return
+      }
       
       const validButtons = buttons.filter(btn => btn.title && btn.value)
       
-      if (validButtons.length === 0) return alert('Please add at least one valid button')
+      if (validButtons.length === 0) {
+        setSending(false)
+        setResultData({ success: false, message: 'Please add at least one valid button' })
+        setShowResultModal(true)
+        return
+      }
       
       payload.content = {
         plainText: message,
@@ -492,7 +562,12 @@ export default function SendMessageClean() {
         })
       }
     } else if (messageType === 'webview') {
-      if (buttons.length === 0) return alert('Please add at least one button for webview message')
+      if (buttons.length === 0) {
+        setSending(false)
+        setResultData({ success: false, message: 'Please add at least one button for webview message' })
+        setShowResultModal(true)
+        return
+      }
       
       const validButtons = buttons.filter(btn => {
         if (!btn.title) return false
@@ -500,7 +575,12 @@ export default function SendMessageClean() {
         return btn.value
       })
       
-      if (validButtons.length === 0) return alert('Please add at least one valid button')
+      if (validButtons.length === 0) {
+        setSending(false)
+        setResultData({ success: false, message: 'Please add at least one valid button' })
+        setShowResultModal(true)
+        return
+      }
       
       payload.content = {
         plainText: message,
@@ -518,10 +598,20 @@ export default function SendMessageClean() {
         }))
       }
     } else if (messageType === 'dialer-action') {
-      if (buttons.length === 0) return alert('Please add at least one dialer button')
+      if (buttons.length === 0) {
+        setSending(false)
+        setResultData({ success: false, message: 'Please add at least one dialer button' })
+        setShowResultModal(true)
+        return
+      }
       
       const validButtons = buttons.filter(btn => btn.title && btn.value && btn.value.startsWith('+'))
-      if (validButtons.length === 0) return alert('Please add at least one button with valid phone number starting with +')
+      if (validButtons.length === 0) {
+        setSending(false)
+        setResultData({ success: false, message: 'Please add at least one button with valid phone number starting with +' })
+        setShowResultModal(true)
+        return
+      }
       
       payload.content = {
         plainText: message,
@@ -553,7 +643,6 @@ export default function SendMessageClean() {
       }
       setShowResultModal(true)
     } catch (error) {
-      console.error('Error sending message:', error)
       if (error.response?.data?.message === 'Insufficient balance') {
         setResultData({ 
           success: false, 
@@ -652,19 +741,16 @@ export default function SendMessageClean() {
             rows={4}
           />
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Media URL</label>
-              <input
-                type="text"
-                value={mediaUrl}
-                onChange={(e) => setMediaUrl(e.target.value)}
-                placeholder="https://example.com/image.jpg"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Or Upload Media</label>
+          <div className="border-2 border-dashed border-purple-600 rounded-lg p-6 bg-gradient-to-br from-blue-50 to-purple-50 hover:border-blue-400 transition-colors">
+            <label className="cursor-pointer">
+              <div className="flex flex-col items-center justify-center">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-3">
+                  <FiUpload className="text-3xl text-purple-600" />
+                </div>
+                <p className="text-sm font-medium text-gray-700 mb-1">Upload Media File</p>
+                <p className="text-xs text-gray-500 mb-3">Click to browse or drag and drop</p>
+                <p className="text-xs text-gray-400">Supports: Images & Videos</p>
+              </div>
               <input
                 type="file"
                 accept="image/*,video/*"
@@ -678,9 +764,15 @@ export default function SendMessageClean() {
                     }
                   }
                 }}
-                className="w-full text-sm"
+                className="hidden"
               />
-            </div>
+            </label>
+            {mediaUrl && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                <FiCheck className="text-green-600" />
+                <span className="text-sm text-green-700 font-medium">Media uploaded successfully!</span>
+              </div>
+            )}
           </div>
           
           <input
@@ -852,22 +944,6 @@ export default function SendMessageClean() {
               <button onClick={() => setShowPreview(!showPreview)} className="px-2 md:px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-1 md:gap-2 text-sm md:text-base">
                 <FiEye /> {showPreview ? 'Hide' : 'Show'} Preview
               </button>
-              <button 
-                onClick={handleSend} 
-                disabled={sending}
-                className="px-3 md:px-6 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 flex items-center gap-1 md:gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
-              >
-                {sending ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <FiSend /> Send Message
-                  </>
-                )}
-              </button>
             </div>
           </div>
 
@@ -925,6 +1001,9 @@ export default function SendMessageClean() {
                   <input type="checkbox" checked={excludeUnsub} onChange={(e) => setExcludeUnsub(e.target.checked)} className="w-4 h-4" />
                   <span className="text-sm text-gray-700">Exclude Unsubscribes</span>
                 </label>
+                <button onClick={removeDuplicates} className="px-2 md:px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
+                  <FiX /> Remove Duplicates
+                </button>
                 <button onClick={clearAllContacts} className="px-2 md:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
                   <FiTrash2 /> Clear All
                 </button>
@@ -1002,12 +1081,42 @@ export default function SendMessageClean() {
             <label className="block text-sm font-medium text-gray-700 mb-3"><span className="text-red-500">*</span> Message Content</label>
             {renderMessageEditor()}
           </div>
+
+          {/* Campaign Name and Send Button */}
+          <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-4">
+            <div className="w-full md:w-96">
+              <label className="block text-sm font-medium text-gray-700 mb-2"><span className="text-red-500">*</span> Campaign Name</label>
+              <input
+                type="text"
+                value={campaignName}
+                onChange={(e) => setCampaignName(e.target.value)}
+                placeholder="Enter campaign name"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <button 
+              onClick={handleSend} 
+              disabled={sending}
+              className="px-8 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 flex items-center gap-2 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mt-7"
+            >
+              {sending ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <FiSend /> Send Message
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Add Money Modal */}
       {showAddMoney && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-96 max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Add Money to Wallet</h3>
             
@@ -1084,7 +1193,7 @@ export default function SendMessageClean() {
 
       {/* Result Modal */}
       {showResultModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
             <div className="text-center">
               <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${

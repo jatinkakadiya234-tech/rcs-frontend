@@ -8,6 +8,8 @@ export default function CreateCampaign() {
   const [isChecking, setIsChecking] = useState(false)
   const [message, setMessage] = useState('')
   const [campaignName, setCampaignName] = useState('')
+  const [mediaFile, setMediaFile] = useState(null)
+  const [mediaPreview, setMediaPreview] = useState(null)
 
   // Format phone number with +91 if needed
   const formatPhoneNumber = (number) => {
@@ -203,6 +205,40 @@ export default function CreateCampaign() {
             rows={4}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
+        </div>
+
+        {/* Media Upload */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Upload Image
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files[0]
+              if (file) {
+                setMediaFile(file)
+                setMediaPreview(URL.createObjectURL(file))
+              }
+            }}
+            className="hidden"
+            id="media-upload"
+          />
+          <label
+            htmlFor="media-upload"
+            className="inline-block px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer"
+          >
+            Choose Image
+          </label>
+          {mediaFile && (
+            <div className="mt-3">
+              <p className="text-sm text-gray-600">📎 {mediaFile.name}</p>
+              {mediaPreview && (
+                <img src={mediaPreview} alt="Preview" className="mt-2 max-w-xs rounded-lg border border-gray-300" />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Add Number Section */}

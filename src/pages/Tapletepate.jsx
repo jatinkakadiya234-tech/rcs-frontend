@@ -15,6 +15,7 @@ export default function Tapletepate() {
     text: '',
     imageUrl: ''
   })
+  const [mediaFile, setMediaFile] = useState(null)
   const [messageType, setMessageType] = useState('plain-text')
   const [actions, setActions] = useState([{ type: 'reply', title: '', payload: '' }])
   const [richCard, setRichCard] = useState({ title: '', subtitle: '', imageUrl: '', actions: [] })
@@ -519,20 +520,7 @@ export default function Tapletepate() {
                   />
                 </div>
 
-                {(messageType === 'rcs' || messageType === 'carousel') && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Image URL
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.imageUrl}
-                      onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                )}
+              
 
                 {/* Actions for text-with-action */}
                 {messageType === 'text-with-action' && (
@@ -642,34 +630,35 @@ export default function Tapletepate() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-1">Image URL</label>
-                            <input
-                              type="url"
-                              value={richCard.imageUrl}
-                              onChange={(e) => setRichCard({...richCard, imageUrl: e.target.value})}
-                              placeholder="https://example.com/image.jpg"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                            />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files[0]
+                            if (file) {
+                              setRichCard({...richCard, imageUrl: URL.createObjectURL(file), imageFile: file})
+                            }
+                          }}
+                          className="hidden"
+                          id="richcard-image-upload"
+                        />
+                        <label
+                          htmlFor="richcard-image-upload"
+                          className="flex flex-col items-center justify-center w-full h-48 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors"
+                        >
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg className="w-12 h-12 mb-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z"/>
+                            </svg>
+                            <p className="mb-2 text-sm text-gray-700 font-medium">Browse Files to upload</p>
                           </div>
-                          <div className="text-center text-gray-500 text-sm">OR</div>
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-1">Upload Image</label>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files[0]
-                                if (file) {
-                                  const url = URL.createObjectURL(file)
-                                  setRichCard({...richCard, imageUrl: url})
-                                }
-                              }}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                            />
+                        </label>
+                        <p className="mt-2 text-xs text-gray-500 text-right">{richCard.imageFile ? `📎 ${richCard.imageFile.name}` : 'No selected File'}</p>
+                        {richCard.imageFile && richCard.imageUrl && (
+                          <div className="mt-3">
+                            <img src={richCard.imageUrl} alt="Preview" className="max-w-xs rounded-lg border-2 border-gray-300" />
                           </div>
-                        </div>
+                        )}
                       </div>
                       
                       {/* RCS Actions */}
@@ -776,48 +765,71 @@ export default function Tapletepate() {
                             Remove
                           </button>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
                             <input
-                              type="text"
-                              value={item.title}
+                              type="file"
+                              accept="image/*"
                               onChange={(e) => {
-                                const newItems = [...carouselItems]
-                                newItems[index].title = e.target.value
-                                setCarouselItems(newItems)
+                                const file = e.target.files[0]
+                                if (file) {
+                                  const newItems = [...carouselItems]
+                                  newItems[index].imageUrl = URL.createObjectURL(file)
+                                  newItems[index].imageFile = file
+                                  setCarouselItems(newItems)
+                                }
                               }}
-                              placeholder="Item title"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                              className="hidden"
+                              id={`carousel-image-${index}`}
                             />
+                            <label
+                              htmlFor={`carousel-image-${index}`}
+                              className="flex flex-col items-center justify-center w-full h-30 border-2 border-purple-600 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors"
+                            >
+                              <div className="flex flex-col items-center justify-center">
+                                <svg className="w-12 h-12 mb-3 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z"/>
+                                </svg>
+                                <p className="text-sm text-gray-700 font-medium">Browse Files to upload</p>
+                              </div>
+                            </label>
+                            <p className="mt-2 text-xs text-gray-500 text-right">{item.imageFile ? `📎 ${item.imageFile.name}` : 'No selected File'}</p>
+                            {item.imageUrl && (
+                              <div className="mt-3">
+                                <img src={item.imageUrl} alt="Preview" className="w-full rounded-lg border-2 h-30 border-gray-300" />
+                              </div>
+                            )}
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Subtitle</label>
-                            <input
-                              type="text"
-                              value={item.subtitle}
-                              onChange={(e) => {
-                                const newItems = [...carouselItems]
-                                newItems[index].subtitle = e.target.value
-                                setCarouselItems(newItems)
-                              }}
-                              placeholder="Item subtitle"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
-                            <input
-                              type="url"
-                              value={item.imageUrl}
-                              onChange={(e) => {
-                                const newItems = [...carouselItems]
-                                newItems[index].imageUrl = e.target.value
-                                setCarouselItems(newItems)
-                              }}
-                              placeholder="https://example.com/image.jpg"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                            />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                              <input
+                                type="text"
+                                value={item.title}
+                                onChange={(e) => {
+                                  const newItems = [...carouselItems]
+                                  newItems[index].title = e.target.value
+                                  setCarouselItems(newItems)
+                                }}
+                                placeholder="Item title"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Subtitle</label>
+                              <input
+                                type="text"
+                                value={item.subtitle}
+                                onChange={(e) => {
+                                  const newItems = [...carouselItems]
+                                  newItems[index].subtitle = e.target.value
+                                  setCarouselItems(newItems)
+                                }}
+                                placeholder="Item subtitle"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                              />
+                            </div>
                           </div>
                         </div>
                         
