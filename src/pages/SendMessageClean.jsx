@@ -54,6 +54,216 @@ export default function SendMessageClean() {
   const [showManualImport, setShowManualImport] = useState(false)
   const [manualNumbers, setManualNumbers] = useState('')
   const [parsedNumbers, setParsedNumbers] = useState([])
+  const [showCountryCode, setShowCountryCode] = useState(false)
+  const [countrySearch, setCountrySearch] = useState('')
+  const [selectedCountryCode, setSelectedCountryCode] = useState('')
+
+  const countryCodes = [
+    { code: '+1', name: 'United States of America', short: 'US' },
+    { code: '+7', name: 'Russia', short: 'RU' },
+    { code: '+20', name: 'Egypt', short: 'EG' },
+    { code: '+27', name: 'South Africa', short: 'ZA' },
+    { code: '+30', name: 'Greece', short: 'GR' },
+    { code: '+31', name: 'Netherlands', short: 'NL' },
+    { code: '+32', name: 'Belgium', short: 'BE' },
+    { code: '+33', name: 'France', short: 'FR' },
+    { code: '+34', name: 'Spain', short: 'ES' },
+    { code: '+36', name: 'Hungary', short: 'HU' },
+    { code: '+39', name: 'Italy', short: 'IT' },
+    { code: '+40', name: 'Romania', short: 'RO' },
+    { code: '+41', name: 'Switzerland', short: 'CH' },
+    { code: '+43', name: 'Austria', short: 'AT' },
+    { code: '+44', name: 'United Kingdom', short: 'GB' },
+    { code: '+45', name: 'Denmark', short: 'DK' },
+    { code: '+46', name: 'Sweden', short: 'SE' },
+    { code: '+47', name: 'Norway', short: 'NO' },
+    { code: '+48', name: 'Poland', short: 'PL' },
+    { code: '+49', name: 'Germany', short: 'DE' },
+    { code: '+51', name: 'Peru', short: 'PE' },
+    { code: '+52', name: 'Mexico', short: 'MX' },
+    { code: '+53', name: 'Cuba', short: 'CU' },
+    { code: '+54', name: 'Argentina', short: 'AR' },
+    { code: '+55', name: 'Brazil', short: 'BR' },
+    { code: '+56', name: 'Chile', short: 'CL' },
+    { code: '+57', name: 'Colombia', short: 'CO' },
+    { code: '+58', name: 'Venezuela', short: 'VE' },
+    { code: '+60', name: 'Malaysia', short: 'MY' },
+    { code: '+61', name: 'Australia', short: 'AU' },
+    { code: '+62', name: 'Indonesia', short: 'ID' },
+    { code: '+63', name: 'Philippines', short: 'PH' },
+    { code: '+64', name: 'New Zealand', short: 'NZ' },
+    { code: '+65', name: 'Singapore', short: 'SG' },
+    { code: '+66', name: 'Thailand', short: 'TH' },
+    { code: '+81', name: 'Japan', short: 'JP' },
+    { code: '+82', name: 'South Korea', short: 'KR' },
+    { code: '+84', name: 'Vietnam', short: 'VN' },
+    { code: '+86', name: 'China', short: 'CN' },
+    { code: '+90', name: 'Turkey', short: 'TR' },
+    { code: '+91', name: 'India', short: 'IN' },
+    { code: '+92', name: 'Pakistan', short: 'PK' },
+    { code: '+93', name: 'Afghanistan', short: 'AF' },
+    { code: '+94', name: 'Sri Lanka', short: 'LK' },
+    { code: '+95', name: 'Myanmar', short: 'MM' },
+    { code: '+98', name: 'Iran', short: 'IR' },
+    { code: '+212', name: 'Morocco', short: 'MA' },
+    { code: '+213', name: 'Algeria', short: 'DZ' },
+    { code: '+216', name: 'Tunisia', short: 'TN' },
+    { code: '+218', name: 'Libya', short: 'LY' },
+    { code: '+220', name: 'Gambia', short: 'GM' },
+    { code: '+221', name: 'Senegal', short: 'SN' },
+    { code: '+222', name: 'Mauritania', short: 'MR' },
+    { code: '+223', name: 'Mali', short: 'ML' },
+    { code: '+224', name: 'Guinea', short: 'GN' },
+    { code: '+225', name: 'Ivory Coast', short: 'CI' },
+    { code: '+226', name: 'Burkina Faso', short: 'BF' },
+    { code: '+227', name: 'Niger', short: 'NE' },
+    { code: '+228', name: 'Togo', short: 'TG' },
+    { code: '+229', name: 'Benin', short: 'BJ' },
+    { code: '+230', name: 'Mauritius', short: 'MU' },
+    { code: '+231', name: 'Liberia', short: 'LR' },
+    { code: '+232', name: 'Sierra Leone', short: 'SL' },
+    { code: '+233', name: 'Ghana', short: 'GH' },
+    { code: '+234', name: 'Nigeria', short: 'NG' },
+    { code: '+235', name: 'Chad', short: 'TD' },
+    { code: '+236', name: 'Central African Republic', short: 'CF' },
+    { code: '+237', name: 'Cameroon', short: 'CM' },
+    { code: '+238', name: 'Cape Verde', short: 'CV' },
+    { code: '+239', name: 'Sao Tome and Principe', short: 'ST' },
+    { code: '+240', name: 'Equatorial Guinea', short: 'GQ' },
+    { code: '+241', name: 'Gabon', short: 'GA' },
+    { code: '+242', name: 'Republic of the Congo', short: 'CG' },
+    { code: '+243', name: 'Democratic Republic of the Congo', short: 'CD' },
+    { code: '+244', name: 'Angola', short: 'AO' },
+    { code: '+245', name: 'Guinea-Bissau', short: 'GW' },
+    { code: '+246', name: 'British Indian Ocean Territory', short: 'IO' },
+    { code: '+248', name: 'Seychelles', short: 'SC' },
+    { code: '+249', name: 'Sudan', short: 'SD' },
+    { code: '+250', name: 'Rwanda', short: 'RW' },
+    { code: '+251', name: 'Ethiopia', short: 'ET' },
+    { code: '+252', name: 'Somalia', short: 'SO' },
+    { code: '+253', name: 'Djibouti', short: 'DJ' },
+    { code: '+254', name: 'Kenya', short: 'KE' },
+    { code: '+255', name: 'Tanzania', short: 'TZ' },
+    { code: '+256', name: 'Uganda', short: 'UG' },
+    { code: '+257', name: 'Burundi', short: 'BI' },
+    { code: '+258', name: 'Mozambique', short: 'MZ' },
+    { code: '+260', name: 'Zambia', short: 'ZM' },
+    { code: '+261', name: 'Madagascar', short: 'MG' },
+    { code: '+262', name: 'Reunion', short: 'RE' },
+    { code: '+263', name: 'Zimbabwe', short: 'ZW' },
+    { code: '+264', name: 'Namibia', short: 'NA' },
+    { code: '+265', name: 'Malawi', short: 'MW' },
+    { code: '+266', name: 'Lesotho', short: 'LS' },
+    { code: '+267', name: 'Botswana', short: 'BW' },
+    { code: '+268', name: 'Swaziland', short: 'SZ' },
+    { code: '+269', name: 'Comoros', short: 'KM' },
+    { code: '+290', name: 'Saint Helena', short: 'SH' },
+    { code: '+291', name: 'Eritrea', short: 'ER' },
+    { code: '+297', name: 'Aruba', short: 'AW' },
+    { code: '+298', name: 'Faroe Islands', short: 'FO' },
+    { code: '+299', name: 'Greenland', short: 'GL' },
+    { code: '+350', name: 'Gibraltar', short: 'GI' },
+    { code: '+351', name: 'Portugal', short: 'PT' },
+    { code: '+352', name: 'Luxembourg', short: 'LU' },
+    { code: '+353', name: 'Ireland', short: 'IE' },
+    { code: '+354', name: 'Iceland', short: 'IS' },
+    { code: '+355', name: 'Albania', short: 'AL' },
+    { code: '+356', name: 'Malta', short: 'MT' },
+    { code: '+357', name: 'Cyprus', short: 'CY' },
+    { code: '+358', name: 'Finland', short: 'FI' },
+    { code: '+359', name: 'Bulgaria', short: 'BG' },
+    { code: '+370', name: 'Lithuania', short: 'LT' },
+    { code: '+371', name: 'Latvia', short: 'LV' },
+    { code: '+372', name: 'Estonia', short: 'EE' },
+    { code: '+373', name: 'Moldova', short: 'MD' },
+    { code: '+374', name: 'Armenia', short: 'AM' },
+    { code: '+375', name: 'Belarus', short: 'BY' },
+    { code: '+376', name: 'Andorra', short: 'AD' },
+    { code: '+377', name: 'Monaco', short: 'MC' },
+    { code: '+378', name: 'San Marino', short: 'SM' },
+    { code: '+380', name: 'Ukraine', short: 'UA' },
+    { code: '+381', name: 'Serbia', short: 'RS' },
+    { code: '+382', name: 'Montenegro', short: 'ME' },
+    { code: '+383', name: 'Kosovo', short: 'XK' },
+    { code: '+385', name: 'Croatia', short: 'HR' },
+    { code: '+386', name: 'Slovenia', short: 'SI' },
+    { code: '+387', name: 'Bosnia and Herzegovina', short: 'BA' },
+    { code: '+389', name: 'North Macedonia', short: 'MK' },
+    { code: '+420', name: 'Czech Republic', short: 'CZ' },
+    { code: '+421', name: 'Slovakia', short: 'SK' },
+    { code: '+423', name: 'Liechtenstein', short: 'LI' },
+    { code: '+500', name: 'Falkland Islands', short: 'FK' },
+    { code: '+501', name: 'Belize', short: 'BZ' },
+    { code: '+502', name: 'Guatemala', short: 'GT' },
+    { code: '+503', name: 'El Salvador', short: 'SV' },
+    { code: '+504', name: 'Honduras', short: 'HN' },
+    { code: '+505', name: 'Nicaragua', short: 'NI' },
+    { code: '+506', name: 'Costa Rica', short: 'CR' },
+    { code: '+507', name: 'Panama', short: 'PA' },
+    { code: '+508', name: 'Saint Pierre and Miquelon', short: 'PM' },
+    { code: '+509', name: 'Haiti', short: 'HT' },
+    { code: '+590', name: 'Guadeloupe', short: 'GP' },
+    { code: '+591', name: 'Bolivia', short: 'BO' },
+    { code: '+592', name: 'Guyana', short: 'GY' },
+    { code: '+593', name: 'Ecuador', short: 'EC' },
+    { code: '+594', name: 'French Guiana', short: 'GF' },
+    { code: '+595', name: 'Paraguay', short: 'PY' },
+    { code: '+596', name: 'Martinique', short: 'MQ' },
+    { code: '+597', name: 'Suriname', short: 'SR' },
+    { code: '+598', name: 'Uruguay', short: 'UY' },
+    { code: '+599', name: 'Netherlands Antilles', short: 'AN' },
+    { code: '+670', name: 'East Timor', short: 'TL' },
+    { code: '+672', name: 'Antarctica', short: 'AQ' },
+    { code: '+673', name: 'Brunei', short: 'BN' },
+    { code: '+674', name: 'Nauru', short: 'NR' },
+    { code: '+675', name: 'Papua New Guinea', short: 'PG' },
+    { code: '+676', name: 'Tonga', short: 'TO' },
+    { code: '+677', name: 'Solomon Islands', short: 'SB' },
+    { code: '+678', name: 'Vanuatu', short: 'VU' },
+    { code: '+679', name: 'Fiji', short: 'FJ' },
+    { code: '+680', name: 'Palau', short: 'PW' },
+    { code: '+681', name: 'Wallis and Futuna', short: 'WF' },
+    { code: '+682', name: 'Cook Islands', short: 'CK' },
+    { code: '+683', name: 'Niue', short: 'NU' },
+    { code: '+685', name: 'Samoa', short: 'WS' },
+    { code: '+686', name: 'Kiribati', short: 'KI' },
+    { code: '+687', name: 'New Caledonia', short: 'NC' },
+    { code: '+688', name: 'Tuvalu', short: 'TV' },
+    { code: '+689', name: 'French Polynesia', short: 'PF' },
+    { code: '+690', name: 'Tokelau', short: 'TK' },
+    { code: '+691', name: 'Micronesia', short: 'FM' },
+    { code: '+692', name: 'Marshall Islands', short: 'MH' },
+    { code: '+850', name: 'North Korea', short: 'KP' },
+    { code: '+852', name: 'Hong Kong', short: 'HK' },
+    { code: '+853', name: 'Macau', short: 'MO' },
+    { code: '+855', name: 'Cambodia', short: 'KH' },
+    { code: '+856', name: 'Laos', short: 'LA' },
+    { code: '+880', name: 'Bangladesh', short: 'BD' },
+    { code: '+886', name: 'Taiwan', short: 'TW' },
+    { code: '+960', name: 'Maldives', short: 'MV' },
+    { code: '+961', name: 'Lebanon', short: 'LB' },
+    { code: '+962', name: 'Jordan', short: 'JO' },
+    { code: '+963', name: 'Syria', short: 'SY' },
+    { code: '+964', name: 'Iraq', short: 'IQ' },
+    { code: '+965', name: 'Kuwait', short: 'KW' },
+    { code: '+966', name: 'Saudi Arabia', short: 'SA' },
+    { code: '+967', name: 'Yemen', short: 'YE' },
+    { code: '+968', name: 'Oman', short: 'OM' },
+    { code: '+970', name: 'Palestinian Territory', short: 'PS' },
+    { code: '+971', name: 'United Arab Emirates', short: 'AE' },
+    { code: '+972', name: 'Israel', short: 'IL' },
+    { code: '+973', name: 'Bahrain', short: 'BH' },
+    { code: '+974', name: 'Qatar', short: 'QA' },
+    { code: '+975', name: 'Bhutan', short: 'BT' },
+    { code: '+976', name: 'Mongolia', short: 'MN' },
+    { code: '+977', name: 'Nepal', short: 'NP' },
+    { code: '+992', name: 'Tajikistan', short: 'TJ' },
+    { code: '+993', name: 'Turkmenistan', short: 'TM' },
+    { code: '+994', name: 'Azerbaijan', short: 'AZ' },
+    { code: '+995', name: 'Georgia', short: 'GE' },
+    { code: '+996', name: 'Kyrgyzstan', short: 'KG' },
+    { code: '+998', name: 'Uzbekistan', short: 'UZ' },
+  ]
 
   useEffect(() => {
     loadTemplates()
@@ -162,19 +372,19 @@ export default function SendMessageClean() {
       if (trimmed.includes(',')) {
         const [name, num] = trimmed.split(',').map(s => s.trim())
         let number = num || ''
-        if (!number.startsWith('+91') && /^\d{10}$/.test(number)) {
+        if (!number.startsWith('+') && /^\d{10}$/.test(number)) {
           number = '+91' + number
         }
-        if (number && /^\+91\d{10}$/.test(number)) {
-          parsed.push({ id: Date.now() + idx, name: name || '', number })
+        if (number && /^\+\d{1,4}\d{7,15}$/.test(number)) {
+          parsed.push({ id: Date.now() + idx + Math.random(), name: name || '', number })
         }
       } else {
         let number = trimmed
-        if (!number.startsWith('+91') && /^\d{10}$/.test(number)) {
+        if (!number.startsWith('+') && /^\d{10}$/.test(number)) {
           number = '+91' + number
         }
-        if (number && /^\+91\d{10}$/.test(number)) {
-          parsed.push({ id: Date.now() + idx, name: '', number })
+        if (number && /^\+\d{1,4}\d{7,15}$/.test(number)) {
+          parsed.push({ id: Date.now() + idx + Math.random(), name: '', number })
         }
       }
     })
@@ -220,6 +430,35 @@ export default function SendMessageClean() {
     }
     setShowResultModal(true)
   }
+
+  const applyCountryCode = () => {
+    if (!selectedCountryCode) return
+    
+    const updatedContacts = contacts.map(contact => {
+      let num = contact.number
+      // Remove existing country code if present
+      if (num.startsWith('+')) {
+        // Find where country code ends (after +, take 1-4 digits)
+        const match = num.match(/^\+(\d{1,4})(\d+)$/)
+        if (match) {
+          num = match[2] // Keep only the phone number part
+        }
+      }
+      // Remove any leading zeros or spaces
+      num = num.replace(/^[\s0]+/, '')
+      // Add new country code
+      return { ...contact, number: selectedCountryCode + num }
+    })
+    setContacts(updatedContacts)
+    setShowCountryCode(false)
+    setCountrySearch('')
+  }
+
+  const filteredCountries = countryCodes.filter(country => 
+    country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+    country.short.toLowerCase().includes(countrySearch.toLowerCase()) ||
+    country.code.includes(countrySearch)
+  )
 
 
   const checkRcsCapability = async (numbers) => {
@@ -985,18 +1224,18 @@ export default function SendMessageClean() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div className="bg-white rounded-xl md:rounded-2xl shadow-xl p-3 md:p-6 lg:p-8">
+          <div className="flex flex-col gap-3 md:gap-4 mb-6 md:mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Send Message</h1>
-              <p className="text-gray-600">Create and send RCS messages to your contacts</p>
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 md:mb-2">Send Message</h1>
+              <p className="text-xs md:text-sm lg:text-base text-gray-600">Create and send RCS messages to your contacts</p>
             </div>
-            <div className="flex gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600 text-sm md:text-base">Balance: ₹{user?.Wallet?.toFixed(2) || '0.00'}</span>
+            <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+              <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+                <span className="text-gray-600 text-xs md:text-sm">Balance: ₹{user?.Wallet?.toFixed(2) || '0.00'}</span>
                 <button 
                   onClick={() => setShowAddMoney(true)}
-                  className="px-2 md:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base"
+                  className="px-2 md:px-3 py-1.5 md:py-2 bg-blue-500 text-white rounded-md md:rounded-lg hover:bg-blue-600 text-xs md:text-sm"
                 >
                   Add Money
                 </button>
@@ -1007,23 +1246,23 @@ export default function SendMessageClean() {
                     setRefreshing(false)
                   }}
                   disabled={refreshing}
-                  className="px-2 md:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 flex items-center gap-1 text-sm md:text-base"
+                  className="px-2 md:px-3 py-1.5 md:py-2 bg-gray-500 text-white rounded-md md:rounded-lg hover:bg-gray-600 disabled:opacity-50 flex items-center gap-1 text-xs md:text-sm"
                 >
                   {refreshing ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span className="hidden md:inline">Refreshing</span>
                     </>
                   ) : 'Refresh'}
                 </button>
                 <button 
                   onClick={downloadDemoExcel}
-                  className="px-2 md:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-1 text-sm md:text-base"
+                  className="px-2 md:px-3 py-1.5 md:py-2 bg-purple-600 text-white rounded-md md:rounded-lg hover:bg-purple-700 flex items-center gap-1 text-xs md:text-sm"
                 >
-                  <FiUpload /> Demo
+                  <FiUpload className="text-sm md:text-base" /> <span className="hidden sm:inline">Demo</span>
                 </button>
               </div>
-              <button onClick={() => setShowPreview(!showPreview)} className="px-2 md:px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-1 md:gap-2 text-sm md:text-base">
+              <button onClick={() => setShowPreview(!showPreview)} className="px-2 md:px-3 py-1.5 md:py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-md md:rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center justify-center gap-1 text-xs md:text-sm">
                 <FiEye /> {showPreview ? 'Hide' : 'Show'} Preview
               </button>
             </div>
@@ -1041,13 +1280,13 @@ export default function SendMessageClean() {
             />
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Template</label>
+              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">Template</label>
               <select 
                 value={template} 
                 onChange={(e) => handleTemplateSelect(e.target.value)} 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
               >
                 <option value="new">New Message</option>
                 {templates.map(tmpl => (
@@ -1057,88 +1296,90 @@ export default function SendMessageClean() {
                 ))}
               </select>
               {selectedTemplate && (
-                <div className="mt-2 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">
+                <div className="mt-2 p-2 md:p-3 bg-blue-50 rounded-lg">
+                  <p className="text-xs md:text-sm text-blue-800">
                     <strong>Selected:</strong> {selectedTemplate.name} - {MESSAGE_TYPES[selectedTemplate.messageType]}
                   </p>
                 </div>
               )}
             </div>
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2"><span className="text-red-500">*</span> Message Type</label>
-              <select value={messageType} onChange={(e) => setMessageType(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2"><span className="text-red-500">*</span> Message Type</label>
+              <select value={messageType} onChange={(e) => setMessageType(e.target.value)} className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base">
                 {Object.entries(MESSAGE_TYPES).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
                 ))}
               </select>
-              <FiCheck className="absolute right-10 top-11 text-green-500" size={20} />
+              <FiCheck className="absolute right-8 md:right-10 top-9 md:top-11 text-green-500" size={16} />
             </div>
           </div>
 
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <label className="text-sm font-medium text-gray-700"><span className="text-red-500">*</span> Contacts ({contacts.length})</label>
-              <div className="flex flex-wrap gap-2 md:gap-3">
-                
-                <button onClick={removeDuplicates} className="px-2 md:px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
-                  <FiX /> Remove Duplicates
+          <div className="mb-6 md:mb-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 md:mb-4 gap-2">
+              <label className="text-xs md:text-sm font-medium text-gray-700"><span className="text-red-500">*</span> Contacts ({contacts.length})</label>
+              <div className="flex flex-wrap gap-1.5 md:gap-2">
+                <button onClick={removeDuplicates} className="px-2 md:px-3 py-1.5 md:py-2 bg-orange-600 text-white rounded-md md:rounded-lg hover:bg-orange-700 flex items-center gap-1 text-xs md:text-sm">
+                  <FiX className="text-sm" /> <span className="hidden sm:inline">Remove</span> Dup
                 </button>
-                <button onClick={clearAllContacts} className="px-2 md:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
-                  <FiTrash2 /> Clear All
+                <button onClick={clearAllContacts} className="px-2 md:px-3 py-1.5 md:py-2 bg-red-600 text-white rounded-md md:rounded-lg hover:bg-red-700 flex items-center gap-1 text-xs md:text-sm">
+                  <FiTrash2 className="text-sm" /> Clear
                 </button>
-                <label className={`px-2 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer flex items-center gap-1 md:gap-2 text-sm md:text-base ${checkingCapability ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <label className={`px-2 md:px-3 py-1.5 md:py-2 bg-blue-600 text-white rounded-md md:rounded-lg hover:bg-blue-700 cursor-pointer flex items-center gap-1 text-xs md:text-sm ${checkingCapability ? 'opacity-50 cursor-not-allowed' : ''}`}>
                   {checkingCapability ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Checking...
+                      <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span className="hidden sm:inline">Checking...</span>
                     </>
                   ) : (
                     <>
-                      <FiUpload /> Import Excel
+                      <FiUpload className="text-sm" /> Excel
                     </>
                   )}
                   <input type="file" accept=".xlsx,.xls,.csv" onChange={importExcel} className="hidden" disabled={checkingCapability} />
                 </label>
-                <button onClick={() => setShowManualImport(true)} className={`px-2 md:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1 md:gap-2 text-sm md:text-base ${checkingCapability ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={checkingCapability}>
-                  <FiPlus /> Manual Import
+                <button onClick={() => setShowManualImport(true)} className={`px-2 md:px-3 py-1.5 md:py-2 bg-green-600 text-white rounded-md md:rounded-lg hover:bg-green-700 flex items-center gap-1 text-xs md:text-sm ${checkingCapability ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={checkingCapability}>
+                  <FiPlus className="text-sm" /> Manual
                 </button>
+                {/* <button onClick={() => setShowCountryCode(true)} className="px-2 md:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
+                  Insert Country Code
+                </button> */}
               </div>
             </div>
 
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto max-h-96">
-                <table className="w-full">
+              <div className="overflow-x-auto max-h-64 md:max-h-96">
+                <table className="w-full min-w-[500px]">
                   <thead className="bg-gray-50 sticky top-0">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">SN</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Phone Number</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Action</th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 border-b">SN</th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 border-b">Phone Number</th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 border-b">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {contacts.map((contact, idx) => (
                       <tr key={contact.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-2 text-sm border-b">{idx + 1}</td>
-                        <td className="px-4 py-2 border-b">
-                          <div className="flex items-center gap-2">
+                        <td className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm border-b">{idx + 1}</td>
+                        <td className="px-2 md:px-4 py-1.5 md:py-2 border-b">
+                          <div className="flex items-center gap-1 md:gap-2">
                             <input 
                               type="text" 
                               value={contact.number} 
                               onChange={(e) => updateContact(contact.id, e.target.value)} 
                               placeholder="+91xxxxxxxxxx" 
-                              className={`w-full px-2 py-1 border rounded focus:ring-1 focus:ring-blue-500 ${
+                              className={`w-full px-2 py-1 border rounded text-xs md:text-sm focus:ring-1 focus:ring-blue-500 ${
                                 contact.capable === true ? 'border-green-500 bg-green-50' : 
                                 contact.capable === false ? 'border-red-500 bg-red-50' : ''
                               }`} 
                             />
-                            {contact.checking && <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>}
-                            {contact.capable === true && <span className="text-green-600 text-sm">✓</span>}
-                            {contact.capable === false && <span className="text-red-600 text-sm">✗</span>}
+                            {contact.checking && <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>}
+                            {contact.capable === true && <span className="text-green-600 text-xs md:text-sm flex-shrink-0">✓</span>}
+                            {contact.capable === false && <span className="text-red-600 text-xs md:text-sm flex-shrink-0">✗</span>}
                           </div>
                         </td>
-                        <td className="px-4 py-2 border-b">
+                        <td className="px-2 md:px-4 py-1.5 md:py-2 border-b">
                           <button onClick={() => deleteContact(contact.id)} className="text-red-600 hover:text-red-800">
-                            <FiTrash2 />
+                            <FiTrash2 className="text-sm md:text-base" />
                           </button>
                         </td>
                       </tr>
@@ -1151,36 +1392,36 @@ export default function SendMessageClean() {
 
           <div>
             {checkingCapability && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
-                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-blue-700 font-medium">Checking RCS capability...</span>
+              <div className="mb-3 md:mb-4 p-2 md:p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
+                <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-blue-700 font-medium text-xs md:text-sm">Checking RCS capability...</span>
               </div>
             )}
             
-            <label className="block text-sm font-medium text-gray-700 mb-3"><span className="text-red-500">*</span> Message Content</label>
+            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2 md:mb-3"><span className="text-red-500">*</span> Message Content</label>
             {renderMessageEditor()}
           </div>
 
           {/* Campaign Name and Send Button */}
-          <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-4">
-            <div className="w-full md:w-96">
-              <label className="block text-sm font-medium text-gray-700 mb-2"><span className="text-red-500">*</span> Campaign Name</label>
+          <div className="mt-6 md:mt-8 flex flex-col gap-3 md:gap-4">
+            <div className="w-full">
+              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2"><span className="text-red-500">*</span> Campaign Name</label>
               <input
                 type="text"
                 value={campaignName}
                 onChange={(e) => setCampaignName(e.target.value)}
                 placeholder="Enter campaign name"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
               />
             </div>
             <button 
               onClick={handleSend} 
               disabled={sending}
-              className="px-8 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 flex items-center gap-2 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mt-7"
+              className="w-full md:w-auto md:self-center px-6 md:px-8 py-2.5 md:py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 flex items-center justify-center gap-2 font-semibold text-base md:text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
               {sending ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   Sending...
                 </>
               ) : (
@@ -1270,24 +1511,85 @@ export default function SendMessageClean() {
         </div>
       )}
 
-      {/* Manual Import Modal */}
-      {showManualImport && (
+      {/* Country Code Modal */}
+      {showCountryCode && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Manual Import</h3>
+              <h3 className="text-lg font-semibold">Insert Country Code</h3>
               <button onClick={() => {
-                setShowManualImport(false)
-                setManualNumbers('')
-                setParsedNumbers([])
+                setShowCountryCode(false)
+                setCountrySearch('')
               }} className="text-gray-500 hover:text-gray-700">
                 <FiX size={24} />
               </button>
             </div>
             
             <div className="space-y-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={countrySearch}
+                  onChange={(e) => setCountrySearch(e.target.value)}
+                  placeholder="Search country..."
+                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="border border-gray-200 rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+                {filteredCountries.map((country) => (
+                  <div
+                    key={country.code}
+                    onClick={() => setSelectedCountryCode(country.code)}
+                    className={`px-4 py-3 cursor-pointer hover:bg-blue-50 ${
+                      selectedCountryCode === country.code ? 'bg-blue-100' : ''
+                    }`}
+                  >
+                    <span className="text-sm">[{country.short}] {country.name} ({country.code})</span>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowCountryCode(false)
+                    setCountrySearch('')
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={applyCountryCode}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Import Modal */}
+      {showManualImport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2">
+          <div className="bg-white rounded-xl p-4 md:p-6 w-full max-w-3xl max-h-[95vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-3 md:mb-4">
+              <h3 className="text-base md:text-lg font-semibold">Manual Import</h3>
+              <button onClick={() => {
+                setShowManualImport(false)
+                setManualNumbers('')
+                setParsedNumbers([])
+              }} className="text-gray-500 hover:text-gray-700">
+                <FiX size={20} className="md:w-6 md:h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-3 md:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Enter Phone Numbers</label>
+                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">Enter Phone Numbers</label>
                 <textarea
                   value={manualNumbers}
                   onChange={(e) => {
@@ -1295,28 +1597,28 @@ export default function SendMessageClean() {
                     parseManualNumbers(e.target.value)
                   }}
                   placeholder="Enter numbers (one per line)&#10;Format: 9876543210 or name,9876543210"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 h-32"
+                  className="w-full px-2 md:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 h-24 md:h-32 text-sm"
                 />
                 <p className="text-xs text-gray-500 mt-1">Line per number, you can name by enter name comma then mobile (name,number)</p>
               </div>
               
               {parsedNumbers.length > 0 && (
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="overflow-x-auto max-h-64">
-                    <table className="w-full">
+                  <div className="overflow-x-auto max-h-48 md:max-h-64">
+                    <table className="w-full min-w-[300px]">
                       <thead className="bg-gray-50 sticky top-0">
                         <tr>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">SN</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Name</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Number</th>
+                          <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 border-b">SN</th>
+                          <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 border-b">Name</th>
+                          <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 border-b">Number</th>
                         </tr>
                       </thead>
                       <tbody>
                         {parsedNumbers.map((item, idx) => (
                           <tr key={item.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-2 text-sm border-b">{idx + 1}</td>
-                            <td className="px-4 py-2 text-sm border-b">{item.name || '-'}</td>
-                            <td className="px-4 py-2 text-sm border-b">{item.number}</td>
+                            <td className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm border-b">{idx + 1}</td>
+                            <td className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm border-b">{item.name || '-'}</td>
+                            <td className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm border-b">{item.number}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1325,21 +1627,21 @@ export default function SendMessageClean() {
                 </div>
               )}
               
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-2 md:gap-3 pt-3 md:pt-4">
                 <button
                   onClick={() => {
                     setShowManualImport(false)
                     setManualNumbers('')
                     setParsedNumbers([])
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="flex-1 px-3 md:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm md:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={importManualNumbers}
                   disabled={parsedNumbers.length === 0 || checkingCapability}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
                 >
                   {checkingCapability ? 'Checking...' : 'Import'}
                 </button>
