@@ -51,6 +51,9 @@ export default function SendMessageClean() {
   const [showAddMoney, setShowAddMoney] = useState(false)
   const [addAmount, setAddAmount] = useState('')
   const [campaignName, setCampaignName] = useState('')
+  const [showManualImport, setShowManualImport] = useState(false)
+  const [manualNumbers, setManualNumbers] = useState('')
+  const [parsedNumbers, setParsedNumbers] = useState([])
 
   useEffect(() => {
     loadTemplates()
@@ -151,9 +154,71 @@ export default function SendMessageClean() {
     }
   }
 
-  const addContact = async () => {
-    const newContact = { id: Date.now(), number: '+91', vars: {} }
-    setContacts([...contacts, newContact])
+  const parseManualNumbers = (text) => {
+    const lines = text.split('\n').filter(line => line.trim())
+    const parsed = []
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim()
+      if (trimmed.includes(',')) {
+        const [name, num] = trimmed.split(',').map(s => s.trim())
+        let number = num || ''
+        if (!number.startsWith('+91') && /^\d{10}$/.test(number)) {
+          number = '+91' + number
+        }
+        if (number && /^\+91\d{10}$/.test(number)) {
+          parsed.push({ id: Date.now() + idx, name: name || '', number })
+        }
+      } else {
+        let number = trimmed
+        if (!number.startsWith('+91') && /^\d{10}$/.test(number)) {
+          number = '+91' + number
+        }
+        if (number && /^\+91\d{10}$/.test(number)) {
+          parsed.push({ id: Date.now() + idx, name: '', number })
+        }
+      }
+    })
+    setParsedNumbers(parsed)
+  }
+
+  const importManualNumbers = async () => {
+    if (parsedNumbers.length === 0) return
+    
+    setCheckingCapability(true)
+    const capableNumbers = []
+    
+    for (const item of parsedNumbers) {
+      try {
+        const capabilityResult = await checkRcsCapability([item.number])
+        const rcsMessaging = capabilityResult?.data?.rcsMessaging || capabilityResult?.rcsMessaging
+        const rcsData = rcsMessaging?.[item.number]
+        
+        if (rcsData?.features && rcsData.features.length > 0) {
+          capableNumbers.push({ id: Date.now() + Math.random(), number: item.number, vars: {}, capable: true })
+        }
+      } catch (error) {
+        // Silent error
+      }
+    }
+    
+    setContacts([...contacts, ...capableNumbers])
+    setCheckingCapability(false)
+    setShowManualImport(false)
+    setManualNumbers('')
+    setParsedNumbers([])
+    
+    if (capableNumbers.length > 0) {
+      setResultData({ 
+        success: true, 
+        message: `${capableNumbers.length} RCS capable numbers added out of ${parsedNumbers.length} total` 
+      })
+    } else {
+      setResultData({ 
+        success: false, 
+        message: 'No RCS capable numbers found' 
+      })
+    }
+    setShowResultModal(true)
   }
 
 
@@ -997,10 +1062,7 @@ export default function SendMessageClean() {
             <div className="flex justify-between items-center mb-4">
               <label className="text-sm font-medium text-gray-700"><span className="text-red-500">*</span> Contacts ({contacts.length})</label>
               <div className="flex flex-wrap gap-2 md:gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={excludeUnsub} onChange={(e) => setExcludeUnsub(e.target.checked)} className="w-4 h-4" />
-                  <span className="text-sm text-gray-700">Exclude Unsubscribes</span>
-                </label>
+                
                 <button onClick={removeDuplicates} className="px-2 md:px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
                   <FiX /> Remove Duplicates
                 </button>
@@ -1020,8 +1082,8 @@ export default function SendMessageClean() {
                   )}
                   <input type="file" accept=".xlsx,.xls,.csv" onChange={importExcel} className="hidden" disabled={checkingCapability} />
                 </label>
-                <button onClick={addContact} className={`px-2 md:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1 md:gap-2 text-sm md:text-base ${checkingCapability ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={checkingCapability}>
-                  <FiPlus /> Add Contact
+                <button onClick={() => setShowManualImport(true)} className={`px-2 md:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1 md:gap-2 text-sm md:text-base ${checkingCapability ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={checkingCapability}>
+                  <FiPlus /> Manual Import
                 </button>
               </div>
             </div>
@@ -1184,6 +1246,85 @@ export default function SendMessageClean() {
                   className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                 >
                   Add Money
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Import Modal */}
+      {showManualImport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Manual Import</h3>
+              <button onClick={() => {
+                setShowManualImport(false)
+                setManualNumbers('')
+                setParsedNumbers([])
+              }} className="text-gray-500 hover:text-gray-700">
+                <FiX size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Enter Phone Numbers</label>
+                <textarea
+                  value={manualNumbers}
+                  onChange={(e) => {
+                    setManualNumbers(e.target.value)
+                    parseManualNumbers(e.target.value)
+                  }}
+                  placeholder="Enter numbers (one per line)&#10;Format: 9876543210 or name,9876543210"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 h-32"
+                />
+                <p className="text-xs text-gray-500 mt-1">Line per number, you can name by enter name comma then mobile (name,number)</p>
+              </div>
+              
+              {parsedNumbers.length > 0 && (
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto max-h-64">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">SN</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Name</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Number</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parsedNumbers.map((item, idx) => (
+                          <tr key={item.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-2 text-sm border-b">{idx + 1}</td>
+                            <td className="px-4 py-2 text-sm border-b">{item.name || '-'}</td>
+                            <td className="px-4 py-2 text-sm border-b">{item.number}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowManualImport(false)
+                    setManualNumbers('')
+                    setParsedNumbers([])
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={importManualNumbers}
+                  disabled={parsedNumbers.length === 0 || checkingCapability}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {checkingCapability ? 'Checking...' : 'Import'}
                 </button>
               </div>
             </div>
