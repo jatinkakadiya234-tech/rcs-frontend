@@ -1224,18 +1224,18 @@ export default function SendMessageClean() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-xl md:rounded-2xl shadow-xl p-3 md:p-6 lg:p-8">
-          <div className="flex flex-col gap-3 md:gap-4 mb-6 md:mb-8">
+        <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 md:mb-2">Send Message</h1>
-              <p className="text-xs md:text-sm lg:text-base text-gray-600">Create and send RCS messages to your contacts</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Send Message</h1>
+              <p className="text-gray-600">Create and send RCS messages to your contacts</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
-              <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
-                <span className="text-gray-600 text-xs md:text-sm">Balance: ₹{user?.Wallet?.toFixed(2) || '0.00'}</span>
+            <div className="flex gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 text-sm md:text-base">Balance: ₹{user?.Wallet?.toFixed(2) || '0.00'}</span>
                 <button 
                   onClick={() => setShowAddMoney(true)}
-                  className="px-2 md:px-3 py-1.5 md:py-2 bg-blue-500 text-white rounded-md md:rounded-lg hover:bg-blue-600 text-xs md:text-sm"
+                  className="px-2 md:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base"
                 >
                   Add Money
                 </button>
@@ -1246,23 +1246,23 @@ export default function SendMessageClean() {
                     setRefreshing(false)
                   }}
                   disabled={refreshing}
-                  className="px-2 md:px-3 py-1.5 md:py-2 bg-gray-500 text-white rounded-md md:rounded-lg hover:bg-gray-600 disabled:opacity-50 flex items-center gap-1 text-xs md:text-sm"
+                  className="px-2 md:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 flex items-center gap-1 text-sm md:text-base"
                 >
                   {refreshing ? (
                     <>
-                      <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span className="hidden md:inline">Refreshing</span>
                     </>
                   ) : 'Refresh'}
                 </button>
                 <button 
                   onClick={downloadDemoExcel}
-                  className="px-2 md:px-3 py-1.5 md:py-2 bg-purple-600 text-white rounded-md md:rounded-lg hover:bg-purple-700 flex items-center gap-1 text-xs md:text-sm"
+                  className="px-2 md:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-1 text-sm md:text-base"
                 >
-                  <FiUpload className="text-sm md:text-base" /> <span className="hidden sm:inline">Demo</span>
+                  <FiUpload /> Demo
                 </button>
               </div>
-              <button onClick={() => setShowPreview(!showPreview)} className="px-2 md:px-3 py-1.5 md:py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-md md:rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center justify-center gap-1 text-xs md:text-sm">
+              <button onClick={() => setShowPreview(!showPreview)} className="px-2 md:px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-1 md:gap-2 text-sm md:text-base">
                 <FiEye /> {showPreview ? 'Hide' : 'Show'} Preview
               </button>
             </div>
@@ -1280,13 +1280,13 @@ export default function SendMessageClean() {
             />
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div>
-              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">Template</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Template</label>
               <select 
                 value={template} 
                 onChange={(e) => handleTemplateSelect(e.target.value)} 
-                className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 <option value="new">New Message</option>
                 {templates.map(tmpl => (
@@ -1296,90 +1296,91 @@ export default function SendMessageClean() {
                 ))}
               </select>
               {selectedTemplate && (
-                <div className="mt-2 p-2 md:p-3 bg-blue-50 rounded-lg">
-                  <p className="text-xs md:text-sm text-blue-800">
+                <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
                     <strong>Selected:</strong> {selectedTemplate.name} - {MESSAGE_TYPES[selectedTemplate.messageType]}
                   </p>
                 </div>
               )}
             </div>
             <div className="relative">
-              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2"><span className="text-red-500">*</span> Message Type</label>
-              <select value={messageType} onChange={(e) => setMessageType(e.target.value)} className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base">
+              <label className="block text-sm font-medium text-gray-700 mb-2"><span className="text-red-500">*</span> Message Type</label>
+              <select value={messageType} onChange={(e) => setMessageType(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 {Object.entries(MESSAGE_TYPES).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
                 ))}
               </select>
-              <FiCheck className="absolute right-8 md:right-10 top-9 md:top-11 text-green-500" size={16} />
+              <FiCheck className="absolute right-10 top-11 text-green-500" size={20} />
             </div>
           </div>
 
-          <div className="mb-6 md:mb-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 md:mb-4 gap-2">
-              <label className="text-xs md:text-sm font-medium text-gray-700"><span className="text-red-500">*</span> Contacts ({contacts.length})</label>
-              <div className="flex flex-wrap gap-1.5 md:gap-2">
-                <button onClick={removeDuplicates} className="px-2 md:px-3 py-1.5 md:py-2 bg-orange-600 text-white rounded-md md:rounded-lg hover:bg-orange-700 flex items-center gap-1 text-xs md:text-sm">
-                  <FiX className="text-sm" /> <span className="hidden sm:inline">Remove</span> Dup
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <label className="text-sm font-medium text-gray-700"><span className="text-red-500">*</span> Contacts ({contacts.length})</label>
+              <div className="flex flex-wrap gap-2 md:gap-3">
+                
+                <button onClick={removeDuplicates} className="px-2 md:px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
+                  <FiX /> Remove Duplicates
                 </button>
-                <button onClick={clearAllContacts} className="px-2 md:px-3 py-1.5 md:py-2 bg-red-600 text-white rounded-md md:rounded-lg hover:bg-red-700 flex items-center gap-1 text-xs md:text-sm">
-                  <FiTrash2 className="text-sm" /> Clear
+                <button onClick={clearAllContacts} className="px-2 md:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
+                  <FiTrash2 /> Clear All
                 </button>
-                <label className={`px-2 md:px-3 py-1.5 md:py-2 bg-blue-600 text-white rounded-md md:rounded-lg hover:bg-blue-700 cursor-pointer flex items-center gap-1 text-xs md:text-sm ${checkingCapability ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <label className={`px-2 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer flex items-center gap-1 md:gap-2 text-sm md:text-base ${checkingCapability ? 'opacity-50 cursor-not-allowed' : ''}`}>
                   {checkingCapability ? (
                     <>
-                      <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span className="hidden sm:inline">Checking...</span>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Checking...
                     </>
                   ) : (
                     <>
-                      <FiUpload className="text-sm" /> Excel
+                      <FiUpload /> Import Excel
                     </>
                   )}
                   <input type="file" accept=".xlsx,.xls,.csv" onChange={importExcel} className="hidden" disabled={checkingCapability} />
                 </label>
-                <button onClick={() => setShowManualImport(true)} className={`px-2 md:px-3 py-1.5 md:py-2 bg-green-600 text-white rounded-md md:rounded-lg hover:bg-green-700 flex items-center gap-1 text-xs md:text-sm ${checkingCapability ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={checkingCapability}>
-                  <FiPlus className="text-sm" /> Manual
+                <button onClick={() => setShowManualImport(true)} className={`px-2 md:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1 md:gap-2 text-sm md:text-base ${checkingCapability ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={checkingCapability}>
+                  <FiPlus /> Manual Import
                 </button>
-                {/* <button onClick={() => setShowCountryCode(true)} className="px-2 md:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
+                <button onClick={() => setShowCountryCode(true)} className="px-2 md:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
                   Insert Country Code
-                </button> */}
+                </button>
               </div>
             </div>
 
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto max-h-64 md:max-h-96">
-                <table className="w-full min-w-[500px]">
+              <div className="overflow-x-auto max-h-96">
+                <table className="w-full">
                   <thead className="bg-gray-50 sticky top-0">
                     <tr>
-                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 border-b">SN</th>
-                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 border-b">Phone Number</th>
-                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 border-b">Action</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">SN</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Phone Number</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {contacts.map((contact, idx) => (
                       <tr key={contact.id} className="hover:bg-gray-50">
-                        <td className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm border-b">{idx + 1}</td>
-                        <td className="px-2 md:px-4 py-1.5 md:py-2 border-b">
-                          <div className="flex items-center gap-1 md:gap-2">
+                        <td className="px-4 py-2 text-sm border-b">{idx + 1}</td>
+                        <td className="px-4 py-2 border-b">
+                          <div className="flex items-center gap-2">
                             <input 
                               type="text" 
                               value={contact.number} 
                               onChange={(e) => updateContact(contact.id, e.target.value)} 
                               placeholder="+91xxxxxxxxxx" 
-                              className={`w-full px-2 py-1 border rounded text-xs md:text-sm focus:ring-1 focus:ring-blue-500 ${
+                              className={`w-full px-2 py-1 border rounded focus:ring-1 focus:ring-blue-500 ${
                                 contact.capable === true ? 'border-green-500 bg-green-50' : 
                                 contact.capable === false ? 'border-red-500 bg-red-50' : ''
                               }`} 
                             />
-                            {contact.checking && <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>}
-                            {contact.capable === true && <span className="text-green-600 text-xs md:text-sm flex-shrink-0">✓</span>}
-                            {contact.capable === false && <span className="text-red-600 text-xs md:text-sm flex-shrink-0">✗</span>}
+                            {contact.checking && <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>}
+                            {contact.capable === true && <span className="text-green-600 text-sm">✓</span>}
+                            {contact.capable === false && <span className="text-red-600 text-sm">✗</span>}
                           </div>
                         </td>
-                        <td className="px-2 md:px-4 py-1.5 md:py-2 border-b">
+                        <td className="px-4 py-2 border-b">
                           <button onClick={() => deleteContact(contact.id)} className="text-red-600 hover:text-red-800">
-                            <FiTrash2 className="text-sm md:text-base" />
+                            <FiTrash2 />
                           </button>
                         </td>
                       </tr>
@@ -1392,36 +1393,36 @@ export default function SendMessageClean() {
 
           <div>
             {checkingCapability && (
-              <div className="mb-3 md:mb-4 p-2 md:p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
-                <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-blue-700 font-medium text-xs md:text-sm">Checking RCS capability...</span>
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-blue-700 font-medium">Checking RCS capability...</span>
               </div>
             )}
             
-            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2 md:mb-3"><span className="text-red-500">*</span> Message Content</label>
+            <label className="block text-sm font-medium text-gray-700 mb-3"><span className="text-red-500">*</span> Message Content</label>
             {renderMessageEditor()}
           </div>
 
           {/* Campaign Name and Send Button */}
-          <div className="mt-6 md:mt-8 flex flex-col gap-3 md:gap-4">
-            <div className="w-full">
-              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2"><span className="text-red-500">*</span> Campaign Name</label>
+          <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-4">
+            <div className="w-full md:w-96">
+              <label className="block text-sm font-medium text-gray-700 mb-2"><span className="text-red-500">*</span> Campaign Name</label>
               <input
                 type="text"
                 value={campaignName}
                 onChange={(e) => setCampaignName(e.target.value)}
                 placeholder="Enter campaign name"
-                className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <button 
               onClick={handleSend} 
               disabled={sending}
-              className="w-full md:w-auto md:self-center px-6 md:px-8 py-2.5 md:py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 flex items-center justify-center gap-2 font-semibold text-base md:text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              className="px-8 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 flex items-center gap-2 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mt-7"
             >
               {sending ? (
                 <>
-                  <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   Sending...
                 </>
               ) : (
@@ -1574,22 +1575,22 @@ export default function SendMessageClean() {
 
       {/* Manual Import Modal */}
       {showManualImport && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2">
-          <div className="bg-white rounded-xl p-4 md:p-6 w-full max-w-3xl max-h-[95vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-3 md:mb-4">
-              <h3 className="text-base md:text-lg font-semibold">Manual Import</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Manual Import</h3>
               <button onClick={() => {
                 setShowManualImport(false)
                 setManualNumbers('')
                 setParsedNumbers([])
               }} className="text-gray-500 hover:text-gray-700">
-                <FiX size={20} className="md:w-6 md:h-6" />
+                <FiX size={24} />
               </button>
             </div>
             
-            <div className="space-y-3 md:space-y-4">
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">Enter Phone Numbers</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Enter Phone Numbers</label>
                 <textarea
                   value={manualNumbers}
                   onChange={(e) => {
@@ -1597,28 +1598,28 @@ export default function SendMessageClean() {
                     parseManualNumbers(e.target.value)
                   }}
                   placeholder="Enter numbers (one per line)&#10;Format: 9876543210 or name,9876543210"
-                  className="w-full px-2 md:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 h-24 md:h-32 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 h-32"
                 />
                 <p className="text-xs text-gray-500 mt-1">Line per number, you can name by enter name comma then mobile (name,number)</p>
               </div>
               
               {parsedNumbers.length > 0 && (
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="overflow-x-auto max-h-48 md:max-h-64">
-                    <table className="w-full min-w-[300px]">
+                  <div className="overflow-x-auto max-h-64">
+                    <table className="w-full">
                       <thead className="bg-gray-50 sticky top-0">
                         <tr>
-                          <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 border-b">SN</th>
-                          <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 border-b">Name</th>
-                          <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 border-b">Number</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">SN</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Name</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Number</th>
                         </tr>
                       </thead>
                       <tbody>
                         {parsedNumbers.map((item, idx) => (
                           <tr key={item.id} className="hover:bg-gray-50">
-                            <td className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm border-b">{idx + 1}</td>
-                            <td className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm border-b">{item.name || '-'}</td>
-                            <td className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm border-b">{item.number}</td>
+                            <td className="px-4 py-2 text-sm border-b">{idx + 1}</td>
+                            <td className="px-4 py-2 text-sm border-b">{item.name || '-'}</td>
+                            <td className="px-4 py-2 text-sm border-b">{item.number}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1627,21 +1628,21 @@ export default function SendMessageClean() {
                 </div>
               )}
               
-              <div className="flex gap-2 md:gap-3 pt-3 md:pt-4">
+              <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => {
                     setShowManualImport(false)
                     setManualNumbers('')
                     setParsedNumbers([])
                   }}
-                  className="flex-1 px-3 md:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm md:text-base"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={importManualNumbers}
                   disabled={parsedNumbers.length === 0 || checkingCapability}
-                  className="flex-1 px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {checkingCapability ? 'Checking...' : 'Import'}
                 </button>
