@@ -1259,12 +1259,7 @@ export default function SendMessageClean() {
                     </>
                   ) : 'Refresh'}
                 </button>
-                <button 
-                  onClick={downloadDemoExcel}
-                  className="px-2 md:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-1 text-sm md:text-base"
-                >
-                  <FiUpload /> Demo
-                </button>
+              
               </div>
               <button onClick={() => setShowPreview(!showPreview)} className="px-2 md:px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-1 md:gap-2 text-sm md:text-base">
                 <FiEye /> {showPreview ? 'Hide' : 'Show'} Preview
@@ -1322,7 +1317,12 @@ export default function SendMessageClean() {
             <div className="flex justify-between items-center mb-4">
               <label className="text-sm font-medium text-gray-700"><span className="text-red-500">*</span> Contacts ({contacts.length})</label>
               <div className="flex flex-wrap gap-2 md:gap-3">
-                
+                  <button 
+                  onClick={downloadDemoExcel}
+                  className="px-2 md:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-1 text-sm md:text-base"
+                >
+                  <FiUpload />  Download semple
+                </button>
                 <button onClick={removeDuplicates} className="px-2 md:px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
                   <FiX /> Remove Duplicates
                 </button>
