@@ -37,15 +37,15 @@ export default function AdminLayout() {
         <aside className={`fixed lg:relative inset-y-0 left-0 z-50 bg-[#6C3BFF] text-white w-64 sm:w-72 lg:w-72 transform transition-transform duration-300 ease-in-out flex flex-col min-h-screen shadow-xl flex-shrink-0 ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}>
-          <div className="p-3 sm:p-4 lg:p-6 border-b border-white/10 flex-shrink-0">
-            <div className="flex items-center justify-between gap-2 sm:gap-3 lg:gap-4">
-              <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
-                <div className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 rounded-2xl bg-white/10 flex items-center justify-center font-semibold text-lg sm:text-xl lg:text-2xl">
-                  ADMIN
+          <div className="p-4 lg:p-6 border-b border-white/10 flex-shrink-0">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 lg:gap-4 min-w-0 flex-1">
+                <div className="h-14 w-14 lg:h-16  lg:w-16 rounded-2xl bg-white/10 flex items-center justify-center font-bold text-sm lg:text-xl flex-shrink-0">
+                <p>  ADMIN</p>
                 </div>
-                <div className="hidden sm:block">
-                  <h2 className="font-bold text-base sm:text-lg lg:text-xl">Admin Panel</h2>
-                  <p className="text-white/70 text-xs lg:text-sm">Management</p>
+                <div className="min-w-0">
+                  <h2 className="font-bold text-lg lg:text-xl truncate">Admin Panel</h2>
+                  <p className="text-white/70 text-sm">Management</p>
                 </div>
               </div>
               
