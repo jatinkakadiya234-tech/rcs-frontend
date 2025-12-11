@@ -267,12 +267,15 @@ export default function SendMessageClean() {
   ]
 
   useEffect(() => {
-    loadTemplates()
-  }, [])
+    if (user?._id) {
+      loadTemplates()
+    }
+  }, [user])
 
   const loadTemplates = async () => {
     try {
-      const response = await api.getTemplates()
+      const response = await api.getUserTemplates(user?._id)
+      console.log(response);
       setTemplates(response.data || [])
     } catch (error) {
       toast.error('Error loading templates: ' + error.message)

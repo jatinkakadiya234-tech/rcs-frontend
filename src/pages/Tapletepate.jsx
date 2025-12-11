@@ -216,7 +216,7 @@ export default function Tapletepate() {
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">SN</th>
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Name</th>
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Message Type</th>
-                <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Text</th>
+                <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Preview</th>
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Action</th>
               </tr>
             </thead>
@@ -249,7 +249,61 @@ export default function Tapletepate() {
                         {getMessageTypeLabel(template.messageType)}
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-gray-700 text-sm">{template.text || '-'}</td>
+                    <td className="py-4 px-4">
+                      <div className="max-w-xs">
+                        {template.messageType === 'plain-text' && (
+                          <div className="bg-gray-100 p-2 rounded text-xs text-gray-700 truncate">
+                            {template.text}
+                          </div>
+                        )}
+                        {template.messageType === 'text-with-action' && (
+                          <div className="space-y-1">
+                            <div className="bg-gray-100 p-2 rounded text-xs text-gray-700 truncate">
+                              {template.text}
+                            </div>
+                            <div className="flex gap-1">
+                              {template.actions?.slice(0, 2).map((action, i) => (
+                                <span key={i} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                                  {action.title}
+                                </span>
+                              ))}
+                              {template.actions?.length > 2 && (
+                                <span className="text-xs text-gray-500">+{template.actions.length - 2}</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {template.messageType === 'rcs' && (
+                          <div className="border border-gray-200 rounded overflow-hidden">
+                            {template.imageUrl && (
+                              <img src={template.imageUrl} alt="RCS" className="w-full h-16 object-cover" />
+                            )}
+                            <div className="p-1 bg-gray-50">
+                              <p className="text-xs text-gray-700 truncate">{template.text}</p>
+                            </div>
+                          </div>
+                        )}
+                        {template.messageType === 'carousel' && (
+                          <div className="flex gap-1 overflow-x-auto">
+                            {template.carouselItems?.slice(0, 3).map((item, i) => (
+                              <div key={i} className="min-w-[60px] border border-gray-200 rounded overflow-hidden">
+                                {item.imageUrl && (
+                                  <img src={item.imageUrl} alt={`Card ${i+1}`} className="w-full h-12 object-cover" />
+                                )}
+                                <div className="p-1 bg-gray-50">
+                                  <p className="text-xs text-gray-700 truncate">{item.title}</p>
+                                </div>
+                              </div>
+                            ))}
+                            {template.carouselItems?.length > 3 && (
+                              <div className="min-w-[60px] flex items-center justify-center text-xs text-gray-500">
+                                +{template.carouselItems.length - 3}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-2">
                         <button 
@@ -320,10 +374,30 @@ export default function Tapletepate() {
                 </div>
                 
                 <div className="bg-white p-4">
-                  {/* Text Message */}
-                  {previewData?.messageType === 'text' && previewData?.text && (
+                  {/* Plain Text Message */}
+                  {previewData?.messageType === 'plain-text' && previewData?.text && (
                     <div className="bg-gray-100 p-3 rounded-lg max-w-xs">
-                      <p className="text-sm text-gray-800">{previewData.text}</p>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{previewData.text}</p>
+                    </div>
+                  )}
+                  
+                  {/* Text with Actions */}
+                  {previewData?.messageType === 'text-with-action' && (
+                    <div className="max-w-xs">
+                      {previewData?.text && (
+                        <div className="bg-gray-100 p-3 rounded-lg mb-2">
+                          <p className="text-sm text-gray-800 whitespace-pre-wrap">{previewData.text}</p>
+                        </div>
+                      )}
+                      {previewData?.actions?.length > 0 && (
+                        <div className="space-y-1">
+                          {previewData.actions.map((action, index) => (
+                            <button key={index} className="w-full py-2 border border-blue-500 text-blue-500 rounded text-sm font-medium">
+                              {action.type === 'call' ? '📞' : action.type === 'url' ? '🔗' : '💬'} {action.title}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                   
@@ -349,9 +423,9 @@ export default function Tapletepate() {
                   {/* RCS Rich Card */}
                   {previewData?.messageType === 'rcs' && (
                     <div className="border border-gray-200 rounded-lg max-w-sm overflow-hidden">
-                      {previewData?.imageUrl && (
+                      {(previewData?.imageUrl || previewData?.richCard?.imageUrl) && (
                         <img 
-                          src={previewData.imageUrl} 
+                          src={previewData?.imageUrl || previewData?.richCard?.imageUrl} 
                           alt="RCS Card" 
                           className="w-full h-32 object-cover"
                           onError={(e) => {
@@ -360,12 +434,15 @@ export default function Tapletepate() {
                         />
                       )}
                       <div className="p-3">
-                        {previewData?.text && (
-                          <p className="text-sm text-gray-800 mb-2">{previewData.text}</p>
+                        {(previewData?.richCard?.title || previewData?.text) && (
+                          <h4 className="font-semibold text-gray-900 mb-1">{previewData?.richCard?.title || previewData?.text}</h4>
                         )}
-                        {previewData?.actions?.length > 0 && (
+                        {previewData?.richCard?.subtitle && (
+                          <p className="text-xs text-gray-600 mb-2">{previewData.richCard.subtitle}</p>
+                        )}
+                        {(previewData?.richCard?.actions || previewData?.actions)?.length > 0 && (
                           <div className="space-y-2">
-                            {previewData.actions.map((action, index) => (
+                            {(previewData?.richCard?.actions || previewData?.actions).map((action, index) => (
                               <button key={index} className="w-full py-2 bg-blue-500 text-white rounded text-sm font-medium">
                                 {action.type === 'call' ? '📞' : action.type === 'url' ? '🔗' : '💬'} {action.title}
                               </button>
@@ -468,7 +545,7 @@ export default function Tapletepate() {
                   )}
                   
                   {/* Default fallback */}
-                  {!['text', 'image', 'rcs', 'button', 'location', 'contact', 'carousel'].includes(previewData?.messageType) && (
+                  {!['plain-text', 'text-with-action', 'text', 'image', 'rcs', 'button', 'location', 'contact', 'carousel'].includes(previewData?.messageType) && (
                     <div className="bg-gray-100 p-3 rounded-lg max-w-xs">
                       <p className="text-sm text-gray-600">Preview not available for {getMessageTypeLabel(previewData?.messageType)}</p>
                     </div>
