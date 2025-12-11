@@ -1,7 +1,7 @@
 import axios from "axios";
 import { getCookie } from "../utils/cookieUtils";
 
-const API_BASE_URL = "https://rcssender.com/api";
+const API_BASE_URL = "https://rcssender.com";
 // const API_BASE_URL = "http://localhost:8888";
 
 const api = axios.create({
@@ -114,7 +114,7 @@ class ApiService {
     const { data } = await api.post("/v1/user/wallet/request", requestData);
     return data;
   }
-  
+
   async getrecentorders(userId) {
     const { data } = await api.get(`/v1/message-reports/recent/${userId}`);
     return data;
