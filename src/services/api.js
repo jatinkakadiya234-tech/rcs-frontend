@@ -1,8 +1,8 @@
 import axios from "axios";
 import { getCookie } from "../utils/cookieUtils";
 
-const API_BASE_URL = "https://rcssender.com";
-// const API_BASE_URL = "http://localhost:8888";
+const API_BASE_URL = "https://rcssender.com/api";
+// const API_BASE_URL = "http://localhost:8888/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -14,7 +14,7 @@ const api = axios.create({
 
 // Add token to requests
 api.interceptors.request.use((config) => {
-  const token = getCookie('jio_token');
+  const token = getCookie("jio_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -29,6 +29,7 @@ class ApiService {
 
   async loginUser(credentials) {
     const { data } = await api.post("/v1/user/login", credentials);
+    console.log(data , '--loginUsers-----data----------');
     return data;
   }
 
@@ -51,7 +52,10 @@ class ApiService {
     return await api.post("/v1/user/sendMessage", campaignData);
   }
   async chackcapebalNumber(phoneNumbers, userId) {
-    return await api.post("/v1/user/checkAvablityNumber", { phoneNumbers,userId });
+    return await api.post("/v1/user/checkAvablityNumber", {
+      phoneNumbers,
+      userId,
+    });
   }
 
   async uploadFile(file) {
@@ -106,7 +110,7 @@ class ApiService {
   }
 
   async getAllUsers() {
-    const { data } = await api.get('/v1/user/users');
+    const { data } = await api.get("/v1/user/users");
     return data;
   }
 
