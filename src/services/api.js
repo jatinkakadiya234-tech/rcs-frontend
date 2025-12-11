@@ -28,7 +28,7 @@ class ApiService {
   }
 
   async loginUser(credentials) {
-    const { data } = await api.post("/v1/user/login", credentials);
+    const { data } = await api.post("/login", credentials);
     console.log(data , '--loginUsers-----data----------');
     return data;
   }
