@@ -1,8 +1,8 @@
 import axios from "axios";
 import { getCookie } from "../utils/cookieUtils";
 
-const API_BASE_URL = "https://rcssender.com/api";
-// const API_BASE_URL = "http://localhost:8888";
+// const API_BASE_URL = "https://rcssender.com/api";
+const API_BASE_URL = "http://localhost:8888";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -37,6 +37,11 @@ class ApiService {
     return data;
   }
 
+  async getUserTemplates(userId) {
+    const { data } = await api.get(`/api/v1/templates/user/${userId}`);
+    return data;
+  }
+
   async getTemplateById(id) {
     const { data } = await api.get(`/api/v1/templates/${id}`);
     return data;
@@ -61,8 +66,8 @@ class ApiService {
     return data;
   }
 
-  async getMessageReportsall() {
-    const { data } = await api.get("/api/v1/message-reports/alls");
+  async getMessageReportsall(userId) {
+    const { data } = await api.get(`/api/v1/message-reports/alls/${userId}`);
     return data;
   }
 
@@ -100,8 +105,22 @@ class ApiService {
     return data;
   }
 
+  async getAllUsers() {
+    const { data } = await api.get('/api/v1/user/users');
+    return data;
+  }
+
   async addWalletRequest(requestData) {
     const { data } = await api.post("/api/v1/user/wallet/request", requestData);
+    return data;
+  }
+  async getrecentorders(userId) {
+    const { data } = await api.get(`/api/v1/message-reports/recent/${userId}`);
+    return data;
+  }
+
+  async getMessageStats(userId) {
+    const { data } = await api.get(`/api/v1/message-reports/stats/${userId}`);
     return data;
   }
 }

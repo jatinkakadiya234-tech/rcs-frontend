@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { FaEdit, FaTrash, FaTimes, FaPlus } from 'react-icons/fa'
 import ApiService from '../services/api'
 import { getMessageTypeLabel } from '../utils/messageTypes'
+import { useAuth } from '../context/AuthContext'
+import toast from 'react-hot-toast'
 
 export default function Tapletepate() {
+  const { user } = useAuth()
   const [templates, setTemplates] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -27,15 +30,19 @@ export default function Tapletepate() {
   const [importJson, setImportJson] = useState('')
 
   useEffect(() => {
-    fetchTemplates()
-  }, [])
+    if (user?._id) {
+      fetchTemplates()
+    }
+  }, [user])
 
   const fetchTemplates = async () => {
     try {
       setLoading(true)
-      const response = await ApiService.getTemplates()
+      const response = await ApiService.getUserTemplates(user?._id)
       setTemplates(response.data || [])
+      toast.success('Templates fetched successfully')
     } catch (err) {
+      toast.error('Failed to fetch templates')
       setError('Failed to fetch templates')
     } finally {
       setLoading(false)
@@ -93,8 +100,10 @@ export default function Tapletepate() {
     if (window.confirm('Are you sure you want to delete this template?')) {
       try {
         await ApiService.deleteTemplate(id)
+        toast.success('Template deleted successfully')
         fetchTemplates()
       } catch (err) {
+        toast.error('Failed to delete template')
         setError('Failed to delete template')
       }
     }
@@ -127,7 +136,8 @@ export default function Tapletepate() {
       name: formData.name.trim(),
       messageType,
       text: formData.text.trim(),
-      imageUrl: formData.imageUrl.trim()
+      imageUrl: formData.imageUrl.trim(),
+      userId: user?._id
     }
 
     if (messageType === 'text-with-action') {
@@ -161,13 +171,12 @@ export default function Tapletepate() {
     }
     
     try {
-      console.log('Submitting template data:', templateData)
       if (editingTemplate) {
-        const response = await ApiService.updateTemplate(editingTemplate._id, templateData)
-        console.log('Update response:', response)
+        await ApiService.updateTemplate(editingTemplate._id, templateData)
+        toast.success('Template updated successfully')
       } else {
-        const response = await ApiService.createTemplate(templateData)
-        console.log('Create response:', response)
+        await ApiService.createTemplate(templateData)
+        toast.success('Template created successfully')
       }
       await fetchTemplates()
       resetForm()
@@ -175,6 +184,7 @@ export default function Tapletepate() {
       setError('')
     } catch (err) {
       console.error('Template save error:', err)
+      toast.error(err.response?.data?.message || err.message || 'Failed to save template')
       setError(err.response?.data?.message || err.message || 'Failed to save template')
     }
   }
@@ -207,20 +217,19 @@ export default function Tapletepate() {
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Name</th>
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Message Type</th>
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Text</th>
-                <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Preview</th>
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Action</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="py-12 text-center text-gray-500">
+                  <td colSpan="5" className="py-12 text-center text-gray-500">
                     Loading templates...
                   </td>
                 </tr>
               ) : templates.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-12 text-center text-gray-500">
+                  <td colSpan="5" className="py-12 text-center text-gray-500">
                     No templates found
                   </td>
                 </tr>
@@ -242,15 +251,13 @@ export default function Tapletepate() {
                     </td>
                     <td className="py-4 px-4 text-gray-700 text-sm">{template.text || '-'}</td>
                     <td className="py-4 px-4">
-                      <button 
-                        onClick={() => handlePreview(template)}
-                        className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-purple-100 hover:text-purple-700 transition-all duration-200 text-xs font-medium"
-                      >
-                        Preview
-                      </button>
-                    </td>
-                    <td className="py-4 px-4">
                       <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => handlePreview(template)}
+                          className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-purple-100 hover:text-purple-700 transition-all duration-200 text-xs font-medium"
+                        >
+                          Preview
+                        </button>
                         <button 
                           onClick={() => handleEdit(template)}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-gray-700 hover:text-purple-700 hover:bg-purple-50 transition-all duration-200 border border-gray-300 hover:border-purple-300 rounded-lg"
@@ -478,8 +485,9 @@ export default function Tapletepate() {
       {/* Create Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+          <div className="bg-white rounded-lg w-full max-w-7xl max-h-[90vh] overflow-hidden flex">
+            {/* Left Side - Form */}
+            <div className="w-1/2 p-6 overflow-y-auto border-r">
               {/* Modal Header */}
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -1001,6 +1009,150 @@ export default function Tapletepate() {
                   </button>
                 </div>
               </form>
+            </div>
+
+            {/* Right Side - Live Preview */}
+            <div className="w-1/2 p-6 bg-gray-50 overflow-y-auto">
+         s
+              
+              <div className="bg-white rounded-lg shadow-lg p-4">
+                <div className="bg-green-500 text-white p-3 rounded-t-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                      <span className="text-green-500 font-bold text-sm">W</span>
+                    </div>
+                    <span className="font-medium">WhatsApp Business</span>
+                  </div>
+                </div>
+                
+                <div className="p-4 min-h-[400px]">
+                  {/* Plain Text Preview */}
+                  {messageType === 'plain-text' && formData.text && (
+                    <div className="bg-gray-100 p-3 rounded-lg max-w-xs">
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{formData.text}</p>
+                    </div>
+                  )}
+                  
+                  {/* Text with Actions Preview */}
+                  {messageType === 'text-with-action' && (
+                    <div className="max-w-xs">
+                      {formData.text && (
+                        <div className="bg-gray-100 p-3 rounded-lg mb-2">
+                          <p className="text-sm text-gray-800 whitespace-pre-wrap">{formData.text}</p>
+                        </div>
+                      )}
+                      {actions.filter(a => a.title.trim()).length > 0 && (
+                        <div className="space-y-1">
+                          {actions.filter(a => a.title.trim()).map((action, index) => (
+                            <button key={index} className="w-full py-2 border border-blue-500 text-blue-500 rounded text-sm font-medium">
+                              {action.type === 'call' ? '📞' : action.type === 'url' ? '🔗' : '💬'} {action.title}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* RCS Rich Card Preview */}
+                  {messageType === 'rcs' && (
+                    <div className="border border-gray-200 rounded-lg max-w-sm overflow-hidden">
+                      {richCard.imageUrl && (
+                        <img 
+                          src={richCard.imageUrl} 
+                          alt="RCS Card" 
+                          className="w-full h-32 object-cover"
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/300x128/f5f5f5/666666?text=RCS+Card'
+                          }}
+                        />
+                      )}
+                      <div className="p-3">
+                        {richCard.title && (
+                          <h4 className="font-semibold text-gray-900 mb-1">{richCard.title}</h4>
+                        )}
+                        {richCard.subtitle && (
+                          <p className="text-xs text-gray-600 mb-2">{richCard.subtitle}</p>
+                        )}
+                        {formData.text && (
+                          <p className="text-sm text-gray-800 mb-2 whitespace-pre-wrap">{formData.text}</p>
+                        )}
+                        {richCard.actions?.filter(a => a.title.trim()).length > 0 && (
+                          <div className="space-y-2">
+                            {richCard.actions.filter(a => a.title.trim()).map((action, index) => (
+                              <button key={index} className="w-full py-2 bg-blue-500 text-white rounded text-sm font-medium">
+                                {action.type === 'call' ? '📞' : action.type === 'url' ? '🔗' : '💬'} {action.title}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Carousel Preview */}
+                  {messageType === 'carousel' && carouselItems.filter(item => item.title.trim()).length > 0 && (
+                    <div className="max-w-sm">
+                      {formData.text && (
+                        <div className="bg-gray-100 p-3 rounded-lg mb-3 max-w-xs">
+                          <p className="text-sm text-gray-800 whitespace-pre-wrap">{formData.text}</p>
+                        </div>
+                      )}
+                      <div className="flex gap-2 overflow-x-auto pb-2">
+                        {carouselItems.filter(item => item.title.trim()).map((item, index) => (
+                          <div key={index} className="border border-gray-200 rounded-lg min-w-[200px] overflow-hidden">
+                            {item.imageUrl && (
+                              <img 
+                                src={item.imageUrl} 
+                                alt={`Carousel ${index + 1}`} 
+                                className="w-full h-24 object-cover"
+                                onError={(e) => {
+                                  e.target.src = 'https://via.placeholder.com/200x96/f5f5f5/666666?text=Item+' + (index + 1)
+                                }}
+                              />
+                            )}
+                            <div className="p-2">
+                              <h5 className="font-medium text-xs text-gray-900">{item.title}</h5>
+                              {item.subtitle && (
+                                <p className="text-xs text-gray-600 mt-1">{item.subtitle}</p>
+                              )}
+                              {item.actions?.filter(a => a.title.trim()).length > 0 && (
+                                <div className="space-y-1 mt-2">
+                                  {item.actions.filter(a => a.title.trim()).map((action, actionIndex) => (
+                                    <button key={actionIndex} className="w-full py-1 bg-blue-500 text-white rounded text-xs font-medium">
+                                      {action.type === 'call' ? '📞' : action.type === 'url' ? '🔗' : '💬'} {action.title}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {carouselSuggestions.filter(s => s.title.trim()).length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {carouselSuggestions.filter(s => s.title.trim()).map((suggestion, index) => (
+                            <button key={index} className="px-3 py-2 border border-purple-500 text-purple-600 rounded text-sm font-medium">
+                              💬 {suggestion.title}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <div className="text-xs text-gray-500 text-center mt-2">
+                        Swipe to see more items →
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Empty State */}
+                  {!formData.text && (
+                    <div className="flex items-center justify-center h-full text-gray-400">
+                      <div className="text-center">
+                        <p className="text-sm">Start typing to see preview</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

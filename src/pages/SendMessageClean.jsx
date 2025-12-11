@@ -3,7 +3,8 @@ import { FiCheck, FiUpload, FiX, FiEye, FiSend, FiPlus, FiTrash2 } from 'react-i
 import * as XLSX from 'xlsx'
 import ModernTemplatePreview from '../components/ModernTemplatePreview'
 import api from '../services/api'
- import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/AuthContext'
+import toast from 'react-hot-toast'
 
 const MESSAGE_TYPES = {
   
@@ -274,8 +275,7 @@ export default function SendMessageClean() {
       const response = await api.getTemplates()
       setTemplates(response.data || [])
     } catch (error) {
-      setResultData({ success: false, message: 'Error loading templates: ' + error.message })
-      setShowResultModal(true)
+      toast.error('Error loading templates: ' + error.message)
     }
   }
 
@@ -348,18 +348,17 @@ export default function SendMessageClean() {
         })))
       }
     } catch (error) {
-      setResultData({ success: false, message: 'Failed to load template: ' + error.message })
-      setShowResultModal(true)
+      toast.error('Failed to load template: ' + error.message)
     }
   }
 
   const uploadFile = async (file) => {
     try {
       const result = await api.uploadFile(file)
+      toast.success('File uploaded successfully')
       return result.url
     } catch (error) {
-      setResultData({ success: false, message: 'File upload failed: ' + error.message })
-      setShowResultModal(true)
+      toast.error('File upload failed: ' + error.message)
       return null
     }
   }
@@ -470,8 +469,7 @@ export default function SendMessageClean() {
       return response.data
 
     } catch (error) {
-      setResultData({ success: false, message: 'Error checking RCS capability: ' + error.message })
-      setShowResultModal(true)
+      toast.error('Error checking RCS capability: ' + error.message)
       return null
     }
   }
@@ -718,7 +716,8 @@ export default function SendMessageClean() {
     let payload = {
       phoneNumbers: contacts.map(c => c.number),
       type: messageType,
-      userId: user._id
+      userId: user._id,
+      campaignName: campaignName.trim()
     }
     
     if (messageType === 'carousel') {
@@ -951,21 +950,24 @@ export default function SendMessageClean() {
     try {
       const response = await api.sendMessage(payload)
       if (response.data.success) {
+        toast.success(`Messages sent successfully! ₹${response.data.walletDeducted} credits deducted.`)
         setResultData({ 
           success: true, 
           message: `Messages sent successfully! ₹${response.data.walletDeducted} credits deducted.`,
           details: `Message sent to ${phoneCount} phone numbers`
         })
         await refreshUser()
+        setShowResultModal(true)
       }
-      setShowResultModal(true)
     } catch (error) {
       if (error.response?.data?.message === 'Insufficient balance') {
+        toast.error(`Insufficient credits! Required: ₹${error.response.data.required}, Available: ₹${error.response.data.available}`)
         setResultData({ 
           success: false, 
           message: `Insufficient credits! Required: ₹${error.response.data.required}, Available: ₹${error.response.data.available}` 
         })
       } else {
+        toast.error(error.message || 'Failed to send message')
         setResultData({ success: false, message: error.message || 'Failed to send message' })
       }
       setShowResultModal(true)
@@ -1487,20 +1489,15 @@ export default function SendMessageClean() {
                         })
                         
                         if (data.success) {
-                          setResultData({ 
-                            success: true, 
-                            message: `Wallet recharge request of ₹${addAmount} submitted for admin approval!` 
-                          })
+                          toast.success(`Wallet recharge request of ₹${addAmount} submitted for admin approval!`)
                           setAddAmount('')
                           setShowAddMoney(false)
                           await refreshUser()
                         } else {
-                          setResultData({ success: false, message: 'Failed to submit request: ' + data.message })
+                          toast.error('Failed to submit request: ' + data.message)
                         }
-                        setShowResultModal(true)
                       } catch (error) {
-                        setResultData({ success: false, message: 'Error submitting request: ' + error.message })
-                        setShowResultModal(true)
+                        toast.error('Error submitting request: ' + error.message)
                       }
                     }
                   }}

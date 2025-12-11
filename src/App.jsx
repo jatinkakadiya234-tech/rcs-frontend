@@ -18,11 +18,12 @@ import Users from './pages/admin/Users.jsx'
 import WalletRequests from './pages/admin/WalletRequests.jsx'
 import CreateUser from './pages/admin/CreateUser.jsx'
 import RoleBasedRoute from './components/RoleBasedRoute.jsx'
-
+import { Toaster } from 'react-hot-toast'
 
 function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-right" />
       <AuthChecker />
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -38,8 +39,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="newCampaign" element={<SendMessage />} />
           <Route path="templates" element={<Tapletepate />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="reports" element={<Reports />} />
+          <Route path="reports" element={<Orders />} />
           <Route path="profile" element={<Profile />} />
         </Route>
 

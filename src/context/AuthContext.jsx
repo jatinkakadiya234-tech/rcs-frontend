@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { setCookie, getCookie, deleteCookie, isTokenExpired } from '../utils/cookieUtils'
+import toast from 'react-hot-toast'
 
 const AuthContext = createContext()
 
@@ -43,13 +44,16 @@ export const AuthProvider = ({ children }) => {
     deleteCookie('user_data')
     deleteCookie('login_time')
     setUser(null)
-    window.location.href = '/login'
+    toast.success('Logged out successfully')
+    setTimeout(() => {
+      window.location.href = '/login'
+    }, 500)
   }
 
   const refreshUser = async () => {
     if (user?._id) {
       try {
-        const response = await fetch(`/api/api/v1/user/profile/${user._id}`)
+        const response = await fetch(`/api/v1/user/profile/${user._id}`)
         const data = await response.json()
         if (data.success) {
           const updatedUser = data.user

@@ -100,7 +100,6 @@ export default function Layout() {
               { to: '/', icon: <FaHome />, label: 'Dashboard' },
               { to: '/newCampaign', icon: <Send />, label: 'Send Messsage' },
               { to: '/templates', icon: <BiSolidReport />, label: 'Templates' },
-              { to: '/orders', icon: <FaPlus />, label: 'Orders' },
               { to: '/reports', icon: <BiSolidReport />, label: 'Reports' },
              
             ].map(({ to, icon, label }) => (

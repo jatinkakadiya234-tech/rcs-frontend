@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 export default function Dashboard() {
+  const { user } = useAuth()
   const [messageReports, setMessageReports] = useState([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -15,29 +18,33 @@ export default function Dashboard() {
   })
 
   useEffect(() => {
-    fetchMessageReports()
-  }, [])
+    if (user?._id) {
+      fetchMessageReports()
+    }
+  }, [user])
 
   const fetchMessageReports = async () => {
     try {
       setLoading(true)
-      const [reportsData, templatesData] = await Promise.all([
-        api.getMessageReports(),
-        api.getTemplates()
+      const [reportsData, templatesData, statsData] = await Promise.all([
+        api.getrecentorders(user._id),
+        api.getTemplates(),
+        api.getMessageStats(user._id)
       ])
+      toast.success('Dashboard data loaded successfully')
       
-      
-      const report = reportsData.report || {}
-      setMessageReports(report.recentMessages || [])
+      const messages = reportsData.data || []
+      setMessageReports(messages)
       setStats({
-        totalMessages: report.totalMessages || 0,
-        sentMessages: report.successfulMessages || 0,
-        pendingMessages: 0,
-        failedMessages: report?.failedMessages || 0,
+        totalMessages: statsData.data?.totalMessages || 0,
+        sentMessages: statsData.data?.sentMessages || 0,
+        pendingMessages: statsData.data?.pendingMessages || 0,
+        failedMessages: statsData.data?.failedMessages || 0,
         totalTemplates: templatesData?.data?.length || 0
       })
     } catch (err) {
       console.error('Error fetching data:', err)
+      toast.error('Failed to fetch dashboard data')
     } finally {
       setLoading(false)
     }
@@ -127,7 +134,7 @@ export default function Dashboard() {
         
         {/* Recent Messages Section */}
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Messages</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Today's Orders</h2>
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -159,15 +166,15 @@ export default function Dashboard() {
                         </td>
                         <td className="py-3 px-4 text-sm">{message.phoneNumbers?.length || 0}</td>
                         <td className="py-3 px-4 text-sm">
-                          <span className="text-green-600">{message.results?.filter(r => !r.error).length || 0}</span>
+                          <span className="text-green-600">{message.status === 'sent'? message.successCount : 0}</span>
                           <span className="text-gray-400 mx-1">/</span>
-                          <span className="text-red-600">{message.results?.filter(r => r.error).length || 0}</span>
+                          <span className="text-red-600">{message.failedCount || 0}</span>
                         </td>
                         <td className="py-3 px-4 text-sm">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            message.results?.some(r => !r.error) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            message.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                           }`}>
-                            {message.results?.some(r => !r.error) ? 'Success' : 'Failed'}
+                            {message.status}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-sm text-gray-500">
