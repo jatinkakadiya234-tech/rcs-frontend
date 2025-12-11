@@ -64,14 +64,15 @@ export default function AdminLayout() {
             </div>
             
             {[
-              { to: '/admin', icon: <FaHome />, label: 'Dashboard' },
+              { to: '/admin', icon: <FaHome />, label: 'Dashboard', end: true },
               { to: '/admin/users', icon: <FaUsers />, label: 'Users' },
               { to: '/admin/wallet-requests', icon: <FaWallet />, label: 'Wallet Requests' },
               { to: '/admin/create-user', icon: <FaUserPlus />, label: 'Create User' },
-            ].map(({ to, icon, label }) => (
+            ].map(({ to, icon, label, end }) => (
               <NavLink 
                 key={to} 
-                to={to} 
+                to={to}
+                end={end}
                 className={({isActive}) => `flex items-center gap-2 sm:gap-3 lg:gap-4 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 rounded-xl transition-all duration-200 ${
                   isActive 
                     ? 'bg-white/25 text-white shadow-lg' 
