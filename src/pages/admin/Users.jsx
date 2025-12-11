@@ -16,7 +16,7 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/api/v1/user/admin/users');
+      const response = await fetch('/api/v1/user/admin/users');
       const data = await response.json();
       if (data.success) {
         setUsers(data.users);
