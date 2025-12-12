@@ -608,7 +608,7 @@ export default function Tapletepate() {
                       onChange={(e) => setMessageType(e.target.value)}
                       className="w-full px-4 py-2 border border-purple-500 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-purple-50"
                     >
-                      <option value="plain-text">Plain Text</option>
+                      <option value="text">Plain Text</option>
                       <option value="text-with-action">Text with Actions</option>
                       <option value="rcs">RCS Rich Card</option>
                       <option value="carousel">Carousel</option>
