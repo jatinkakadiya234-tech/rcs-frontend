@@ -26,21 +26,21 @@ export default function Dashboard() {
   const fetchMessageReports = async () => {
     try {
       setLoading(true)
-      const [reportsData, templatesData, statsData] = await Promise.all([
+      const [reportsData, statsData] = await Promise.all([
         api.getrecentorders(user._id),
-        api.getTemplates(),
         api.getMessageStats(user._id)
       ])
       toast.success('Dashboard data loaded successfully')
       
       const messages = reportsData.data || []
       setMessageReports(messages)
+      console.log(statsData);
       setStats({
         totalMessages: statsData.data?.totalMessages || 0,
         sentMessages: statsData.data?.sentMessages || 0,
         pendingMessages: statsData.data?.pendingMessages || 0,
         failedMessages: statsData.data?.failedMessages || 0,
-        totalTemplates: templatesData?.data?.length || 0
+        totalTemplates: statsData?.data?.sendtoteltemplet || 0
       })
     } catch (err) {
       console.error('Error fetching data:', err)
