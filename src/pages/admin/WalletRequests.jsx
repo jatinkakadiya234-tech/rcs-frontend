@@ -16,7 +16,7 @@ const WalletRequests = () => {
 
   const fetchRequests = async () => {
     try {
-      const response = await fetch('/api/api/v1/user/admin/wallet-requests');
+      const response = await fetch('/api/admin/wallet-requests');
       const data = await response.json();
       if (data.success) {
         setRequests(data.requests);
@@ -30,7 +30,7 @@ const WalletRequests = () => {
 
   const handleApprove = async (requestId) => {
     try {
-      const response = await fetch('/api/api/v1/user/admin/wallet/approve', {
+      const response = await fetch('/api/admin/wallet/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'app lication/json' },
         body: JSON.stringify({
@@ -57,7 +57,7 @@ const WalletRequests = () => {
     }
 
     try {
-      const response = await fetch('/api/api/v1/user/admin/wallet/reject', {
+      const response = await fetch('/api/admin/wallet/reject', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

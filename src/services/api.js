@@ -110,7 +110,7 @@ class ApiService {
   }
 
   async getAllUsers() {
-    const { data } = await api.get("/v1/user/users");
+    const { data } = await api.get("/users");
     return data;
   }
 
