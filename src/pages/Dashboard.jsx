@@ -53,8 +53,10 @@ export default function Dashboard() {
   return (
     <div className="w-full overflow-hidden">
       {/* Stats Cards */}
+      <h1 className="text-2xl ms-5 uppercase">Welcome to {user.companyname}</h1>
       <div className="p-2 sm:p-3 md:p-4 lg:p-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <p className="text-xs text-gray-500 mb-2">Devices</p>
             <div className="flex items-center gap-2">

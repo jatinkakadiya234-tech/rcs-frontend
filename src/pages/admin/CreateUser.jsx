@@ -8,7 +8,8 @@ const CreateUser = () => {
     phone: '',
     role: 'user',
     jioId: '',
-    jioSecret: ''
+    jioSecret: '',
+    companyname:""
   });
   const [loading, setLoading] = useState(false);
 
@@ -34,7 +35,8 @@ const CreateUser = () => {
           phone: '',
           role: 'user',
           jioId: '',
-          jioSecret: ''
+          jioSecret: '',
+          companyname:""
         });
       } else {
         alert('Error: ' + data.message);
@@ -66,6 +68,7 @@ const CreateUser = () => {
             { label: "Email", name: "email", type: "email" },
             { label: "Password", name: "password", type: "password" },
             { label: "Phone", name: "phone", type: "tel" },
+            { label: "companyname", name: "companyname", type: "text" },
           ].map((field, index) => (
             <div key={index}>
               <label className="block mb-1.5 font-medium text-gray-700">
