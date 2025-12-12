@@ -23,7 +23,7 @@ api.interceptors.request.use((config) => {
 
 class ApiService {
   async registerUser(userData) {
-    const { data } = await api.post("/v1/user/register", userData);
+    const { data } = await api.post("/user/register", userData);
     return data;
   }
 
@@ -39,20 +39,20 @@ class ApiService {
   }
 
   async getUserTemplates(userId) {
-    const { data } = await api.get(`/v1/templates/user/${userId}`);
+    const { data } = await api.get(`/user/templates/user/${userId}`);
     return data;
   }
 
   async getTemplateById(id) {
-    const { data } = await api.get(`/v1/templates/${id}`);
+    const { data } = await api.get(`/user/templates/${id}`);
     return data;
   }
 
   async sendMessage(campaignData) {
-    return await api.post("/v1/user/sendMessage", campaignData);
+    return await api.post("/user/sendMessage", campaignData);
   }
   async chackcapebalNumber(phoneNumbers, userId) {
-    return await api.post("/v1/user/checkAvablityNumber", {
+    return await api.post("/user/checkAvablityNumber", {
       phoneNumbers,
       userId,
     });
@@ -62,7 +62,7 @@ class ApiService {
     const formData = new FormData();
     formData.append("file", file);
 
-    const { data } = await api.post("/v1/user/uploadFile", formData, {
+    const { data } = await api.post("/user/uploadFile", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -105,17 +105,17 @@ class ApiService {
   }
 
   async getUserMessages(userId) {
-    const { data } = await api.get(`/v1/user/messages/${userId}`);
+    const { data } = await api.get(`/user/messages/${userId}`);
     return data;
   }
 
   async getAllUsers() {
-    const { data } = await api.get("/v1/user/users");
+    const { data } = await api.get("/user/users");
     return data;
   }
 
   async addWalletRequest(requestData) {
-    const { data } = await api.post("/v1/user/wallet/request", requestData);
+    const { data } = await api.post("/user/wallet/request", requestData);
     return data;
   }
 
