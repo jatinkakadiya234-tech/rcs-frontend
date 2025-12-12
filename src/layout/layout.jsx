@@ -7,6 +7,7 @@ import { FiUser, FiSettings } from 'react-icons/fi';
 import { useState, useEffect, useRef } from 'react';
 import { Send } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import AccountStatusChecker from '../components/AccountStatusChecker';
 
 export default function Layout() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -53,6 +54,8 @@ export default function Layout() {
   };
 
   return (
+    <>
+    <AccountStatusChecker />
     <div className="h-screen w-screen bg-[#F7F7FB] text-palette-text flex overflow-hidden">
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
@@ -222,6 +225,7 @@ export default function Layout() {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

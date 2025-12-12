@@ -7,8 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 
 const MESSAGE_TYPES = {
-  
-  'plain-text': 'Plain Text',
+  'text': 'Plain Text',
   'text-with-action': 'Text with Actions',
   'rcs': 'RCS Rich Card',
   'carousel': 'Carousel',
@@ -311,10 +310,10 @@ export default function SendMessageClean() {
       
       // Set message based on type
       if (templateData.text) setMessage(templateData.text)
-      if (templateData.richCard?.title) setMessage(templateData.richCard.title)
-      if (templateData.richCard?.subtitle) setFooter(templateData.richCard.subtitle)
-      if (templateData.richCard?.imageUrl) setMediaUrl(templateData.richCard.imageUrl)
-      if (templateData.imageUrl) setMediaUrl(templateData.imageUrl)
+      if (templateData.richCard?.title) setMessage(templateData?.richCard?.title)
+      if (templateData.richCard?.subtitle) setFooter(templateData?.richCard?.subtitle)
+      if (templateData.richCard?.imageUrl) setMediaUrl(templateData?.richCard?.imageUrl)
+      if (templateData.imageUrl) setMediaUrl(templateData?.imageUrl)
       
       // Set buttons for RCS (from richCard.actions)
       if (templateData.richCard?.actions && templateData.richCard.actions.length > 0) {
@@ -771,7 +770,7 @@ export default function SendMessageClean() {
         }
       }
     } else if (messageType === 'rcs') {
-      if (!mediaUrl || !mediaUrl.startsWith('http')) {
+      if (!mediaUrl) {
         setSending(false)
         setResultData({ success: false, message: 'Please upload a valid media file' })
         setShowResultModal(true)
@@ -944,7 +943,8 @@ export default function SendMessageClean() {
           }
         }))
       }
-    } else if (messageType === 'text') {
+    } else {
+      // Default text message
       payload.content = {
         plainText: message
       }

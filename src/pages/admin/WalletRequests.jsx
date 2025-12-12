@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { FiX } from 'react-icons/fi';
+import { FaTrash } from 'react-icons/fa';
+import apiService from '../../services/api';
+import CustomModal from '../../components/CustomModal';
 
 const WalletRequests = () => {
   const [requests, setRequests] = useState([]);
@@ -9,6 +12,7 @@ const WalletRequests = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const { user } = useAuth();
+  const [modal, setModal] = useState({ show: false, type: 'success', title: '', message: '' });
 
   useEffect(() => {
     fetchRequests();
@@ -16,8 +20,7 @@ const WalletRequests = () => {
 
   const fetchRequests = async () => {
     try {
-      const response = await fetch('/api/admin/wallet-requests');
-      const data = await response.json();
+      const data = await apiService.getWalletRequests();
       if (data.success) {
         setRequests(data.requests);
       }
@@ -30,59 +33,54 @@ const WalletRequests = () => {
 
   const handleApprove = async (requestId) => {
     try {
-      const response = await fetch('/api/admin/wallet/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'app lication/json' },
-        body: JSON.stringify({
-          requestId,
-          adminId: user._id,
-          note: 'Approved by admin'
-        })
-      });
-
-      const data = await response.json();
+      const data = await apiService.approveWalletRequest(requestId, user._id, 'Approved by admin');
       if (data.success) {
         fetchRequests();
-        alert('Request approved successfully!');
+        setModal({ show: true, type: 'success', title: 'Success', message: 'Request approved successfully!' });
       }
     } catch (error) {
-      alert('Error approving request');
+      setModal({ show: true, type: 'error', title: 'Error', message: 'Error approving request' });
     }
   };
 
+
   const handleReject = async () => {
     if (!rejectReason.trim()) {
-      alert('Please enter rejection reason');
+      setModal({ show: true, type: 'warning', title: 'Warning', message: 'Please enter rejection reason' });
       return;
     }
 
     try {
-      const response = await fetch('/api/admin/wallet/reject', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requestId: selectedRequestId,
-          adminId: user._id,
-          note: rejectReason
-        })
-      });
-
-      const data = await response.json();
+      const data = await apiService.rejectWalletRequest(selectedRequestId, user._id, rejectReason);
       if (data.success) {
         fetchRequests();
-        alert('Request rejected successfully!');
+        setModal({ show: true, type: 'success', title: 'Success', message: 'Request rejected successfully!' });
         setShowRejectModal(false);
         setRejectReason('');
         setSelectedRequestId(null);
       }
     } catch (error) {
-      alert('Error rejecting request');
+      setModal({ show: true, type: 'error', title: 'Error', message: 'Error rejecting request' });
     }
   };
 
   const openRejectModal = (requestId) => {
     setSelectedRequestId(requestId);
     setShowRejectModal(true);
+  };
+
+  const handleDelete = async (requestId) => {
+    if (window.confirm('Are you sure you want to delete this wallet request?')) {
+      try {
+        const data = await apiService.deleteWalletRequest(requestId);
+        if (data.success) {
+          fetchRequests();
+          setModal({ show: true, type: 'success', title: 'Success', message: 'Request deleted successfully!' });
+        }
+      } catch (error) {
+        setModal({ show: true, type: 'error', title: 'Error', message: 'Error deleting request' });
+      }
+    }
   };
 
   if (loading) return <div>Loading...</div>;
@@ -125,22 +123,31 @@ const WalletRequests = () => {
                   {new Date(request.requestedAt).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4">
-                  {request.status === 'pending' && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleApprove(request._id)}
-                        className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => openRejectModal(request._id)}
-                        className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex gap-2">
+                    {request.status === 'pending' && (
+                      <>
+                        <button
+                          onClick={() => handleApprove(request._id)}
+                          className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => openRejectModal(request._id)}
+                          className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => handleDelete(request._id)}
+                      className="p-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
+                      title="Delete Request"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -202,6 +209,14 @@ const WalletRequests = () => {
           </div>
         </div>
       )}
+
+      <CustomModal 
+        show={modal.show} 
+        onClose={() => setModal({ ...modal, show: false })} 
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+      />
     </div>
   );
 };

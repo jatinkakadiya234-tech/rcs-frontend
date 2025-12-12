@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import apiService from '../../services/api';
+import CustomModal from '../../components/CustomModal';
 
 const CreateUser = () => {
   const [formData, setFormData] = useState({
@@ -12,22 +14,16 @@ const CreateUser = () => {
     companyname:""
   });
   const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState({ show: false, type: 'success', title: '', message: '' });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await fetch('/api/admin/create-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-
+      const data = await apiService.createUser(formData);
       if (data.success) {
-        alert('User created successfully!');
+        setModal({ show: true, type: 'success', title: 'Success', message: 'User created successfully!' });
         setFormData({
           name: '',
           email: '',
@@ -39,10 +35,10 @@ const CreateUser = () => {
           companyname:""
         });
       } else {
-        alert('Error: ' + data.message);
+        setModal({ show: true, type: 'error', title: 'Error', message: data.message });
       }
     } catch (error) {
-      alert('Error creating user');
+      setModal({ show: true, type: 'error', title: 'Error', message: 'Error creating user' });
     } finally {
       setLoading(false);
     }
@@ -139,6 +135,14 @@ const CreateUser = () => {
           </button>
         </form>
       </div>
+
+      <CustomModal 
+        show={modal.show} 
+        onClose={() => setModal({ ...modal, show: false })} 
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+      />
     </div>
   );
 };

@@ -217,7 +217,7 @@ export default function Tapletepate() {
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Name</th>
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Message Type</th>
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Preview</th>
-                <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Action</th>
+                <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm ms-4"> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Action</th>
               </tr>
             </thead>
             <tbody>
@@ -249,7 +249,7 @@ export default function Tapletepate() {
                         {getMessageTypeLabel(template.messageType)}
                       </span>
                     </td>
-                    <td className="py-4 px-4">
+                    {/* <td className="py-4 px-4">
                       <div className="max-w-xs">
                         {template.messageType === 'plain-text' && (
                           <div className="bg-gray-100 p-2 rounded text-xs text-gray-700 truncate">
@@ -303,15 +303,15 @@ export default function Tapletepate() {
                           </div>
                         )}
                       </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-2">
-                        <button 
+                    </td> */}  <button 
                           onClick={() => handlePreview(template)}
-                          className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-purple-100 hover:text-purple-700 transition-all duration-200 text-xs font-medium"
+                          className="px-4 py-1.5 mt-5  bg-gray-100 text-gray-700 rounded-lg hover:bg-purple-100 hover:text-purple-700 transition-all duration-200 text-xs font-medium"
                         >
                           Preview
                         </button>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                      
                         <button 
                           onClick={() => handleEdit(template)}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-gray-700 hover:text-purple-700 hover:bg-purple-50 transition-all duration-200 border border-gray-300 hover:border-purple-300 rounded-lg"

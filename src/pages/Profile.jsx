@@ -12,6 +12,8 @@ const Profile = () => {
   const [showResultModal, setShowResultModal] = useState(false);
   const [resultData, setResultData] = useState(null);
   const [userStats, setUserStats] = useState({ messagesSent: 0, totalSpent: 0 });
+  const [transactions, setTransactions] = useState([]);
+  const [transactionSummary, setTransactionSummary] = useState({ totalCredit: 0, totalDebit: 0, currentBalance: 0 });
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -27,12 +29,21 @@ const Profile = () => {
   const fetchUserStats = async () => {
     if (user?._id) {
       try {
-        const data = await apiService.getUserMessages(user._id);
-        if (data.success) {
-          const messages = data.messages;
+        const [messagesData, profileData] = await Promise.all([
+          apiService.getUserMessages(user._id),
+          apiService.getProfileWithTransactions(user._id, 10)
+        ]);
+        
+        if (messagesData.success) {
+          const messages = messagesData.messages;
           const totalMessages = messages.reduce((sum, msg) => sum + (msg.phoneNumbers?.length || 0), 0);
           const totalSpent = messages.reduce((sum, msg) => sum + (msg.cost || 0), 0);
           setUserStats({ messagesSent: totalMessages, totalSpent });
+        }
+        
+        if (profileData.success) {
+          setTransactions(profileData.profile.recentTransactions || []);
+          setTransactionSummary(profileData.profile.transactionSummary || { totalCredit: 0, totalDebit: 0, currentBalance: 0 });
         }
       } catch (error) {
         console.error('Error fetching user stats:', error);
@@ -180,19 +191,58 @@ const Profile = () => {
         </div>
       )}
 
-      {/* Usage Stats */}
+      {/* Transaction Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <h4 className="font-semibold text-gray-700 mb-2">Total Credit</h4>
+          <p className="text-2xl font-bold text-green-600">₹{transactionSummary.totalCredit}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <h4 className="font-semibold text-gray-700 mb-2">Total Debit</h4>
+          <p className="text-2xl font-bold text-red-600">₹{transactionSummary.totalDebit}</p>
+        </div>
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h4 className="font-semibold text-gray-700 mb-2">Messages Sent</h4>
           <p className="text-2xl font-bold text-blue-600">{userStats.messagesSent}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <h4 className="font-semibold text-gray-700 mb-2">Templates Created</h4>
-          <p className="text-2xl font-bold text-green-600">0</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <h4 className="font-semibent text-gray-700 mb-2">Total Spent</h4>
-          <p className="text-2xl font-bold text-purple-600">₹{userStats.totalSpent}</p>
+      </div>
+
+      {/* Recent Transactions */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {transactions.length > 0 ? transactions.map((txn, index) => (
+                <tr key={index}>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 text-xs rounded-full ${txn.type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {txn.type}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-semibold">
+                    <span className={txn.type === 'credit' ? 'text-green-600' : 'text-red-600'}>
+                      {txn.type === 'credit' ? '+' : '-'}₹{txn.amount}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{txn.description}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{new Date(txn.createdAt).toLocaleString()}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="4" className="px-4 py-8 text-center text-gray-500">No transactions found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

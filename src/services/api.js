@@ -1,8 +1,8 @@
 import axios from "axios";
 import { getCookie } from "../utils/cookieUtils";
 
-const API_BASE_URL = "https://rcssender.com/api";
-// const API_BASE_URL = "http://localhost:8888/api";
+// const API_BASE_URL = "https://rcssender.com/api";
+const API_BASE_URL = "http://localhost:8888/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -62,7 +62,7 @@ class ApiService {
     const formData = new FormData();
     formData.append("file", file);
 
-    const { data } = await api.post("/v1/user/uploadFile", formData, {
+    const { data } = await api.post("/uploadFile", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -126,6 +126,111 @@ class ApiService {
 
   async getMessageStats(userId) {
     const { data } = await api.get(`/v1/message-reports/stats/${userId}`);
+    return data;
+  }
+
+  async editUser(userId, userData) {
+    const { data } = await api.put(`/admin/edit-user/${userId}`, userData);
+    return data;
+  }
+
+  async addWalletBalance(userId, amount) {
+    const { data } = await api.post(`/admin/add-wallet/${userId}`, { amount });
+    return data;
+  }
+
+  async getUser(userId) {
+    const { data } = await api.get(`/admin/user/${userId}`);
+    return data;
+  }
+
+  async createUser(userData) {
+    const { data } = await api.post('/admin/create-user', userData);
+    return data;
+  }
+
+  async deleteUser(userId) {
+    const { data } = await api.delete(`/admin/delete-user/${userId}`);
+    return data;
+  }
+
+  async updateUserStatus(userId, status) {
+    const { data } = await api.put(`/admin/user-status/${userId}`, { status });
+    return data;
+  }
+
+  async resetPassword(userId, newPassword) {
+    const { data } = await api.put(`/admin/reset-password/${userId}`, { newPassword });
+    return data;
+  }
+
+  async deductWallet(userId, amount) {
+    const { data } = await api.post(`/admin/deduct-wallet/${userId}`, { amount });
+    return data;
+  }
+
+  async getWalletRequests() {
+    const { data } = await api.get('/admin/wallet-requests');
+    return data;
+  }
+
+  async approveWalletRequest(requestId, adminId, note) {
+    const { data } = await api.post(`/admin/wallet/approve/${requestId}`, { adminId, note });
+    return data;
+  }
+
+  async rejectWalletRequest(requestId, adminId, note) {
+    const { data } = await api.post('/admin/wallet/reject', { requestId, adminId, note });
+    return data;
+  }
+
+  async deleteWalletRequest(requestId) {
+    const { data } = await api.delete(`/admin/wallet-request/${requestId}`);
+    return data;
+  }
+
+  async getUserTransactions(userId, page = 1, limit = 20) {
+    const { data } = await api.get(`/v1/transactions/user/${userId}?page=${page}&limit=${limit}`);
+    return data;
+  }
+
+  async getUserTransactionSummary(userId) {
+    const { data } = await api.get(`/v1/transactions/user/${userId}/summary`);
+    return data;
+  }
+
+  async getAllTransactions(page = 1, limit = 50) {
+    const { data } = await api.get(`/v1/transactions/admin/all?page=${page}&limit=${limit}`);
+    return data;
+  }
+
+  async getUserStats(userId) {
+    const { data } = await api.get(`/admin/user-stats/${userId}`);
+    return data;
+  }
+
+  async getUserMessages(userId, page = 1, limit = 10) {
+    const { data } = await api.get(`/admin/user-messages/${userId}?page=${page}&limit=${limit}`);
+    return data;
+  }
+
+  async getUserReports(userId) {
+    const { data } = await api.get(`/admin/user-reports/${userId}`);
+    return data;
+  }
+
+  async getProfileWithTransactions(userId, limit = 10) {
+    const { data } = await api.get(`/profile-with-transactions/${userId}?limit=${limit}`);
+    return data;
+  }
+
+  async getDashboard() {
+    const { data } = await api.get('/admin/dashboard');
+    return data;
+  }
+
+  async getUserOrders(userId, page = 1, limit = 20) {
+    const { data } = await api.get(`/admin/user-orders/${userId}?page=${page}&limit=${limit}`);
     return data;
   }
 }
