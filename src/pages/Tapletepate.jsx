@@ -19,7 +19,7 @@ export default function Tapletepate() {
     imageUrl: ''
   })
   const [mediaFile, setMediaFile] = useState(null)
-  const [messageType, setMessageType] = useState('text')
+  const [messageType, setMessageType] = useState(null)
   const [actions, setActions] = useState([{ type: 'reply', title: '', payload: '' }])
   const [richCard, setRichCard] = useState({ title: '', subtitle: '', imageUrl: '', actions: [] })
   const [carouselItems, setCarouselItems] = useState([{ title: '', subtitle: '', imageUrl: '', actions: [] }])
@@ -545,7 +545,7 @@ export default function Tapletepate() {
                   )}
                   
                   {/* Default fallback */}
-                  {!['plain-text', 'text-with-action', 'text', 'image', 'rcs', 'button', 'location', 'contact', 'carousel'].includes(previewData?.messageType) && (
+                  {!['text', 'text-with-action', 'text', 'image', 'rcs', 'button', 'location', 'contact', 'carousel'].includes(previewData?.messageType) && (
                     <div className="bg-gray-100 p-3 rounded-lg max-w-xs">
                       <p className="text-sm text-gray-600">Preview not available for {getMessageTypeLabel(previewData?.messageType)}</p>
                     </div>
