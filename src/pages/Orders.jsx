@@ -541,7 +541,7 @@ export default function Orders() {
 
             {/* Stats Cards */}
             <div className="p-6 border-b">
-              <div className="grid grid-cols-6 gap-4">
+              <div className="grid grid-cols-6 gap-4 justify-center">
                 <div className="text-center">
                   <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2">
                     <span className="text-blue-600 text-xl">💬</span>
@@ -582,11 +582,11 @@ export default function Orders() {
                   <tr>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">SN</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Number</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Instance</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Instance Number</th>
+       
+                  
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Message Type</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Status</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Created At</th>
+                   
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Sent At</th>
                   </tr>
                 </thead>
@@ -597,8 +597,7 @@ export default function Orders() {
                       <tr key={idx} className="border-t hover:bg-gray-50">
                         <td className="py-3 px-4 text-sm">{idx + 1}</td>
                         <td className="py-3 px-4 text-sm">{phone}</td>
-                        <td className="py-3 px-4 text-sm">-</td>
-                        <td className="py-3 px-4 text-sm">{phone}</td>
+                        
                         <td className="py-3 px-4 text-sm">
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
                             {selectedOrder.type}
@@ -615,7 +614,7 @@ export default function Orders() {
                              result?.messaestatus || 'Pending'}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-sm">{new Date(selectedOrder.createdAt).toLocaleString()}</td>
+           
                         <td className="py-3 px-4 text-sm">{result?.timestamp ? new Date(result.timestamp).toLocaleString() : '-'}</td>
                       </tr>
                     )
@@ -626,9 +625,7 @@ export default function Orders() {
 
             {/* Modal Footer */}
             <div className="flex items-center justify-between p-6 border-t">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Add to sender list
-              </button>
+             
               <div className="flex gap-2">
                 <button onClick={closeModal} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
                   Cancel
