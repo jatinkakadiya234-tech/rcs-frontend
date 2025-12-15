@@ -111,7 +111,7 @@ export default function Tapletepate() {
 
   const resetForm = () => {
     setFormData({ name: '', text: '', imageUrl: '' })
-    setMessageType('plain-text')
+    setMessageType('text')
     setActions([{ type: 'reply', title: '', payload: '' }])
     setRichCard({ title: '', subtitle: '', imageUrl: '', actions: [] })
     setCarouselItems([{ title: '', subtitle: '', imageUrl: '', actions: [] }])
