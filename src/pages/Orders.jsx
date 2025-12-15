@@ -434,8 +434,8 @@ export default function Orders() {
                     </tr>
                   ) : (
                     filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((order, idx) => {
-                      const successCount = order.results?.filter(r => r.status === 201).length || 0
-                      const failedCount = order.results?.filter(r => r.error || r.status !== 201).length || 0
+                      const successCount = order.results?.filter(r => r.messaestatus === "MESSAGE_DELIVERED" || r.messaestatus === "SEND_MESSAGE_SUCCESS" || r.messaestatus === "MESSAGE_READ").length || 0
+                      const failedCount = order.results?.filter(r => r.messaestatus === "SEND_MESSAGE_FAILURE" ).length || 0
                       
                       return (
                         <tr key={order._id || idx} className="border-t hover:bg-gray-50 transition-colors">
@@ -560,28 +560,16 @@ export default function Orders() {
                   <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mx-auto mb-2">
                     <span className="text-green-600 text-xl">✓</span>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">{selectedOrder.results?.filter(r => r.status === 201).length || 0}</div>
+                  <div className="text-2xl font-bold text-gray-900">{selectedOrder.results?.filter(r => r.messaestatus === "MESSAGE_DELIVERED" || r.messaestatus === "SEND_MESSAGE_SUCCESS" || r.messaestatus === "MESSAGE_READ").length || 0}</div>
                   <div className="text-sm text-gray-500">Sent</div>
                 </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2">
-                    <span className="text-blue-600 text-xl">⏸</span>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">0</div>
-                  <div className="text-sm text-gray-500">Paused</div>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-2">
-                    <span className="text-red-600 text-xl">✕</span>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">0</div>
-                  <div className="text-sm text-gray-500">Cancelled</div>
-                </div>
+              
+               
                 <div className="text-center">
                   <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-2">
                     <span className="text-red-600 text-xl">⚠</span>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">{selectedOrder.results?.filter(r => r.status !== 201).length || 0}</div>
+                  <div className="text-2xl font-bold text-gray-900">{selectedOrder.results?.filter(r => r.messaestatus === "SEND_MESSAGE_FAILURE").length || 0}</div>
                   <div className="text-sm text-gray-500">Failed</div>
                 </div>
               </div>
@@ -618,9 +606,13 @@ export default function Orders() {
                         </td>
                         <td className="py-3 px-4 text-sm">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            result?.status === 201 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            result?.messaestatus === "MESSAGE_DELIVERED" || result?.messaestatus === "SEND_MESSAGE_SUCCESS" || result?.messaestatus === "MESSAGE_READ" ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                           }`}>
-                            {result?.status === 201 ? 'Sent' : 'Failed'}
+                            {result?.messaestatus === "MESSAGE_DELIVERED" ? "Delivered" :
+                             result?.messaestatus === "SEND_MESSAGE_SUCCESS" ? "Sent" :
+                             result?.messaestatus === "MESSAGE_READ" ? "Read" :
+                             result?.messaestatus === "SEND_MESSAGE_FAILURE" ? "Failed" :
+                             result?.messaestatus || 'Pending'}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-sm">{new Date(selectedOrder.createdAt).toLocaleString()}</td>
