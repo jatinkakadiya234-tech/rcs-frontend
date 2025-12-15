@@ -40,6 +40,7 @@ export default function Tapletepate() {
       setLoading(true)
       const response = await ApiService.getUserTemplates(user?._id)
       setTemplates(response.data || [])
+      console.log(response.data);
       toast.success('Templates fetched successfully')
     } catch (err) {
       toast.error('Failed to fetch templates')
