@@ -341,6 +341,7 @@ export default function SendMessageClean() {
           title: item.title,
           description: item.subtitle || item.description || '',
           imageUrl: item.imageUrl || '',
+          image: null,
           buttons: item.actions?.map((action, btnIdx) => ({
             id: Date.now() + idx + btnIdx,
             type: action.type === 'url' ? 'URL Button' : action.type === 'call' ? 'Call Button' : 'Quick Reply Button',

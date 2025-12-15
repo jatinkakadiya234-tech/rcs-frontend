@@ -29,6 +29,17 @@ export default function Tapletepate() {
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [importJson, setImportJson] = useState('')
 
+  const uploadFile = async (file) => {
+    try {
+      const result = await ApiService.uploadFile(file)
+      toast.success('File uploaded successfully')
+      return result.url
+    } catch (error) {
+      toast.error('File upload failed: ' + error.message)
+      return null
+    }
+  }
+
   useEffect(() => {
     if (user?._id) {
       fetchTemplates()
@@ -745,10 +756,13 @@ export default function Tapletepate() {
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files[0]
                             if (file) {
-                              setRichCard({...richCard, imageUrl: URL.createObjectURL(file), imageFile: file})
+                              const uploadedUrl = await uploadFile(file)
+                              if (uploadedUrl) {
+                                setRichCard({...richCard, imageUrl: uploadedUrl, imageFile: file})
+                              }
                             }
                           }}
                           className="hidden"
@@ -883,13 +897,16 @@ export default function Tapletepate() {
                             <input
                               type="file"
                               accept="image/*"
-                              onChange={(e) => {
+                              onChange={async (e) => {
                                 const file = e.target.files[0]
                                 if (file) {
-                                  const newItems = [...carouselItems]
-                                  newItems[index].imageUrl = URL.createObjectURL(file)
-                                  newItems[index].imageFile = file
-                                  setCarouselItems(newItems)
+                                  const uploadedUrl = await uploadFile(file)
+                                  if (uploadedUrl) {
+                                    const newItems = [...carouselItems]
+                                    newItems[index].imageUrl = uploadedUrl
+                                    newItems[index].imageFile = file
+                                    setCarouselItems(newItems)
+                                  }
                                 }
                               }}
                               className="hidden"
