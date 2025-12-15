@@ -48,10 +48,10 @@ export default function Orders() {
       // Calculate stats
       const totalOrders = ordersData.length
       const successfulOrders = ordersData.filter(order => 
-        order.results?.some(r => r.status === 201)
+        order.results?.some(r => r.messaestatus === "MESSAGE_DELIVERED" || r.messaestatus === "SEND_MESSAGE_SUCCESS" || r.messaestatus === "MESSAGE_READ")
       ).length
       const failedOrders = ordersData.filter(order => 
-        order.results?.some(r => r.error || r.status !== 201)
+        order.results?.some(r => r.error || r.messaestatus === "SEND_MESSAGE_FAILURE")
       ).length
       const pendingOrders = ordersData.filter(order => 
         !order.results || order.results.length === 0
