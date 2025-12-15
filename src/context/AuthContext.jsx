@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
   const refreshUser = async () => {
     if (user?._id) {
       try {
-        const response = await fetch(`/api/profile/${user._id}`)
+        const response = await fetch(`https://rcssender.com/api/profile/${user._id}`)
         const data = await response.json()
         if (data.success) {
           const updatedUser = data.user

@@ -110,7 +110,7 @@ const Profile = () => {
       </div>
 
       {/* Wallet Card */}
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+      {/* <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <FiCreditCard className="text-2xl" />
@@ -140,7 +140,7 @@ const Profile = () => {
         
         <div className="text-3xl font-bold mb-2">₹{user?.Wallet?.toFixed(2) || '0.00'}</div>
         <p className="text-purple-100">Available Credits</p>
-      </div>
+      </div> */}
 
       {/* Add Money Modal */}
       {showAddMoney && (
