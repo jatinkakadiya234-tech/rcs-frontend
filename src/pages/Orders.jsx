@@ -40,6 +40,7 @@ export default function Orders() {
       setError(null)
       const data = await api.getMessageReportsall(user._id)
       const ordersData = data.data || []
+      console.log(data);
 
       setOrders(ordersData)
       toast.success('Orders fetched successfully')
@@ -412,8 +413,7 @@ export default function Orders() {
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Campaign Name</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Message Type</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Recipients</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Sent/Failed</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Delivered/Read</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Success/Failed</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Status</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
@@ -422,7 +422,7 @@ export default function Orders() {
                 <tbody>
                   {filteredOrders.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="text-center py-12 text-gray-500">
+                      <td colSpan="7" className="text-center py-12 text-gray-500">
                         <div className="flex flex-col items-center">
                           <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -455,16 +455,9 @@ export default function Orders() {
                           </td>
                           <td className="py-3 px-4 text-sm">
                             <div className="flex items-center gap-2">
-                              <span className="text-green-600 font-semibold">{order.successCount || 0}</span>
+                              <span className="text-green-600 font-semibold">{successCount}</span>
                               <span className="text-gray-400">/</span>
-                              <span className="text-red-600 font-semibold">{order.failedCount || 0}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            <div className="flex items-center gap-2">
-                              <span className="text-blue-600 font-semibold">{order.deliveredCount || 0}</span>
-                              <span className="text-gray-400">/</span>
-                              <span className="text-purple-600 font-semibold">{order.readCount || 0}</span>
+                              <span className="text-red-600 font-semibold">{failedCount}</span>
                             </div>
                           </td>
                           <td className="py-3 px-4 text-sm">
