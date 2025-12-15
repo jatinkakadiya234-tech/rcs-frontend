@@ -19,7 +19,7 @@ export default function Tapletepate() {
     imageUrl: ''
   })
   const [mediaFile, setMediaFile] = useState(null)
-  const [messageType, setMessageType] = useState(null)
+  const [messageType, setMessageType] = useState("text")
   const [actions, setActions] = useState([{ type: 'reply', title: '', payload: '' }])
   const [richCard, setRichCard] = useState({ title: '', subtitle: '', imageUrl: '', actions: [] })
   const [carouselItems, setCarouselItems] = useState([{ title: '', subtitle: '', imageUrl: '', actions: [] }])
