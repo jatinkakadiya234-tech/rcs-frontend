@@ -961,6 +961,7 @@ export default function SendMessageClean() {
     }
     
     try {
+      console.log('Sending Payload:', JSON.stringify(payload, null, 2))
       const response = await api.sendMessage(payload)
       if (response.data.success) {
         toast.success(`Messages sent successfully! ₹${response.data.walletDeducted} credits deducted.`)
