@@ -640,11 +640,21 @@ export default function SendMessageClean() {
   }
 
   const addButton = () => {
-    setButtons([...buttons, { id: Date.now(), type: 'URL Button', title: '', value: '' }])
+    setButtons([...buttons, { id: Date.now(), type: 'URL Button', title: '', value: '', postBackData: 'SA1L1C1' }])
   }
 
   const updateButton = (id, field, value) => {
-    setButtons(buttons.map(b => b.id === id ? { ...b, [field]: value } : b))
+    setButtons(buttons.map(b => {
+      if (b.id === id) {
+        const updated = { ...b, [field]: value }
+        // Auto-generate postBack data for URL buttons
+        if (b.type === 'URL Button' && field === 'value') {
+          updated.postBackData = 'SA1L1C1'
+        }
+        return updated
+      }
+      return b
+    }))
   }
 
   const deleteButton = (id) => {
@@ -822,7 +832,7 @@ export default function SendMessageClean() {
                 return {
                   action: {
                     plainText: btn.title,
-                    postBack: { data: btn.value },
+                    postBack: { data: btn.postBackData || 'SA1L1C1' },
                     openUrl: { url: btn.value }
                   }
                 }
