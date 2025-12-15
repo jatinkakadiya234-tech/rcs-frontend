@@ -876,7 +876,7 @@ export default function SendMessageClean() {
             return {
               action: {
                 plainText: btn.title,
-                postBack: { data: btn.value },
+                postBack: { data: btn.postBackData || 'SA1L1C1' },
                 openUrl: { url: btn.value }
               }
             }
