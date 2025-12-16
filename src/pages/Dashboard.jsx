@@ -22,22 +22,7 @@ export default function Dashboard() {
     totalTemplates: 0,
   });
 
-  useEffect(() => {
-    const userInterval = setInterval(() => {
-      refreshUser();
-    }, 70000); // Refresh user every 30 seconds
-    
-    const dataInterval = setInterval(() => {
-      if (user?._id) {
-        fetchMessageReports();
-      }
-    }, 100000); // Refresh data every 10 seconds
-    
-    return () => {
-      clearInterval(userInterval);
-      clearInterval(dataInterval);
-    };
-  }, [refreshUser, user]);
+
 
   useEffect(() => {
     if (user?._id) {
