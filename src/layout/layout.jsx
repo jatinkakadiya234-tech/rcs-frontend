@@ -6,6 +6,7 @@ import { IoClose } from "react-icons/io5";
 import { FiUser, FiSettings } from 'react-icons/fi';
 import { useState, useEffect, useRef } from 'react';
 import { Send } from '@mui/icons-material';
+import { GoGraph } from "react-icons/go";
 import { useAuth } from '../context/AuthContext';
 import AccountStatusChecker from '../components/AccountStatusChecker';
 
@@ -103,7 +104,7 @@ export default function Layout() {
               { to: '/', icon: <FaHome />, label: 'Dashboard' },
               { to: '/newCampaign', icon: <Send />, label: 'Send Messsage' },
               { to: '/templates', icon: <BiSolidReport />, label: 'Templates' },
-              { to: '/reports', icon: <BiSolidReport />, label: 'Reports' },
+              { to: '/reports', icon: <GoGraph />, label: 'Reports' },
              
             ].map(({ to, icon, label }) => (
               <NavLink 
