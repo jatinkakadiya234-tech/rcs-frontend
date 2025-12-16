@@ -454,11 +454,7 @@ export default function SendMessageClean() {
     setCountrySearch('')
   }
 
-  const filteredCountries = countryCodes.filter(country => 
-    country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
-    country.short.toLowerCase().includes(countrySearch.toLowerCase()) ||
-    country.code.includes(countrySearch)
-  )
+
 
 
   const checkRcsCapability = async (numbers) => {
