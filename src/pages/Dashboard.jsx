@@ -25,7 +25,7 @@ export default function Dashboard() {
   useEffect(() => {
     const userInterval = setInterval(() => {
       refreshUser();
-    }, 30000); // Refresh user every 30 seconds
+    }, 1000); // Refresh user every 30 seconds
     
     const dataInterval = setInterval(() => {
       if (user?._id) {
