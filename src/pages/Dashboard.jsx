@@ -23,26 +23,39 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const userInterval = setInterval(() => {
       refreshUser();
-    }, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
-  }, [refreshUser]);
+    }, 30000); // Refresh user every 30 seconds
+    
+    const dataInterval = setInterval(() => {
+      if (user?._id) {
+        fetchMessageReports();
+      }
+    }, 10000); // Refresh data every 10 seconds
+    
+    return () => {
+      clearInterval(userInterval);
+      clearInterval(dataInterval);
+    };
+  }, [refreshUser, user]);
 
   useEffect(() => {
     if (user?._id) {
-      fetchMessageReports();
+      fetchMessageReports(true); // Show toast on initial load
     }
   }, [user]);
 
-  const fetchMessageReports = async () => {
+  const fetchMessageReports = async (showToast = false) => {
     try {
       setLoading(true);
       const [reportsData, statsData] = await Promise.all([
         api.getrecentorders(user._id),
         api.getMessageStats(user._id),
       ]);
-      toast.success("Dashboard data loaded successfully");
+      
+      if (showToast) {
+        toast.success("Dashboard data loaded successfully");
+      }
 
       const messages = reportsData.data || [];
       setMessageReports(messages);
@@ -56,7 +69,9 @@ export default function Dashboard() {
       });
     } catch (err) {
       console.error("Error fetching data:", err);
-      toast.error("Failed to fetch dashboard data");
+      if (showToast) {
+        toast.error("Failed to fetch dashboard data");
+      }
     } finally {
       setLoading(false);
     }
