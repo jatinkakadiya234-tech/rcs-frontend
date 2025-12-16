@@ -14,6 +14,9 @@ const Profile = () => {
   const [userStats, setUserStats] = useState({ messagesSent: 0, totalSpent: 0 });
   const [transactions, setTransactions] = useState([]);
   const [transactionSummary, setTransactionSummary] = useState({ totalCredit: 0, totalDebit: 0, currentBalance: 0 });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({ name: '', email: '', phone: '', companyname: '' });
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -78,6 +81,41 @@ const Profile = () => {
     }
   };
 
+  const handleEditProfile = () => {
+    setIsEditing(true);
+    setEditData({
+      name: user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      companyname: user.companyname || ''
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      setUpdating(true);
+      const response = await apiService.updateProfile(user._id, editData);
+      
+      if (response.success) {
+        setResultData({ success: true, message: 'Profile updated successfully!' });
+        setIsEditing(false);
+        await refreshUser();
+      } else {
+        setResultData({ success: false, message: response.message || 'Failed to update profile' });
+      }
+      setShowResultModal(true);
+    } catch (error) {
+      setResultData({ success: false, message: 'Error updating profile: ' + error.message });
+      setShowResultModal(true);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold">User Profile</h1>
@@ -92,21 +130,87 @@ const Profile = () => {
             <h2 className="text-xl font-semibold">{user?.name || 'User Name'}</h2>
             <p className="text-gray-600">{user?.email || 'user@example.com'}</p>
           </div>
-          <button className="ml-auto p-2 text-gray-500 hover:text-purple-600">
-            <FiEdit2 />
-          </button>
+          {!isEditing ? (
+            <button 
+              onClick={handleEditProfile}
+              className="ml-auto p-2 text-gray-500 hover:text-purple-600"
+            >
+              <FiEdit2 />
+            </button>
+          ) : (
+            <div className="ml-auto flex gap-2">
+              <button 
+                onClick={handleCancelEdit}
+                className="p-2 text-gray-500 hover:text-red-600"
+              >
+                <FiX />
+              </button>
+              <button 
+                onClick={handleUpdateProfile}
+                disabled={updating}
+                className="p-2 text-gray-500 hover:text-green-600 disabled:opacity-50"
+              >
+                <FiCheck className={updating ? 'animate-spin' : ''} />
+              </button>
+            </div>
+          )}
         </div>
         
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">Phone</p>
-            <p className="font-semibold">{user?.phone || '+91xxxxxxxxxx'}</p>
+        {isEditing ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  value={editData.name}
+                  onChange={(e) => setEditData({...editData, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={editData.email}
+                  onChange={(e) => setEditData({...editData, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <input
+                  type="text"
+                  value={editData.phone}
+                  onChange={(e) => setEditData({...editData, phone: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <input
+                  type="text"
+                  value={editData.companyname}
+                  onChange={(e) => setEditData({...editData, companyname: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            </div>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">Member Since</p>
-            <p className="font-semibold">{new Date().toLocaleDateString()}</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600">Phone</p>
+              <p className="font-semibold">{user?.phone || '+91xxxxxxxxxx'}</p>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600">Company</p>
+              <p className="font-semibold">{user?.companyname || 'Not set'}</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Wallet Card */}

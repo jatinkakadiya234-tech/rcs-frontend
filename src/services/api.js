@@ -1,8 +1,8 @@
 import axios from "axios";
 import { getCookie } from "../utils/cookieUtils";
 
-const API_BASE_URL = "https://rcssender.com/api";
-// const API_BASE_URL = "http://localhost:8888/api";
+// const API_BASE_URL = "https://rcssender.com/api";
+const API_BASE_URL = "http://localhost:8888/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -231,6 +231,11 @@ class ApiService {
 
   async getUserOrders(userId, page = 1, limit = 20) {
     const { data } = await api.get(`/admin/user-orders/${userId}?page=${page}&limit=${limit}`);
+    return data;
+  }
+
+  async updateProfile(userId, profileData) {
+    const { data } = await api.put(`/update-profile/${userId}`, profileData);
     return data;
   }
 }

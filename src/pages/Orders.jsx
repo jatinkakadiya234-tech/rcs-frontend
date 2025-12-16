@@ -540,37 +540,37 @@ export default function Orders() {
             </div>
 
             {/* Stats Cards */}
-            <div className="p-6 border-b">
-              <div className="grid grid-cols-6 gap-4 justify-center">
-                <div className="text-center">
-                  <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2">
-                    <span className="text-blue-600 text-xl">💬</span>
+            <div className="p-6 border-b bg-gray-50">
+              <div className="flex justify-center">
+                <div className="grid grid-cols-4 gap-30 max-w-2xl">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mx-auto mb-3">
+                      <span className="text-blue-600 text-2xl">💬</span>
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">{selectedOrder.phoneNumbers?.length || 0}</div>
+                    <div className="text-sm text-gray-500 font-medium">Total</div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">{selectedOrder.phoneNumbers?.length || 0}</div>
-                  <div className="text-sm text-gray-500">Total</div>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-full mx-auto mb-2">
-                    <span className="text-yellow-600 text-xl">⏳</span>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mx-auto mb-3">
+                      <span className="text-yellow-600 text-2xl">⏳</span>
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">0</div>
+                    <div className="text-sm text-gray-500 font-medium">Sending</div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">0</div>
-                  <div className="text-sm text-gray-500">Sending</div>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mx-auto mb-2">
-                    <span className="text-green-600 text-xl">✓</span>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mx-auto mb-3">
+                      <span className="text-green-600 text-2xl">✓</span>
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">{selectedOrder.results?.filter(r => r.messaestatus === "MESSAGE_DELIVERED" || r.messaestatus === "SEND_MESSAGE_SUCCESS" || r.messaestatus === "MESSAGE_READ").length || 0}</div>
+                    <div className="text-sm text-gray-500 font-medium">Sent</div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">{selectedOrder.results?.filter(r => r.messaestatus === "MESSAGE_DELIVERED" || r.messaestatus === "SEND_MESSAGE_SUCCESS" || r.messaestatus === "MESSAGE_READ").length || 0}</div>
-                  <div className="text-sm text-gray-500">Sent</div>
-                </div>
-              
-               
-                <div className="text-center">
-                  <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-2">
-                    <span className="text-red-600 text-xl">⚠</span>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-3">
+                      <span className="text-red-600 text-2xl">⚠</span>
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">{selectedOrder.results?.filter(r => r.messaestatus === "SEND_MESSAGE_FAILURE").length || 0}</div>
+                    <div className="text-sm text-gray-500 font-medium">Failed</div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">{selectedOrder.results?.filter(r => r.messaestatus === "SEND_MESSAGE_FAILURE").length || 0}</div>
-                  <div className="text-sm text-gray-500">Failed</div>
                 </div>
               </div>
             </div>
