@@ -687,6 +687,19 @@ export default function SendMessageClean() {
   }
 
   const handleSend = async () => {
+    if (templates.length === 0) {
+      setResultData({ success: false, message: 'No templates found. Please create a template first.' })
+      setShowResultModal(true)
+      setTimeout(() => {
+        window.location.href = '/templates'
+      }, 2000)
+      return
+    }
+    if (template === 'new') {
+      setResultData({ success: false, message: 'Please select a template before sending message' })
+      setShowResultModal(true)
+      return
+    }
     if (!campaignName.trim()) {
       setResultData({ success: false, message: 'Please enter campaign name' })
       setShowResultModal(true)

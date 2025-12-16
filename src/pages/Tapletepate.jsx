@@ -230,6 +230,7 @@ export default function Tapletepate() {
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Message Type</th>
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Preview</th>
                 <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm ms-4"> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Action</th>
+                <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm ms-4"> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Status</th>
               </tr>
             </thead>
             <tbody>
@@ -339,6 +340,19 @@ export default function Tapletepate() {
                           <span className="text-xs font-medium">Delete</span>
                         </button>
                       </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      {(() => {
+                        const createdDate = new Date(template.createdAt)
+                        const now = new Date()
+                        const secondsDiff = (now - createdDate) / 1000
+                        
+                        if (secondsDiff < 3) {
+                          return <span className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Pending</span>
+                        } else {
+                          return <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">Approved</span>
+                        }
+                      })()}
                     </td>
                   </tr>
                 ))

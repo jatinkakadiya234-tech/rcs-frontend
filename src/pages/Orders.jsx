@@ -166,18 +166,16 @@ export default function Orders() {
       return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium">Pending</span>
     }
     
-    const hasSuccess = order.results.some(r => r.status === 201)
+    const hasSuccess = order.results.some(r => r.messaestatus === "MESSAGE_DELIVERED" || r.messaestatus === "SEND_MESSAGE_SUCCESS" || r.messaestatus === "MESSAGE_READ")
     const hasFailure = order.results.some(r => r.error || r.status !== 201)
     
     if (hasSuccess && !hasFailure) {
       return <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">Success</span>
     } else if (hasFailure && !hasSuccess) {
       return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full font-medium">Failed</span>
-    } else if (hasSuccess && hasFailure) {
-      return <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">Partial</span>
-    }
+    } 
     
-    return <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full font-medium">Unknown</span>
+    return <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full font-medium">Partial</span>
   }
 
   const viewOrderDetails = (order) => {
