@@ -5,6 +5,7 @@ import ModernTemplatePreview from '../components/ModernTemplatePreview'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
 
 const MESSAGE_TYPES = {
   'text': 'Plain Text',
@@ -19,6 +20,7 @@ const BUTTON_TYPES = ['URL Button', 'Call Button', 'Quick Reply Button']
 
 export default function SendMessageClean() {
   const { user, refreshUser } = useAuth()
+  const navigate = useNavigate()
   const [messageType, setMessageType] = useState('text')
   const [template, setTemplate] = useState('new')
 /*  */  const [templates, setTemplates] = useState([])
@@ -875,13 +877,12 @@ export default function SendMessageClean() {
       const response = await api.sendMessage(payload)
       if (response.data.success) {
         toast.success(`Messages sent successfully!`)
-        setResultData({ 
-          success: true, 
-          message: `Messages sent successfully!`,
-          details: `Message sent to ${phoneCount} phone numbers`
-        })
         await refreshUser()
-        setShowResultModal(true)
+        
+        // Redirect to reports page after 1.5 seconds
+        setTimeout(() => {
+          navigate('/reports')
+        }, 1000)
       }
     } catch (error) {
       if (error.response?.data?.message === 'Insufficient balance') {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BiRefresh } from 'react-icons/bi';
-import { FaTimes, FaEye, FaEdit, FaWallet, FaKey, FaToggleOn, FaToggleOff, FaHistory, FaTrash } from 'react-icons/fa';
+import { FaTimes, FaEye, FaEyeSlash, FaEdit, FaWallet, FaKey, FaToggleOn, FaToggleOff, FaHistory, FaTrash } from 'react-icons/fa';
 import apiService from '../../services/api';
 import CustomModal from '../../components/CustomModal';
 
@@ -22,6 +22,7 @@ const Users = () => {
   const [editFormData, setEditFormData] = useState({});
   const [walletAmount, setWalletAmount] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [modal, setModal] = useState({ show: false, type: 'success', title: '', message: '' });
 
   useEffect(() => {
@@ -365,7 +366,12 @@ const Users = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">New Password</label>
-                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-3 py-2 border rounded-lg" placeholder="Enter new password" minLength="6" required />
+                <div className="relative">
+                  <input type={showResetPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-3 py-2 pr-10 border rounded-lg" placeholder="Enter new password" minLength="6" required />
+                  <button type="button" onClick={() => setShowResetPassword(!showResetPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-yellow-600">
+                    {showResetPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                  </button>
+                </div>
               </div>
               <button type="submit" className="w-full bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700">Reset Password</button>
             </form>

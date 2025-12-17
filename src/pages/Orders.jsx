@@ -612,9 +612,23 @@ export default function Orders() {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedOrder.phoneNumbers?.map((phone, idx) => {
-                    const result = selectedOrder.results?.find(r => r.phone === phone)
-                    return (
+                  {selectedOrder.phoneNumbers
+                    ?.map((phone, idx) => {
+                      const result = selectedOrder.results?.find(r => r.phone === phone)
+                      return { phone, result, originalIdx: idx }
+                    })
+                    .sort((a, b) => {
+                      // Priority order: Read > Delivered > Sent > Failed > Others
+                      const getPriority = (status) => {
+                        if (status === "MESSAGE_READ") return 1
+                        if (status === "MESSAGE_DELIVERED") return 2
+                        if (status === "SEND_MESSAGE_SUCCESS") return 3
+                        if (status === "SEND_MESSAGE_FAILURE") return 4
+                        return 5
+                      }
+                      return getPriority(a.result?.messaestatus) - getPriority(b.result?.messaestatus)
+                    })
+                    .map(({ phone, result }, idx) => (
                       <tr key={idx} className="border-t hover:bg-gray-50">
                         <td className="py-3 px-4 text-sm">{idx + 1}</td>
                         <td className="py-3 px-4 text-sm">{phone}</td>
@@ -639,8 +653,8 @@ export default function Orders() {
                         <td className="py-3 px-4 text-sm">{result?.timestamp ? new Date(result.timestamp).toLocaleString() : '-'}</td>
                         <td className="py-3 px-4 text-sm text-red-900">{result?.errorMessage || '-'}</td>
                       </tr>
-                    )
-                  })}
+                    ))
+                  }
                 </tbody>
               </table>
             </div>

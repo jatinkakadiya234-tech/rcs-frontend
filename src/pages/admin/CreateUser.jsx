@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import apiService from '../../services/api';
 import CustomModal from '../../components/CustomModal';
 
@@ -15,6 +16,7 @@ const CreateUser = () => {
   });
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({ show: false, type: 'success', title: '', message: '' });
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,7 +64,6 @@ const CreateUser = () => {
           {[
             { label: "Name", name: "name", type: "text" },
             { label: "Email", name: "email", type: "email" },
-            { label: "Password", name: "password", type: "password" },
             { label: "Phone", name: "phone", type: "tel" },
             { label: "companyname", name: "companyname", type: "text" },
           ].map((field, index) => (
@@ -81,6 +82,29 @@ const CreateUser = () => {
               />
             </div>
           ))}
+
+          {/* Password Field with Toggle */}
+          <div>
+            <label className="block mb-1.5 font-medium text-gray-700">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg bg-gray-50
+                           focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-purple-600"
+              >
+                {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+              </button>
+            </div>
+          </div>
 
           {/* Role Dropdown */}
           <div>
