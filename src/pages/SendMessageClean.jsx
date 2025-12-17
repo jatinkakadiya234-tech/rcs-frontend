@@ -56,213 +56,6 @@ export default function SendMessageClean() {
   const [countrySearch, setCountrySearch] = useState('')
   const [selectedCountryCode, setSelectedCountryCode] = useState('')
 
-  // const countryCodes = [
-  //   { code: '+1', name: 'United States of America', short: 'US' },
-  //   { code: '+7', name: 'Russia', short: 'RU' },
-  //   { code: '+20', name: 'Egypt', short: 'EG' },
-  //   { code: '+27', name: 'South Africa', short: 'ZA' },
-  //   { code: '+30', name: 'Greece', short: 'GR' },
-  //   { code: '+31', name: 'Netherlands', short: 'NL' },
-  //   { code: '+32', name: 'Belgium', short: 'BE' },
-  //   { code: '+33', name: 'France', short: 'FR' },
-  //   { code: '+34', name: 'Spain', short: 'ES' },
-  //   { code: '+36', name: 'Hungary', short: 'HU' },
-  //   { code: '+39', name: 'Italy', short: 'IT' },
-  //   { code: '+40', name: 'Romania', short: 'RO' },
-  //   { code: '+41', name: 'Switzerland', short: 'CH' },
-  //   { code: '+43', name: 'Austria', short: 'AT' },
-  //   { code: '+44', name: 'United Kingdom', short: 'GB' },
-  //   { code: '+45', name: 'Denmark', short: 'DK' },
-  //   { code: '+46', name: 'Sweden', short: 'SE' },
-  //   { code: '+47', name: 'Norway', short: 'NO' },
-  //   { code: '+48', name: 'Poland', short: 'PL' },
-  //   { code: '+49', name: 'Germany', short: 'DE' },
-  //   { code: '+51', name: 'Peru', short: 'PE' },
-  //   { code: '+52', name: 'Mexico', short: 'MX' },
-  //   { code: '+53', name: 'Cuba', short: 'CU' },
-  //   { code: '+54', name: 'Argentina', short: 'AR' },
-  //   { code: '+55', name: 'Brazil', short: 'BR' },
-  //   { code: '+56', name: 'Chile', short: 'CL' },
-  //   { code: '+57', name: 'Colombia', short: 'CO' },
-  //   { code: '+58', name: 'Venezuela', short: 'VE' },
-  //   { code: '+60', name: 'Malaysia', short: 'MY' },
-  //   { code: '+61', name: 'Australia', short: 'AU' },
-  //   { code: '+62', name: 'Indonesia', short: 'ID' },
-  //   { code: '+63', name: 'Philippines', short: 'PH' },
-  //   { code: '+64', name: 'New Zealand', short: 'NZ' },
-  //   { code: '+65', name: 'Singapore', short: 'SG' },
-  //   { code: '+66', name: 'Thailand', short: 'TH' },
-  //   { code: '+81', name: 'Japan', short: 'JP' },
-  //   { code: '+82', name: 'South Korea', short: 'KR' },
-  //   { code: '+84', name: 'Vietnam', short: 'VN' },
-  //   { code: '+86', name: 'China', short: 'CN' },
-  //   { code: '+90', name: 'Turkey', short: 'TR' },
-  //   { code: '+91', name: 'India', short: 'IN' },
-  //   { code: '+92', name: 'Pakistan', short: 'PK' },
-  //   { code: '+93', name: 'Afghanistan', short: 'AF' },
-  //   { code: '+94', name: 'Sri Lanka', short: 'LK' },
-  //   { code: '+95', name: 'Myanmar', short: 'MM' },
-  //   { code: '+98', name: 'Iran', short: 'IR' },
-  //   { code: '+212', name: 'Morocco', short: 'MA' },
-  //   { code: '+213', name: 'Algeria', short: 'DZ' },
-  //   { code: '+216', name: 'Tunisia', short: 'TN' },
-  //   { code: '+218', name: 'Libya', short: 'LY' },
-  //   { code: '+220', name: 'Gambia', short: 'GM' },
-  //   { code: '+221', name: 'Senegal', short: 'SN' },
-  //   { code: '+222', name: 'Mauritania', short: 'MR' },
-  //   { code: '+223', name: 'Mali', short: 'ML' },
-  //   { code: '+224', name: 'Guinea', short: 'GN' },
-  //   { code: '+225', name: 'Ivory Coast', short: 'CI' },
-  //   { code: '+226', name: 'Burkina Faso', short: 'BF' },
-  //   { code: '+227', name: 'Niger', short: 'NE' },
-  //   { code: '+228', name: 'Togo', short: 'TG' },
-  //   { code: '+229', name: 'Benin', short: 'BJ' },
-  //   { code: '+230', name: 'Mauritius', short: 'MU' },
-  //   { code: '+231', name: 'Liberia', short: 'LR' },
-  //   { code: '+232', name: 'Sierra Leone', short: 'SL' },
-  //   { code: '+233', name: 'Ghana', short: 'GH' },
-  //   { code: '+234', name: 'Nigeria', short: 'NG' },
-  //   { code: '+235', name: 'Chad', short: 'TD' },
-  //   { code: '+236', name: 'Central African Republic', short: 'CF' },
-  //   { code: '+237', name: 'Cameroon', short: 'CM' },
-  //   { code: '+238', name: 'Cape Verde', short: 'CV' },
-  //   { code: '+239', name: 'Sao Tome and Principe', short: 'ST' },
-  //   { code: '+240', name: 'Equatorial Guinea', short: 'GQ' },
-  //   { code: '+241', name: 'Gabon', short: 'GA' },
-  //   { code: '+242', name: 'Republic of the Congo', short: 'CG' },
-  //   { code: '+243', name: 'Democratic Republic of the Congo', short: 'CD' },
-  //   { code: '+244', name: 'Angola', short: 'AO' },
-  //   { code: '+245', name: 'Guinea-Bissau', short: 'GW' },
-  //   { code: '+246', name: 'British Indian Ocean Territory', short: 'IO' },
-  //   { code: '+248', name: 'Seychelles', short: 'SC' },
-  //   { code: '+249', name: 'Sudan', short: 'SD' },
-  //   { code: '+250', name: 'Rwanda', short: 'RW' },
-  //   { code: '+251', name: 'Ethiopia', short: 'ET' },
-  //   { code: '+252', name: 'Somalia', short: 'SO' },
-  //   { code: '+253', name: 'Djibouti', short: 'DJ' },
-  //   { code: '+254', name: 'Kenya', short: 'KE' },
-  //   { code: '+255', name: 'Tanzania', short: 'TZ' },
-  //   { code: '+256', name: 'Uganda', short: 'UG' },
-  //   { code: '+257', name: 'Burundi', short: 'BI' },
-  //   { code: '+258', name: 'Mozambique', short: 'MZ' },
-  //   { code: '+260', name: 'Zambia', short: 'ZM' },
-  //   { code: '+261', name: 'Madagascar', short: 'MG' },
-  //   { code: '+262', name: 'Reunion', short: 'RE' },
-  //   { code: '+263', name: 'Zimbabwe', short: 'ZW' },
-  //   { code: '+264', name: 'Namibia', short: 'NA' },
-  //   { code: '+265', name: 'Malawi', short: 'MW' },
-  //   { code: '+266', name: 'Lesotho', short: 'LS' },
-  //   { code: '+267', name: 'Botswana', short: 'BW' },
-  //   { code: '+268', name: 'Swaziland', short: 'SZ' },
-  //   { code: '+269', name: 'Comoros', short: 'KM' },
-  //   { code: '+290', name: 'Saint Helena', short: 'SH' },
-  //   { code: '+291', name: 'Eritrea', short: 'ER' },
-  //   { code: '+297', name: 'Aruba', short: 'AW' },
-  //   { code: '+298', name: 'Faroe Islands', short: 'FO' },
-  //   { code: '+299', name: 'Greenland', short: 'GL' },
-  //   { code: '+350', name: 'Gibraltar', short: 'GI' },
-  //   { code: '+351', name: 'Portugal', short: 'PT' },
-  //   { code: '+352', name: 'Luxembourg', short: 'LU' },
-  //   { code: '+353', name: 'Ireland', short: 'IE' },
-  //   { code: '+354', name: 'Iceland', short: 'IS' },
-  //   { code: '+355', name: 'Albania', short: 'AL' },
-  //   { code: '+356', name: 'Malta', short: 'MT' },
-  //   { code: '+357', name: 'Cyprus', short: 'CY' },
-  //   { code: '+358', name: 'Finland', short: 'FI' },
-  //   { code: '+359', name: 'Bulgaria', short: 'BG' },
-  //   { code: '+370', name: 'Lithuania', short: 'LT' },
-  //   { code: '+371', name: 'Latvia', short: 'LV' },
-  //   { code: '+372', name: 'Estonia', short: 'EE' },
-  //   { code: '+373', name: 'Moldova', short: 'MD' },
-  //   { code: '+374', name: 'Armenia', short: 'AM' },
-  //   { code: '+375', name: 'Belarus', short: 'BY' },
-  //   { code: '+376', name: 'Andorra', short: 'AD' },
-  //   { code: '+377', name: 'Monaco', short: 'MC' },
-  //   { code: '+378', name: 'San Marino', short: 'SM' },
-  //   { code: '+380', name: 'Ukraine', short: 'UA' },
-  //   { code: '+381', name: 'Serbia', short: 'RS' },
-  //   { code: '+382', name: 'Montenegro', short: 'ME' },
-  //   { code: '+383', name: 'Kosovo', short: 'XK' },
-  //   { code: '+385', name: 'Croatia', short: 'HR' },
-  //   { code: '+386', name: 'Slovenia', short: 'SI' },
-  //   { code: '+387', name: 'Bosnia and Herzegovina', short: 'BA' },
-  //   { code: '+389', name: 'North Macedonia', short: 'MK' },
-  //   { code: '+420', name: 'Czech Republic', short: 'CZ' },
-  //   { code: '+421', name: 'Slovakia', short: 'SK' },
-  //   { code: '+423', name: 'Liechtenstein', short: 'LI' },
-  //   { code: '+500', name: 'Falkland Islands', short: 'FK' },
-  //   { code: '+501', name: 'Belize', short: 'BZ' },
-  //   { code: '+502', name: 'Guatemala', short: 'GT' },
-  //   { code: '+503', name: 'El Salvador', short: 'SV' },
-  //   { code: '+504', name: 'Honduras', short: 'HN' },
-  //   { code: '+505', name: 'Nicaragua', short: 'NI' },
-  //   { code: '+506', name: 'Costa Rica', short: 'CR' },
-  //   { code: '+507', name: 'Panama', short: 'PA' },
-  //   { code: '+508', name: 'Saint Pierre and Miquelon', short: 'PM' },
-  //   { code: '+509', name: 'Haiti', short: 'HT' },
-  //   { code: '+590', name: 'Guadeloupe', short: 'GP' },
-  //   { code: '+591', name: 'Bolivia', short: 'BO' },
-  //   { code: '+592', name: 'Guyana', short: 'GY' },
-  //   { code: '+593', name: 'Ecuador', short: 'EC' },
-  //   { code: '+594', name: 'French Guiana', short: 'GF' },
-  //   { code: '+595', name: 'Paraguay', short: 'PY' },
-  //   { code: '+596', name: 'Martinique', short: 'MQ' },
-  //   { code: '+597', name: 'Suriname', short: 'SR' },
-  //   { code: '+598', name: 'Uruguay', short: 'UY' },
-  //   { code: '+599', name: 'Netherlands Antilles', short: 'AN' },
-  //   { code: '+670', name: 'East Timor', short: 'TL' },
-  //   { code: '+672', name: 'Antarctica', short: 'AQ' },
-  //   { code: '+673', name: 'Brunei', short: 'BN' },
-  //   { code: '+674', name: 'Nauru', short: 'NR' },
-  //   { code: '+675', name: 'Papua New Guinea', short: 'PG' },
-  //   { code: '+676', name: 'Tonga', short: 'TO' },
-  //   { code: '+677', name: 'Solomon Islands', short: 'SB' },
-  //   { code: '+678', name: 'Vanuatu', short: 'VU' },
-  //   { code: '+679', name: 'Fiji', short: 'FJ' },
-  //   { code: '+680', name: 'Palau', short: 'PW' },
-  //   { code: '+681', name: 'Wallis and Futuna', short: 'WF' },
-  //   { code: '+682', name: 'Cook Islands', short: 'CK' },
-  //   { code: '+683', name: 'Niue', short: 'NU' },
-  //   { code: '+685', name: 'Samoa', short: 'WS' },
-  //   { code: '+686', name: 'Kiribati', short: 'KI' },
-  //   { code: '+687', name: 'New Caledonia', short: 'NC' },
-  //   { code: '+688', name: 'Tuvalu', short: 'TV' },
-  //   { code: '+689', name: 'French Polynesia', short: 'PF' },
-  //   { code: '+690', name: 'Tokelau', short: 'TK' },
-  //   { code: '+691', name: 'Micronesia', short: 'FM' },
-  //   { code: '+692', name: 'Marshall Islands', short: 'MH' },
-  //   { code: '+850', name: 'North Korea', short: 'KP' },
-  //   { code: '+852', name: 'Hong Kong', short: 'HK' },
-  //   { code: '+853', name: 'Macau', short: 'MO' },
-  //   { code: '+855', name: 'Cambodia', short: 'KH' },
-  //   { code: '+856', name: 'Laos', short: 'LA' },
-  //   { code: '+880', name: 'Bangladesh', short: 'BD' },
-  //   { code: '+886', name: 'Taiwan', short: 'TW' },
-  //   { code: '+960', name: 'Maldives', short: 'MV' },
-  //   { code: '+961', name: 'Lebanon', short: 'LB' },
-  //   { code: '+962', name: 'Jordan', short: 'JO' },
-  //   { code: '+963', name: 'Syria', short: 'SY' },
-  //   { code: '+964', name: 'Iraq', short: 'IQ' },
-  //   { code: '+965', name: 'Kuwait', short: 'KW' },
-  //   { code: '+966', name: 'Saudi Arabia', short: 'SA' },
-  //   { code: '+967', name: 'Yemen', short: 'YE' },
-  //   { code: '+968', name: 'Oman', short: 'OM' },
-  //   { code: '+970', name: 'Palestinian Territory', short: 'PS' },
-  //   { code: '+971', name: 'United Arab Emirates', short: 'AE' },
-  //   { code: '+972', name: 'Israel', short: 'IL' },
-  //   { code: '+973', name: 'Bahrain', short: 'BH' },
-  //   { code: '+974', name: 'Qatar', short: 'QA' },
-  //   { code: '+975', name: 'Bhutan', short: 'BT' },
-  //   { code: '+976', name: 'Mongolia', short: 'MN' },
-  //   { code: '+977', name: 'Nepal', short: 'NP' },
-  //   { code: '+992', name: 'Tajikistan', short: 'TJ' },
-  //   { code: '+993', name: 'Turkmenistan', short: 'TM' },
-  //   { code: '+994', name: 'Azerbaijan', short: 'AZ' },
-  //   { code: '+995', name: 'Georgia', short: 'GE' },
-  //   { code: '+996', name: 'Kyrgyzstan', short: 'KG' },
-  //   { code: '+998', name: 'Uzbekistan', short: 'UZ' },
-  // ]
-
   useEffect(() => {
     if (user?._id) {
       loadTemplates()
@@ -367,69 +160,60 @@ export default function SendMessageClean() {
   const parseManualNumbers = (text) => {
     const lines = text.split('\n').filter(line => line.trim())
     const parsed = []
+    const seen = new Set()
+    
     lines.forEach((line, idx) => {
       const trimmed = line.trim()
+      if (!trimmed) return
+      
+      let name = ''
+      let num = trimmed
+      
+      // Check if comma separated (name,number)
       if (trimmed.includes(',')) {
-        const [name, num] = trimmed.split(',').map(s => s.trim())
-        let number = num || ''
-        if (!number.startsWith('+') && /^\d{10}$/.test(number)) {
-          number = '+91' + number
-        }
-        if (number && /^\+\d{1,4}\d{7,15}$/.test(number)) {
-          parsed.push({ id: Date.now() + idx + Math.random(), name: name || '', number })
-        }
-      } else {
-        let number = trimmed
-        if (!number.startsWith('+') && /^\d{10}$/.test(number)) {
-          number = '+91' + number
-        }
-        if (number && /^\+\d{1,4}\d{7,15}$/.test(number)) {
-          parsed.push({ id: Date.now() + idx + Math.random(), name: '', number })
+        const parts = trimmed.split(',')
+        name = parts[0].trim()
+        num = parts[1] ? parts[1].trim() : ''
+      }
+      
+      if (!num) return
+      
+      // Clean number - remove spaces, dashes, brackets, dots
+      num = num.replace(/[\s\-\(\)\.]/g, '')
+      
+      // Extract only digits and +
+      num = num.replace(/[^\d+]/g, '')
+      
+      // Handle different formats
+      if (num.startsWith('+91')) {
+        num = num.substring(3)
+      } else if (num.startsWith('+')) {
+        num = num.substring(1)
+        if (num.startsWith('91')) num = num.substring(2)
+      } else if (num.startsWith('91') && num.length > 10) {
+        num = num.substring(2)
+      } else if (num.startsWith('0')) {
+        num = num.substring(1)
+      }
+      
+      // Validate 10 digit number
+      if (/^\d{10}$/.test(num)) {
+        const fullNum = '+91' + num
+        if (!seen.has(fullNum)) {
+          seen.add(fullNum)
+          parsed.push({ 
+            id: Date.now() + idx + Math.random(), 
+            name: name || '', 
+            number: fullNum 
+          })
         }
       }
     })
+    
     setParsedNumbers(parsed)
   }
 
-  const importManualNumbers = async () => {
-    if (parsedNumbers.length === 0) return
-    
-    setCheckingCapability(true)
-    const capableNumbers = []
-    
-    for (const item of parsedNumbers) {
-      try {
-        const capabilityResult = await checkRcsCapability([item.number])
-        const rcsMessaging = capabilityResult?.data?.rcsMessaging || capabilityResult?.rcsMessaging
-        const rcsData = rcsMessaging?.[item.number]
-        
-        if (rcsData?.features && rcsData.features.length > 0) {
-          capableNumbers.push({ id: Date.now() + Math.random(), number: item.number, vars: {}, capable: true })
-        }
-      } catch (error) {
-        // Silent error
-      }
-    }
-    
-    setContacts([...contacts, ...capableNumbers])
-    setCheckingCapability(false)
-    setShowManualImport(false)
-    setManualNumbers('')
-    setParsedNumbers([])
-    
-    if (capableNumbers.length > 0) {
-      setResultData({ 
-        success: true, 
-        message: `${capableNumbers.length} RCS capable numbers added out of ${parsedNumbers.length} total` 
-      })
-    } else {
-      setResultData({ 
-        success: false, 
-        message: 'No RCS capable numbers found' 
-      })
-    }
-    setShowResultModal(true)
-  }
+
 
   const applyCountryCode = () => {
     if (!selectedCountryCode) return
@@ -459,15 +243,78 @@ export default function SendMessageClean() {
 
   const checkRcsCapability = async (numbers) => {
     try {
-      const phoneNumbers  = numbers
-      const userId = user._id
-
-      const response = await api.chackcapebalNumber(phoneNumbers,userId)
-      return response.data
-
+      const response = await api.chackcapebalNumber(numbers, user._id)
+      return response
     } catch (error) {
-      toast.error('Error checking RCS capability: ' + error.message)
+      console.error('Error:', error)
       return null
+    }
+  }
+
+  const importManualNumbers = async () => {
+    if (parsedNumbers.length === 0) return
+    
+    // Validation: Only 1 number OR 500+ numbers allowed
+    if (parsedNumbers.length > 1 && parsedNumbers.length < 500) {
+      setResultData({ 
+        success: false, 
+        message: `Invalid count! You can add only 1 number or minimum 500 numbers. Current: ${parsedNumbers.length}` 
+      })
+      setShowResultModal(true)
+      return
+    }
+    
+    setCheckingCapability(true)
+    const allNumbers = parsedNumbers.map(item => item.number)
+    
+    try {
+      let capableNumbers = []
+      
+      const response = await api.chackcapebalNumber(allNumbers, user._id)
+      const rcsMessaging = response?.data?.rcsMessaging || response?.rcsMessaging
+      
+      if (rcsMessaging) {
+        if (rcsMessaging.reachableUsers) {
+          capableNumbers = parsedNumbers
+            .filter(item => rcsMessaging.reachableUsers.includes(item.number))
+            .map(item => ({ 
+              id: Date.now() + Math.random(), 
+              number: item.number, 
+              vars: {}, 
+              capable: true 
+            }))
+        } else {
+          allNumbers.forEach(num => {
+            const userData = rcsMessaging[num]
+            if (userData?.features && userData.features.length > 0) {
+              const item = parsedNumbers.find(p => p.number === num)
+              if (item) {
+                capableNumbers.push({ 
+                  id: Date.now() + Math.random(), 
+                  number: item.number, 
+                  vars: {}, 
+                  capable: true 
+                })
+              }
+            }
+          })
+        }
+      }
+      
+      setContacts([...contacts, ...capableNumbers])
+      setCheckingCapability(false)
+      setShowManualImport(false)
+      setManualNumbers('')
+      setParsedNumbers([])
+      
+      setResultData({ 
+        success: true, 
+        message: `${capableNumbers.length} capable numbers added out of ${allNumbers.length}` 
+      })
+      setShowResultModal(true)
+    } catch (error) {
+      setCheckingCapability(false)
+      toast.error('Error checking capability: ' + error.message)
     }
   }
 
@@ -529,64 +376,119 @@ export default function SendMessageClean() {
     
     const reader = new FileReader()
     reader.onload = async (evt) => {
-      const wb = XLSX.read(evt.target.result, { type: 'array' })
-      const ws = wb.Sheets[wb.SheetNames[0]]
-      const data = XLSX.utils.sheet_to_json(ws, { header: 1 })
-      
-      const imported = []
-      data.forEach((row, idx) => {
-        if (idx === 0 || !row.length) return
-        row.forEach(cell => {
-          if (cell) {
-            let num = String(cell).trim()
-            // Add +91 prefix if not present
-            if (!num.startsWith('+91') && /^\d{10}$/.test(num)) {
-              num = '+91' + num
-            }
-            if (num && /^\+91\d{10}$/.test(num)) {
-              imported.push(num)
+      try {
+        const wb = XLSX.read(evt.target.result, { type: 'array', cellText: false, cellDates: false })
+        const ws = wb.Sheets[wb.SheetNames[0]]
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' })
+        
+        const imported = []
+        const seen = new Set()
+        let skippedFirst = false
+        
+        data.forEach((row, idx) => {
+          if (!row || row.length === 0) return
+          
+          // Skip header row (first row with text like "Index", "Number", etc.)
+          if (!skippedFirst) {
+            const firstCell = String(row[0] || '').toLowerCase()
+            if (firstCell.includes('index') || firstCell.includes('sn') || firstCell.includes('number') || firstCell.includes('name')) {
+              skippedFirst = true
+              return
             }
           }
-        })
-      })
-      
-      if (imported.length > 0) {
-        setCheckingCapability(true)
-        const capableNumbers = []
-        for (const num of imported) {
-          try {
-            console.log('Checking imported number:', num)
-            const capabilityResult = await checkRcsCapability([num])
-            console.log('Import Response:', capabilityResult)
-            const rcsMessaging = capabilityResult?.data?.rcsMessaging || capabilityResult?.rcsMessaging
-            const rcsData = rcsMessaging?.[num]
-            console.log('Import RCS Data:', rcsData)
-            if (rcsData?.features && rcsData.features.length > 0) {
-              console.log('Adding capable number:', num)
-              capableNumbers.push({ id: Date.now() + Math.random(), number: num, vars: {}, capable: true })
-            } else {
-              console.log('Number not capable:', num)
+          
+          row.forEach(cell => {
+            if (!cell && cell !== 0) return
+            
+            // Convert to string and handle scientific notation
+            let num = String(cell).trim()
+            
+            // Skip if it's text header
+            if (isNaN(num.replace(/[^\d]/g, '')) && num.length < 10) return
+            
+            // Remove all spaces, dashes, brackets, dots
+            num = num.replace(/[\s\-\(\)\.]/g, '')
+            
+            // Extract only digits and +
+            num = num.replace(/[^\d+]/g, '')
+            
+            // Remove + from middle/end, keep only at start
+            if (num.includes('+')) {
+              const parts = num.split('+')
+              num = parts[0] ? parts[0] : parts[1]
+              if (!num.startsWith('+')) num = '+' + num
             }
-          } catch (error) {
-            // Silent error for individual number checks
+            
+            // Handle different formats
+            if (num.startsWith('+91')) {
+              num = num.substring(3)
+            } else if (num.startsWith('+')) {
+              num = num.substring(1)
+              if (num.startsWith('91')) num = num.substring(2)
+            } else if (num.startsWith('91') && num.length > 10) {
+              num = num.substring(2)
+            } else if (num.startsWith('0')) {
+              num = num.substring(1)
+            }
+            
+            // Validate 10 digit number
+            if (/^\d{10}$/.test(num)) {
+              const fullNum = '+91' + num
+              if (!seen.has(fullNum)) {
+                seen.add(fullNum)
+                imported.push(fullNum)
+              }
+            }
+          })
+        })
+        
+        if (imported.length === 0) {
+          toast.error('No valid 10-digit numbers found in Excel file')
+          return
+        }
+        
+        setCheckingCapability(true)
+        
+        const response = await api.chackcapebalNumber(imported, user._id)
+        const rcsMessaging = response?.data?.rcsMessaging || response?.rcsMessaging
+        
+        let capableNumbers = []
+        
+        if (rcsMessaging) {
+          if (rcsMessaging.reachableUsers) {
+            capableNumbers = imported
+              .filter(num => rcsMessaging.reachableUsers.includes(num))
+              .map(num => ({ 
+                id: Date.now() + Math.random(), 
+                number: num, 
+                vars: {}, 
+                capable: true 
+              }))
+          } else {
+            imported.forEach(num => {
+              const userData = rcsMessaging[num]
+              if (userData?.features && userData.features.length > 0) {
+                capableNumbers.push({ 
+                  id: Date.now() + Math.random(), 
+                  number: num, 
+                  vars: {}, 
+                  capable: true 
+                })
+              }
+            })
           }
         }
         
-        if (capableNumbers.length > 0) {
-          setContacts([...contacts, ...capableNumbers])
-          setResultData({ 
-            success: true, 
-            message: `${capableNumbers.length} RCS capable numbers added out of ${imported.length} total` 
-          })
-          setShowResultModal(true)
-        } else {
-          setResultData({ 
-            success: false, 
-            message: 'No RCS capable numbers found in the imported file' 
-          })
-          setShowResultModal(true)
-        }
+        setContacts([...contacts, ...capableNumbers])
+        setResultData({ 
+          success: true, 
+          message: `${capableNumbers.length} RCS capable numbers added out of ${imported.length} total numbers` 
+        })
+        setShowResultModal(true)
         setCheckingCapability(false)
+      } catch (error) {
+        setCheckingCapability(false)
+        toast.error('Error importing Excel: ' + error.message)
       }
     }
     reader.readAsArrayBuffer(file)
@@ -1622,31 +1524,52 @@ export default function SendMessageClean() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 h-32"
                 />
                 <p className="text-xs text-gray-500 mt-1">Line per number, you can name by enter name comma then mobile (name,number)</p>
+                <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-xs text-yellow-800 font-medium">⚠️ Important: You can add only 1 number OR minimum 500 numbers. Between 2-499 is not allowed.</p>
+                </div>
               </div>
               
               {parsedNumbers.length > 0 && (
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="overflow-x-auto max-h-64">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 sticky top-0">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">SN</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Name</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Number</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {parsedNumbers.map((item, idx) => (
-                          <tr key={item.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-2 text-sm border-b">{idx + 1}</td>
-                            <td className="px-4 py-2 text-sm border-b">{item.name || '-'}</td>
-                            <td className="px-4 py-2 text-sm border-b">{item.number}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <>
+                  <div className={`p-3 rounded-lg border ${
+                    parsedNumbers.length === 1 || parsedNumbers.length >= 500 
+                      ? 'bg-green-50 border-green-200' 
+                      : 'bg-red-50 border-red-200'
+                  }`}>
+                    <p className={`text-sm font-medium ${
+                      parsedNumbers.length === 1 || parsedNumbers.length >= 500 
+                        ? 'text-green-700' 
+                        : 'text-red-700'
+                    }`}>
+                      {parsedNumbers.length === 1 || parsedNumbers.length >= 500 
+                        ? `✓ Valid count: ${parsedNumbers.length} number(s)` 
+                        : `✗ Invalid count: ${parsedNumbers.length} numbers (Need 1 or 500+)`
+                      }
+                    </p>
                   </div>
-                </div>
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto max-h-64">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">SN</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Name</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Number</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {parsedNumbers.map((item, idx) => (
+                            <tr key={item.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-2 text-sm border-b">{idx + 1}</td>
+                              <td className="px-4 py-2 text-sm border-b">{item.name || '-'}</td>
+                              <td className="px-4 py-2 text-sm border-b">{item.number}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
               )}
               
               <div className="flex gap-3 pt-4">
