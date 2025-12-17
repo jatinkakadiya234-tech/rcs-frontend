@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 import apiService from '../../services/api';
-import CustomModal from '../../components/CustomModal';
 
 const CreateUser = () => {
   const [formData, setFormData] = useState({
@@ -15,7 +15,6 @@ const CreateUser = () => {
     companyname:""
   });
   const [loading, setLoading] = useState(false);
-  const [modal, setModal] = useState({ show: false, type: 'success', title: '', message: '' });
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -25,7 +24,7 @@ const CreateUser = () => {
     try {
       const data = await apiService.createUser(formData);
       if (data.success) {
-        setModal({ show: true, type: 'success', title: 'Success', message: 'User created successfully!' });
+        toast.success('User created successfully!');
         setFormData({
           name: '',
           email: '',
@@ -37,10 +36,10 @@ const CreateUser = () => {
           companyname:""
         });
       } else {
-        setModal({ show: true, type: 'error', title: 'Error', message: data.message });
+        toast.error(data.message || 'Failed to create user' );
       }
     } catch (error) {
-      setModal({ show: true, type: 'error', title: 'Error', message: 'Error creating user' });
+      toast.error('Error creating user');
     } finally {
       setLoading(false);
     }
@@ -159,14 +158,6 @@ const CreateUser = () => {
           </button>
         </form>
       </div>
-
-      <CustomModal 
-        show={modal.show} 
-        onClose={() => setModal({ ...modal, show: false })} 
-        type={modal.type}
-        title={modal.title}
-        message={modal.message}
-      />
     </div>
   );
 };

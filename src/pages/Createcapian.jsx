@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import * as XLSX from 'xlsx'
+import toast from 'react-hot-toast'
 import ApiService from '../services/api'
 
 export default function CreateCampaign() {
@@ -34,7 +35,7 @@ export default function CreateCampaign() {
       return response
     } catch (error) {
       console.error('Error checking number capabilities:', error)
-      alert('Failed to check number capabilities: ' + error.message)
+      toast.error('Failed to check number capabilities: ' + error.message)
       return null
     } finally {
       setIsChecking(false)
@@ -44,7 +45,7 @@ export default function CreateCampaign() {
   // Add number with capability check
   const addNumber = async () => {
     if (!newNumber.trim()) {
-      alert('Please enter a phone number')
+      toast.error('Please enter a phone number')
       return
     }
 
@@ -52,7 +53,7 @@ export default function CreateCampaign() {
     
     // Check if number already exists
     if (numbers.includes(formattedNumber)) {
-      alert('Number already exists')
+      toast.error('Number already exists')
       setNewNumber('')
       return
     }
@@ -64,7 +65,7 @@ export default function CreateCampaign() {
       // Add number if capability check passes
       setNumbers(prev => [...prev, formattedNumber])
       setNewNumber('')
-      alert('Number added successfully!')
+      toast.success('Number added successfully!')
     }
   }
 
@@ -111,14 +112,14 @@ export default function CreateCampaign() {
               // Filter out existing numbers
               const newNumbers = extractedNumbers.filter(num => !numbers.includes(num))
               setNumbers(prev => [...prev, ...newNumbers])
-              alert(`${newNumbers.length} numbers imported successfully!`)
+              toast.success(`${newNumbers.length} numbers imported successfully!`)
             }
           } else {
-            alert('No valid phone numbers found in the file')
+            toast.error('No valid phone numbers found in the file')
           }
         } catch (error) {
           console.error('Error processing Excel file:', error)
-          alert('Error processing Excel file')
+          toast.error('Error processing Excel file')
         } finally {
           setIsChecking(false)
         }
@@ -127,7 +128,7 @@ export default function CreateCampaign() {
       reader.readAsArrayBuffer(file)
     } catch (error) {
       console.error('Error reading file:', error)
-      alert('Error reading file')
+      toast.error('Error reading file')
       setIsChecking(false)
     }
   }
@@ -140,17 +141,17 @@ export default function CreateCampaign() {
   // Send campaign
   const sendCampaign = async () => {
     if (!campaignName.trim()) {
-      alert('Please enter campaign name')
+      toast.error('Please enter campaign name')
       return
     }
     
     if (!message.trim()) {
-      alert('Please enter message')
+      toast.error('Please enter message')
       return
     }
     
     if (numbers.length === 0) {
-      alert('Please add at least one phone number')
+      toast.error('Please add at least one phone number')
       return
     }
 
@@ -162,7 +163,7 @@ export default function CreateCampaign() {
       }
       
       const response = await ApiService.sendNormalSms(campaignData)
-      alert('Campaign sent successfully!')
+      toast.success('Campaign sent successfully!')
       
       // Reset form
       setCampaignName('')
@@ -170,7 +171,7 @@ export default function CreateCampaign() {
       setNumbers([])
     } catch (error) {
       console.error('Error sending campaign:', error)
-      alert('Failed to send campaign: ' + error.message)
+      toast.error('Failed to send campaign: ' + error.message)
     }
   }
 
