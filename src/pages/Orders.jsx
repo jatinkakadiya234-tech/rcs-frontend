@@ -581,14 +581,14 @@ export default function Orders() {
                     <div className="flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mx-auto mb-3">
                       <span className="text-red-600 text-2xl ">👆</span>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">{selectedOrder.results?.filter(r => r.messaestatus === "SEND_MESSAGE_FAILURE").length || 0}</div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">{selectedOrder.results?.filter(r => r.entityType ==="USER_MESSAGE"  ? r.suggestionResponse?.length > 0 : false).length || 0}</div>
                     <div className="text-sm text-gray-500 font-medium">Clickd</div>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center justify-center w-16 h-16 bg-blue-200 rounded-full mx-auto mb-3">
                       <span className="text-red-600 text-2xl mb-2">🔁</span>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">{selectedOrder.results?.filter(r => r.messaestatus === "SEND_MESSAGE_FAILURE").length || 0}</div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">{selectedOrder.results?.filter(r => r.entityType ==="USER_MESSAGE"  ? r.userReplay?.length > 0 : false).length || 0}</div>
                     <div className="text-sm text-gray-500 font-medium">Replyed</div>
                   </div>
                 </div>
