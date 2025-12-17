@@ -608,6 +608,7 @@ export default function Orders() {
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Status</th>
                    
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Sent At</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700"> Reason</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -636,6 +637,7 @@ export default function Orders() {
                         </td>
            
                         <td className="py-3 px-4 text-sm">{result?.timestamp ? new Date(result.timestamp).toLocaleString() : '-'}</td>
+                        <td className="py-3 px-4 text-sm text-red-900">{result?.errorMessage || '-'}</td>
                       </tr>
                     )
                   })}
