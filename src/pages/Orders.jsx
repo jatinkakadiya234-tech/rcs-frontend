@@ -175,7 +175,7 @@ export default function Orders() {
       return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full font-medium">Failed</span>
     } 
     
-    return <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full font-medium">Partial</span>
+    return <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">Success</span>
   }
 
   const viewOrderDetails = (order) => {
