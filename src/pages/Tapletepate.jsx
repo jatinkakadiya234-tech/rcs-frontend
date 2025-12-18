@@ -140,7 +140,8 @@ export default function Tapletepate() {
       return
     }
     
-    if (!formData.text.trim()) {
+    // Text validation only for text and text-with-action types
+    if ((messageType === 'text' || messageType === 'text-with-action') && !formData.text.trim()) {
       toast.error('Template text is required')
       setError('Template text is required')
       return
@@ -405,12 +406,12 @@ export default function Tapletepate() {
               </div>
 
               <div className="space-y-4">
-                <div className="bg-green-500 text-white p-3 rounded-t-lg">
+                <div className="bg-purple-600 text-white p-3 rounded-t-lg">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                      <span className="text-green-500 font-bold text-sm">W</span>
+                      <span className="text-purple-500 font-bold text-sm">W</span>
                     </div>
-                    <span className="font-medium">WhatsApp Business</span>
+                    <span className="font-medium"> Template Preview</span>
                   </div>
                 </div>
                 
@@ -657,20 +658,22 @@ export default function Tapletepate() {
                   </div>
                 </div>
 
-                {/* Message Editor */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <span className="text-red-500">*</span> Text
-                  </label>
-                  <textarea
-                    value={formData.text}
-                    onChange={(e) => setFormData({...formData, text: e.target.value})}
-                    placeholder="Enter your message text..."
-                    required
-                    rows={4}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+                {/* Message Editor - Only for text and text-with-action */}
+                {(messageType === 'text' || messageType === 'text-with-action') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <span className="text-red-500">*</span> Text
+                    </label>
+                    <textarea
+                      value={formData.text}
+                      onChange={(e) => setFormData({...formData, text: e.target.value})}
+                      placeholder="Enter your message text..."
+                      required
+                      rows={4}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                )}
 
               
 
@@ -1160,16 +1163,16 @@ export default function Tapletepate() {
         
               
               <div className="bg-white rounded-lg shadow-lg p-4">
-                <div className="bg-green-500 text-white p-3 rounded-t-lg">
+                 <div className="bg-purple-600 text-white p-3 rounded-t-lg">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                      <span className="text-green-500 font-bold text-sm">W</span>
+                      <span className="text-purple-500 font-bold text-sm">W</span>
                     </div>
-                    <span className="font-medium">WhatsApp Business</span>
+                    <span className="font-medium"> Template Preview</span>
                   </div>
                 </div>
                 
-                <div className="p-4 min-h-[400px]">
+                <div className="p-4 min-h-600px]">
                   {/* Plain Text Preview */}
                   {messageType === 'plain-text' && formData.text && (
                     <div className="bg-gray-100 p-3 rounded-lg max-w-xs">

@@ -17,7 +17,6 @@ import Users from './pages/admin/Users.jsx'
 import WalletRequests from './pages/admin/WalletRequests.jsx'
 import CreateUser from './pages/admin/CreateUser.jsx'
 import AdminProfile from './pages/admin/AdminProfile.jsx'
-import Webhook from './pages/admin/Webhook.jsx'
 import RoleBasedRoute from './components/RoleBasedRoute.jsx'
 import { Toaster } from 'react-hot-toast'
 
@@ -55,7 +54,6 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="wallet-requests" element={<WalletRequests />} />
           <Route path="create-user" element={<CreateUser />} />
-          <Route path="webhook" element={<Webhook />} />
           <Route path="profile" element={<AdminProfile />} />
         </Route>
 

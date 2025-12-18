@@ -31,36 +31,11 @@ export default function Orders() {
     if (user?._id) {
       fetchOrders()
     }
-  }, [user])
+  }, [user,CampaignData])
 
   useEffect(() => {
     filterAndSortOrders()
   }, [orders, searchTerm, statusFilter, typeFilter, campaignFilter, dateRange, sortOrder])
-
-  // Update stats when campaign is selected
-  useEffect(() => {
-    if (CampaignData && CampaignData.length > 0) {
-      const totalOrders = CampaignData.length
-      const successfulOrders = CampaignData.reduce((sum, order) => sum + (order.successCount || 0), 0)
-      const failedOrders = CampaignData.reduce((sum, order) => sum + (order.failedCount || 0), 0)
-      const totalRecipients = CampaignData.reduce((sum, order) => sum + (order.phoneNumbers?.length || 0), 0)
-      const successRate = totalOrders > 0 ? ((successfulOrders / totalOrders) * 100).toFixed(1) : 0
-      
-      console.log(CampaignData, "Campaign data selected")
-      console.log(totalOrders, "Total orders in campaign")
-      console.log(successfulOrders, "Successful messages in campaign")
-      console.log(failedOrders, "Failed messages in campaign")
-      
-      setStats({
-        totalOrders,
-        successfulOrders,
-        failedOrders,
-        pendingOrders: 0,
-        totalRecipients,
-        successRate
-      })
-    }
-  }, [CampaignData])
 
   const fetchOrders = async () => {
     try {
@@ -88,9 +63,19 @@ export default function Orders() {
         sum + (order.phoneNumbers?.length || 0), 0
       )
 
+      
+      
+      console.log(CampaignData,"ccccscscn=------------------");
+      let totalorders = CampaignData ? CampaignData.map(order => order.cost).toString() :totalOrders;
+      let totelSuccess = CampaignData ? CampaignData.map(order => order.successCount).toString() :successfulOrders;
+      let fildedorders = CampaignData ? CampaignData.map(order => order.failedCount).toString() :failedOrders;
+      console.log(totalorders,"totel order----------------");
+      console.log(totelSuccess,"totel succses=-----------------");
+      console.log(fildedorders,"fileefvdvd");
+      
       setStats({
-        totalOrders,
-        successfulOrders,
+        totalOrders: totalorders, 
+        successfulOrders: totelSuccess,
         failedOrders,
         pendingOrders,
         totalRecipients,

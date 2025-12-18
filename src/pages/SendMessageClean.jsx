@@ -265,12 +265,12 @@ export default function SendMessageClean() {
     if (parsedNumbers.length === 0) return
     
     // Validation: Only 1 number OR 500+ numbers allowed
-      if (parsedNumbers.length > 1 && parsedNumbers.length < 500) { 
-        showResult({ 
-          success: false, 
-          message: `Invalid count! You can add only 1 number or minimum 500 numbers. Current: ${parsedNumbers.length}` 
-        }) 
-    }
+    //   if (parsedNumbers.length > 1 && parsedNumbers.length < 500) { 
+    //     showResult({ 
+    //       success: false, 
+    //       message: `Invalid count! You can add only 1 number or minimum 500 numbers. Current: ${parsedNumbers.length}` 
+    //     }) 
+    // }
     
     setCheckingCapability(true)
     const allNumbers = parsedNumbers.map(item => item.number)
@@ -321,7 +321,7 @@ export default function SendMessageClean() {
         })
     } catch (error) {
       setCheckingCapability(false)
-      toast.error('Error checking capability: ' + error.message)
+      // toast.error('Error checking capability: ' + error.message)
     }
   }
 
@@ -487,14 +487,14 @@ export default function SendMessageClean() {
         }
         
         setContacts([...contacts, ...capableNumbers])
-        showResult({ 
-          success: true, 
-          message: `${capableNumbers.length} RCS capable numbers added out of ${imported.length} total numbers` 
-        })
+        // showResult({ 
+        //   success: true, 
+        //   message: `${capableNumbers.length} RCS capable numbers added out of ${imported.length} total numbers` 
+        // })
         setCheckingCapability(false)
       } catch (error) {
         setCheckingCapability(false)
-        toast.error('Error importing Excel: ' + error.message)
+        // toast.error('Error importing Excel: ' + error.message)
       }
     }
     reader.readAsArrayBuffer(file)
@@ -1542,14 +1542,14 @@ export default function SendMessageClean() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 h-32"
                 />
                 <p className="text-xs text-gray-500 mt-1">Line per number, you can name by enter name comma then mobile (name,number)</p>
-                <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                {/* <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-xs text-yellow-800 font-medium">⚠️ Important: You can add only 1 number OR minimum 500 numbers. Between 2-499 is not allowed.</p>
-                </div>
+                </div> */}
               </div>
               
               {parsedNumbers.length > 0 && (
                 <>
-                  <div className={`p-3 rounded-lg border ${
+                  {/* <div className={`p-3 rounded-lg border ${
                     parsedNumbers.length === 1 || parsedNumbers.length >= 500 
                       ? 'bg-green-50 border-green-200' 
                       : 'bg-red-50 border-red-200'
@@ -1564,7 +1564,7 @@ export default function SendMessageClean() {
                         : `✗ Invalid count: ${parsedNumbers.length} numbers (Need 1 or 500+)`
                       }
                     </p>
-                  </div>
+                  </div> */}
                   <div className="border border-gray-200 rounded-lg overflow-hidden">
                     <div className="overflow-x-auto max-h-64">
                       <table className="w-full">
