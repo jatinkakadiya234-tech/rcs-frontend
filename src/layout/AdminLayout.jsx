@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { FaHome, FaUsers, FaWallet, FaUserPlus } from "react-icons/fa";
+import { FaHome, FaUsers, FaWallet, FaUserPlus, FaLink } from "react-icons/fa";
 import { BiLogOutCircle } from "react-icons/bi";
 import { IoClose } from "react-icons/io5";
 import { FiUser, FiSettings } from 'react-icons/fi';
@@ -68,6 +68,7 @@ export default function AdminLayout() {
               { to: '/admin/users', icon: <FaUsers />, label: 'Users' },
               { to: '/admin/wallet-requests', icon: <FaWallet />, label: 'Wallet Requests' },
               { to: '/admin/create-user', icon: <FaUserPlus />, label: 'Create User' },
+              { to: '/admin/webhook', icon: <FaLink />, label: 'Webhook' },
             ].map(({ to, icon, label, end }) => (
               <NavLink 
                 key={to} 

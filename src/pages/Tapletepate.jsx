@@ -51,7 +51,7 @@ export default function Tapletepate() {
       setLoading(true)
       const response = await ApiService.getUserTemplates(user?._id)
       setTemplates(response.data || [])
-      console.log(response.data);
+      
       toast.success('Templates fetched successfully')
     } catch (err) {
       toast.error('Failed to fetch templates')
@@ -135,11 +135,13 @@ export default function Tapletepate() {
     e.preventDefault()
     
     if (!formData.name.trim()) {
+      toast.error('Template name is required')
       setError('Template name is required')
       return
     }
     
     if (!formData.text.trim()) {
+      toast.error('Template text is required')
       setError('Template text is required')
       return
     }
@@ -174,7 +176,9 @@ export default function Tapletepate() {
       }))
       
       if (validItems.length === 0) {
-        setError('Each carousel item must have at least one valid action with title and payload')
+        const msg = 'Each carousel item must have at least one valid action with title and payload'
+        toast.error(msg)
+        setError(msg)
         return
       }
       
@@ -196,8 +200,19 @@ export default function Tapletepate() {
       setError('')
     } catch (err) {
       console.error('Template save error:', err)
-      toast.error(err.response?.data?.message || err.message || 'Failed to save template')
-      setError(err.response?.data?.message || err.message || 'Failed to save template')
+      
+      let errorMsg = 'Failed to save template'
+      const serverMsg = err.response?.data?.message || err.message || ''
+      
+      // Check for duplicate key error
+      if (serverMsg.includes('E11000') && serverMsg.includes('name')) {
+        errorMsg = `Template name "${formData.name}" already exists. Please use a different name.`
+      } else {
+        errorMsg = serverMsg
+      }
+      
+      toast.error(errorMsg)
+      setError(errorMsg)
     }
   }
 
@@ -691,7 +706,16 @@ export default function Tapletepate() {
                               value={action.type}
                               onChange={(e) => {
                                 const newActions = [...actions]
-                                newActions[index].type = e.target.value
+                                const val = e.target.value
+                                newActions[index].type = val
+                                // If switched to call and title empty, set default title
+                                if (val === 'call' && !newActions[index].title) {
+                                  newActions[index].title = 'call now'
+                                }
+                                // If switched to url, clear title
+                                if (val === 'url') {
+                                  newActions[index].title = ''
+                                }
                                 setActions(newActions)
                               }}
                               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
@@ -832,7 +856,14 @@ export default function Tapletepate() {
                                   value={action.type}
                                   onChange={(e) => {
                                     const newActions = [...richCard.actions]
-                                    newActions[index].type = e.target.value
+                                    const val = e.target.value
+                                    newActions[index].type = val
+                                    if (val === 'call' && !newActions[index].title) {
+                                      newActions[index].title = 'call now'
+                                    }
+                                    if (val === 'url') {
+                                      newActions[index].title = ''
+                                    }
                                     setRichCard({...richCard, actions: newActions})
                                   }}
                                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
@@ -999,12 +1030,21 @@ export default function Tapletepate() {
                                 value={action.type}
                                 onChange={(e) => {
                                   const newItems = [...carouselItems]
-                                  newItems[index].actions[actionIndex].type = e.target.value
+                                  const val = e.target.value
+                                  newItems[index].actions[actionIndex].type = val
+                                  if (val === 'call' && !newItems[index].actions[actionIndex].title) {
+                                    newItems[index].actions[actionIndex].title = 'call now'
+                                  }
+                                  if (val === 'url') {
+                                    newItems[index].actions[actionIndex].title = ''
+                                  }
                                   setCarouselItems(newItems)
                                 }}
                                 className="px-2 py-1 border border-gray-300 rounded text-xs"
                               >
+                                <option value="reply">Reply</option>
                                 <option value="url">URL</option>
+                                <option value="call">Call</option>
                               </select>
                               <input
                                 type="text"
@@ -1117,7 +1157,7 @@ export default function Tapletepate() {
 
             {/* Right Side - Live Preview */}
             <div className="w-1/2 p-6 bg-gray-50 overflow-y-auto">
-         s
+        
               
               <div className="bg-white rounded-lg shadow-lg p-4">
                 <div className="bg-green-500 text-white p-3 rounded-t-lg">

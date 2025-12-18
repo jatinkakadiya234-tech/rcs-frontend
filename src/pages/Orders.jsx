@@ -14,15 +14,18 @@ export default function Orders() {
   const [error, setError] = useState(null)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [modalCurrentPage, setModalCurrentPage] = useState(1)
+  const [modalItemsPerPage] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
+  const [campaignFilter, setCampaignFilter] = useState('all')
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
-  const [sortBy, setSortBy] = useState('date')
   const [sortOrder, setSortOrder] = useState('desc')
   const [stats, setStats] = useState(null)
+  const [CampaignData, setCampaignData] = useState(null)
 
   useEffect(() => {
     if (user?._id) {
@@ -32,7 +35,32 @@ export default function Orders() {
 
   useEffect(() => {
     filterAndSortOrders()
-  }, [orders, searchTerm, statusFilter, typeFilter, dateRange, sortBy, sortOrder])
+  }, [orders, searchTerm, statusFilter, typeFilter, campaignFilter, dateRange, sortOrder])
+
+  // Update stats when campaign is selected
+  useEffect(() => {
+    if (CampaignData && CampaignData.length > 0) {
+      const totalOrders = CampaignData.length
+      const successfulOrders = CampaignData.reduce((sum, order) => sum + (order.successCount || 0), 0)
+      const failedOrders = CampaignData.reduce((sum, order) => sum + (order.failedCount || 0), 0)
+      const totalRecipients = CampaignData.reduce((sum, order) => sum + (order.phoneNumbers?.length || 0), 0)
+      const successRate = totalOrders > 0 ? ((successfulOrders / totalOrders) * 100).toFixed(1) : 0
+      
+      console.log(CampaignData, "Campaign data selected")
+      console.log(totalOrders, "Total orders in campaign")
+      console.log(successfulOrders, "Successful messages in campaign")
+      console.log(failedOrders, "Failed messages in campaign")
+      
+      setStats({
+        totalOrders,
+        successfulOrders,
+        failedOrders,
+        pendingOrders: 0,
+        totalRecipients,
+        successRate
+      })
+    }
+  }, [CampaignData])
 
   const fetchOrders = async () => {
     try {
@@ -40,7 +68,7 @@ export default function Orders() {
       setError(null)
       const data = await api.getMessageReportsall(user._id)
       const ordersData = data.data || []
-      console.log(data);
+      
 
       setOrders(ordersData)
       toast.success('Orders fetched successfully')
@@ -59,7 +87,7 @@ export default function Orders() {
       const totalRecipients = ordersData.reduce((sum, order) => 
         sum + (order.phoneNumbers?.length || 0), 0
       )
-      
+
       setStats({
         totalOrders,
         successfulOrders,
@@ -120,31 +148,15 @@ export default function Orders() {
       )
     }
 
-    // Sort
+    // Campaign filter
+    if (campaignFilter !== 'all') {
+      filtered = filtered.filter(order => order.CampaignName === campaignFilter)
+    }
+
+    // Sort by date
     filtered.sort((a, b) => {
-      let aValue, bValue
-      
-      switch (sortBy) {
-        case 'date':
-          aValue = new Date(a.createdAt)
-          bValue = new Date(b.createdAt)
-          break
-        case 'type':
-          aValue = a.type || ''
-          bValue = b.type || ''
-          break
-        case 'recipients':
-          aValue = a.phoneNumbers?.length || 0
-          bValue = b.phoneNumbers?.length || 0
-          break
-        case 'success':
-          aValue = a.results?.filter(r => r.status === 201).length || 0
-          bValue = b.results?.filter(r => r.status === 201).length || 0
-          break
-        default:
-          aValue = a.createdAt
-          bValue = b.createdAt
-      }
+      const aValue = new Date(a.createdAt)
+      const bValue = new Date(b.createdAt)
       
       if (sortOrder === 'asc') {
         return aValue > bValue ? 1 : -1
@@ -154,11 +166,36 @@ export default function Orders() {
     })
 
     setFilteredOrders(filtered)
+    
+    // Update stats for filtered data
+    const totalOrders = filtered.length
+    const successfulOrders = filtered.filter(order => 
+      order.results?.some(r => r.messaestatus === "MESSAGE_DELIVERED" || r.messaestatus === "SEND_MESSAGE_SUCCESS" || r.messaestatus === "MESSAGE_READ")
+    ).length
+    const failedOrders = filtered.filter(order => 
+      order.results?.some(r => r.error || r.messaestatus === "SEND_MESSAGE_FAILURE")
+    ).length
+    const totalRecipients = filtered.reduce((sum, order) => 
+      sum + (order.phoneNumbers?.length || 0), 0
+    )
+    
+    setStats({
+      totalOrders,
+      successfulOrders,
+      failedOrders,
+      totalRecipients,
+      successRate: totalOrders > 0 ? ((successfulOrders / totalOrders) * 100).toFixed(1) : 0
+    })
+    
     setCurrentPage(1)
   }
 
   const getUniqueTypes = () => {
     return [...new Set(orders.map(order => order.type).filter(Boolean))]
+  }
+
+  const getUniqueCampaigns = () => {
+    return [...new Set(orders.map(order => order.CampaignName).filter(Boolean))]
   }
 
   const getStatusBadge = (order) => {
@@ -180,6 +217,7 @@ export default function Orders() {
 
   const viewOrderDetails = (order) => {
     setSelectedOrder(order)
+    setModalCurrentPage(1)
     setShowModal(true)
   }
 
@@ -339,16 +377,26 @@ export default function Orders() {
               ))}
             </select>
 
-            {/* Sort By */}
+            {/* Campaign Filter */}
             <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              value={campaignFilter}
+              onChange={(e) => {
+                setCampaignFilter(e.target.value)
+                if (e.target.value !== 'all') {
+                  const campaignData = orders.filter(order => order.CampaignName === e.target.value)
+                  toast.success(`Showing campaign: ${e.target.value}`)
+                  setCampaignData(campaignData)
+                } else {
+                  toast.success('Showing all campaigns')
+                  console.log('Showing all campaigns')
+                }
+              }}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
-              <option value="date">Sort by Date</option>
-              <option value="type">Sort by Type</option>
-              <option value="recipients">Sort by Recipients</option>
-              <option value="success">Sort by Success</option>
+              <option value="all">All Campaigns</option>
+              {getUniqueCampaigns().map(campaign => (
+                <option key={campaign} value={campaign}>{campaign}</option>
+              ))}
             </select>
 
             {/* Date Range */}
@@ -612,13 +660,14 @@ export default function Orders() {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedOrder.phoneNumbers
-                    ?.map((phone, idx) => {
-                      const result = selectedOrder.results?.find(r => r.phone === phone)
-                      return { phone, result, originalIdx: idx }
-                    })
-                    .sort((a, b) => {
-                      // Priority order: Read > Delivered > Sent > Failed > Others
+                  {(() => {
+                    const processed = selectedOrder.phoneNumbers
+                      ?.map((phone, idx) => {
+                        const result = selectedOrder.results?.find(r => r.phone === phone)
+                        return { phone, result, originalIdx: idx }
+                      }) || []
+
+                    processed.sort((a, b) => {
                       const getPriority = (status) => {
                         if (status === "MESSAGE_READ") return 1
                         if (status === "MESSAGE_DELIVERED") return 2
@@ -628,9 +677,13 @@ export default function Orders() {
                       }
                       return getPriority(a.result?.messaestatus) - getPriority(b.result?.messaestatus)
                     })
-                    .map(({ phone, result }, idx) => (
-                      <tr key={idx} className="border-t hover:bg-gray-50">
-                        <td className="py-3 px-4 text-sm">{idx + 1}</td>
+
+                    const start = (modalCurrentPage - 1) * modalItemsPerPage
+                    const pageItems = processed.slice(start, start + modalItemsPerPage)
+
+                    return pageItems.map(({ phone, result }, idx) => (
+                      <tr key={start + idx} className="border-t hover:bg-gray-50">
+                        <td className="py-3 px-4 text-sm">{start + idx + 1}</td>
                         <td className="py-3 px-4 text-sm">{phone}</td>
                         
                         <td className="py-3 px-4 text-sm">
@@ -654,6 +707,7 @@ export default function Orders() {
                         <td className="py-3 px-4 text-sm text-red-900">{result?.errorMessage || '-'}</td>
                       </tr>
                     ))
+                  })()
                   }
                 </tbody>
               </table>
@@ -661,7 +715,26 @@ export default function Orders() {
 
             {/* Modal Footer */}
             <div className="flex items-center justify-between p-6 border-t">
-             
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setModalCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={modalCurrentPage === 1}
+                  className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="px-3 py-1 text-sm bg-white border rounded">
+                  Page {modalCurrentPage} of {Math.max(1, Math.ceil((selectedOrder.phoneNumbers?.length || 0) / modalItemsPerPage))}
+                </span>
+                <button
+                  onClick={() => setModalCurrentPage(prev => Math.min(prev + 1, Math.max(1, Math.ceil((selectedOrder.phoneNumbers?.length || 0) / modalItemsPerPage))))}
+                  disabled={modalCurrentPage === Math.max(1, Math.ceil((selectedOrder.phoneNumbers?.length || 0) / modalItemsPerPage))}
+                  className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+
               <div className="flex gap-2">
                 <button onClick={closeModal} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
                   Cancel

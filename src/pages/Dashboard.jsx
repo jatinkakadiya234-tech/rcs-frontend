@@ -41,7 +41,7 @@ export default function Dashboard() {
 
       const messages = reportsData.data || [];
       setMessageReports(messages);
-      console.log(statsData);
+     
       setStats({
         totalMessages: statsData.data?.totalMessages || 0,
         sentMessages: statsData.data?.sentMessages || 0,

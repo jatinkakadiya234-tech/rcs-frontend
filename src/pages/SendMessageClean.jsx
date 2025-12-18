@@ -45,8 +45,16 @@ export default function SendMessageClean() {
   // Response Modal
   const [checkingCapability, setCheckingCapability] = useState(false)
   const [sending, setSending] = useState(false)
-  const [showResultModal, setShowResultModal] = useState(false)
   const [resultData, setResultData] = useState(null)
+
+  const showResult = (res) => {
+    setResultData(res)
+    if (res?.success) {
+      toast.success(res.message)
+    } else {
+      toast.error(res.message)
+    }
+  }
   const [refreshing, setRefreshing] = useState(false)
   const [showAddMoney, setShowAddMoney] = useState(false)
   const [addAmount, setAddAmount] = useState('')
@@ -67,7 +75,7 @@ export default function SendMessageClean() {
   const loadTemplates = async () => {
     try {
       const response = await api.getUserTemplates(user?._id)
-      console.log(response);
+     
       setTemplates(response.data || [])
     } catch (error) {
       toast.error('Error loading templates: ' + error.message)
@@ -257,13 +265,11 @@ export default function SendMessageClean() {
     if (parsedNumbers.length === 0) return
     
     // Validation: Only 1 number OR 500+ numbers allowed
-    if (parsedNumbers.length > 1 && parsedNumbers.length < 500) {
-      setResultData({ 
-        success: false, 
-        message: `Invalid count! You can add only 1 number or minimum 500 numbers. Current: ${parsedNumbers.length}` 
-      })
-      setShowResultModal(true)
-      return
+      if (parsedNumbers.length > 1 && parsedNumbers.length < 500) { 
+        showResult({ 
+          success: false, 
+          message: `Invalid count! You can add only 1 number or minimum 500 numbers. Current: ${parsedNumbers.length}` 
+        }) 
     }
     
     setCheckingCapability(true)
@@ -309,11 +315,10 @@ export default function SendMessageClean() {
       setManualNumbers('')
       setParsedNumbers([])
       
-      setResultData({ 
-        success: true, 
-        message: `${capableNumbers.length} capable numbers added out of ${allNumbers.length}` 
-      })
-      setShowResultModal(true)
+        showResult({ 
+          success: true, 
+          message: `${capableNumbers.length} capable numbers added out of ${allNumbers.length}` 
+        })
     } catch (error) {
       setCheckingCapability(false)
       toast.error('Error checking capability: ' + error.message)
@@ -482,11 +487,10 @@ export default function SendMessageClean() {
         }
         
         setContacts([...contacts, ...capableNumbers])
-        setResultData({ 
+        showResult({ 
           success: true, 
           message: `${capableNumbers.length} RCS capable numbers added out of ${imported.length} total numbers` 
         })
-        setShowResultModal(true)
         setCheckingCapability(false)
       } catch (error) {
         setCheckingCapability(false)
@@ -513,17 +517,15 @@ export default function SendMessageClean() {
     const removedCount = contacts.length - uniqueContacts.length
     setContacts(uniqueContacts)
     if (removedCount > 0) {
-      setResultData({ 
+      showResult({ 
         success: true, 
         message: `${removedCount} duplicate number(s) removed successfully!` 
       })
-      setShowResultModal(true)
     } else {
-      setResultData({ 
+      showResult({ 
         success: false, 
         message: 'No duplicate numbers found' 
       })
-      setShowResultModal(true)
     }
   }
 
@@ -546,8 +548,26 @@ export default function SendMessageClean() {
     setButtons(buttons.map(b => {
       if (b.id === id) {
         const updated = { ...b, [field]: value }
-        // Auto-generate postBack data for URL buttons
-        if (b.type === 'URL Button' && field === 'value') {
+        // If changing type: auto-fill/clear title
+        if (field === 'type') {
+          if (value === 'Call Button' && !updated.title) {
+            updated.title = 'call now'
+          }
+          if (value === 'URL Button') {
+            updated.title = ''
+          }
+        }
+        // Also set/clear button value when type changes
+        if (field === 'type') {
+          if (value === 'Call Button' && !updated.value) {
+            updated.value = '+91'
+          }
+          if (value === 'URL Button') {
+            updated.value = ''
+          }
+        }
+        // Auto-generate postBack data for URL buttons when value changes
+        if (updated.type === 'URL Button' && field === 'value') {
           updated.postBackData = 'SA1L1C1'
         }
         return updated
@@ -580,7 +600,16 @@ export default function SendMessageClean() {
 
   const updateCardButton = (cardId, btnId, field, value) => {
     setCarouselCards(carouselCards.map(c => 
-      c.id === cardId ? { ...c, buttons: c.buttons.map(b => b.id === btnId ? { ...b, [field]: value } : b) } : c
+      c.id === cardId ? { ...c, buttons: c.buttons.map(b => b.id === btnId ? (() => {
+        const updated = { ...b, [field]: value }
+        if (field === 'type') {
+          if (value === 'Call Button' && !updated.title) updated.title = 'call now'
+          if (value === 'URL Button') updated.title = ''
+          if (value === 'Call Button' && !updated.value) updated.value = '+91'
+          if (value === 'URL Button') updated.value = ''
+        }
+        return updated
+      })() : b) } : c
     ))
   }
 
@@ -592,31 +621,26 @@ export default function SendMessageClean() {
 
   const handleSend = async () => {
     if (templates.length === 0) {
-      setResultData({ success: false, message: 'No templates found. Please create a template first.' })
-      setShowResultModal(true)
+      showResult({ success: false, message: 'No templates found. Please create a template first.' })
       setTimeout(() => {
         window.location.href = '/templates'
       }, 2000)
       return
     }
     if (template === 'new') {
-      setResultData({ success: false, message: 'Please select a template before sending message' })
-      setShowResultModal(true)
+      showResult({ success: false, message: 'Please select a template before sending message' })
       return
     }
     if (!campaignName.trim()) {
-      setResultData({ success: false, message: 'Please enter campaign name' })
-      setShowResultModal(true)
+      showResult({ success: false, message: 'Please enter campaign name' })
       return
     }
     if (!message && messageType !== 'carousel') {
-      setResultData({ success: false, message: 'Please enter a message' })
-      setShowResultModal(true)
+      showResult({ success: false, message: 'Please enter a message' })
       return
     }
     if (contacts.length === 0) {
-      setResultData({ success: false, message: 'Please add at least one contact' })
-      setShowResultModal(true)
+      showResult({ success: false, message: 'Please add at least one contact' })
       return
     }
     
@@ -625,11 +649,10 @@ export default function SendMessageClean() {
     const totalCost = phoneCount * costPerPhone
     
     if (user.Wallet < totalCost) {
-      setResultData({ 
+      showResult({ 
         success: false, 
         message: `Insufficient credits! Required: ₹${totalCost}, Available: ₹${user.Wallet}. Please recharge your wallet.` 
       })
-      setShowResultModal(true)
       return
     }
     
@@ -647,8 +670,7 @@ export default function SendMessageClean() {
     if (messageType === 'carousel') {
       if (carouselCards.length < 2) {
         setSending(false)
-        setResultData({ success: false, message: 'Carousel requires minimum 2 cards' })
-        setShowResultModal(true)
+        showResult({ success: false, message: 'Carousel requires minimum 2 cards' })
         return
       }
       
@@ -656,8 +678,7 @@ export default function SendMessageClean() {
       
       if (validCards.length < 2) {
         setSending(false)
-        setResultData({ success: false, message: 'At least 2 cards must have title, description and image' })
-        setShowResultModal(true)
+        showResult({ success: false, message: 'At least 2 cards must have title, description and image' })
         return
       }
       
@@ -694,14 +715,12 @@ export default function SendMessageClean() {
     } else if (messageType === 'rcs') {
       if (!mediaUrl) {
         setSending(false)
-        setResultData({ success: false, message: 'Please upload a valid media file' })
-        setShowResultModal(true)
+        showResult({ success: false, message: 'Please upload a valid media file' })
         return
       }
       if (buttons.length === 0) {
         setSending(false)
-        setResultData({ success: false, message: 'Please add at least one button for RCS message' })
-        setShowResultModal(true)
+        showResult({ success: false, message: 'Please add at least one button for RCS message' })
         return
       }
       
@@ -714,8 +733,7 @@ export default function SendMessageClean() {
       
       if (validButtons.length === 0) {
         setSending(false)
-        setResultData({ success: false, message: 'Please add at least one valid button (URL or Call)' })
-        setShowResultModal(true)
+        showResult({ success: false, message: 'Please add at least one valid button (URL or Call)' })
         return
       }
       
@@ -756,8 +774,7 @@ export default function SendMessageClean() {
     } else if (messageType === 'text-with-action') {
       if (buttons.length === 0) {
         setSending(false)
-        setResultData({ success: false, message: 'Please add at least one button for text with action' })
-        setShowResultModal(true)
+        showResult({ success: false, message: 'Please add at least one button for text with action' })
         return
       }
       
@@ -765,8 +782,7 @@ export default function SendMessageClean() {
       
       if (validButtons.length === 0) {
         setSending(false)
-        setResultData({ success: false, message: 'Please add at least one valid button' })
-        setShowResultModal(true)
+        showResult({ success: false, message: 'Please add at least one valid button' })
         return
       }
       
@@ -804,8 +820,7 @@ export default function SendMessageClean() {
     } else if (messageType === 'webview') {
       if (buttons.length === 0) {
         setSending(false)
-        setResultData({ success: false, message: 'Please add at least one button for webview message' })
-        setShowResultModal(true)
+        showResult({ success: false, message: 'Please add at least one button for webview message' })
         return
       }
       
@@ -817,8 +832,7 @@ export default function SendMessageClean() {
       
       if (validButtons.length === 0) {
         setSending(false)
-        setResultData({ success: false, message: 'Please add at least one valid button' })
-        setShowResultModal(true)
+        showResult({ success: false, message: 'Please add at least one valid button' })
         return
       }
       
@@ -840,16 +854,14 @@ export default function SendMessageClean() {
     } else if (messageType === 'dialer-action') {
       if (buttons.length === 0) {
         setSending(false)
-        setResultData({ success: false, message: 'Please add at least one dialer button' })
-        setShowResultModal(true)
+        showResult({ success: false, message: 'Please add at least one dialer button' })
         return
       }
       
       const validButtons = buttons.filter(btn => btn.title && btn.value && btn.value.startsWith('+'))
       if (validButtons.length === 0) {
         setSending(false)
-        setResultData({ success: false, message: 'Please add at least one button with valid phone number starting with +' })
-        setShowResultModal(true)
+        showResult({ success: false, message: 'Please add at least one button with valid phone number starting with +' })
         return
       }
       
@@ -873,8 +885,9 @@ export default function SendMessageClean() {
     }
     
     try {
-      console.log('Sending Payload:', JSON.stringify(payload, null, 2))
+     
       const response = await api.sendMessage(payload)
+       console.log(response,"sscscssc");
       if (response.data.success) {
         toast.success(`Messages sent successfully!`)
         await refreshUser()
@@ -884,18 +897,22 @@ export default function SendMessageClean() {
           navigate('/reports')
         }, 1000)
       }
+     
+    
+
     } catch (error) {
       if (error.response?.data?.message === 'Insufficient balance') {
         toast.error(`Insufficient credits! Required: ₹${error.response.data.required}, Available: ₹${error.response.data.available}`)
-        setResultData({ 
+        showResult({ 
           success: false, 
           message: `Insufficient credits! Required: ₹${error.response.data.required}, Available: ₹${error.response.data.available}` 
         })
       } else {
-        toast.error(error.message || 'Failed to send message')
-        setResultData({ success: false, message: error.message || 'Failed to send message' })
+        console.log(error);
+        toast.error(error?.response?.data?.message || 'Failed to send message')
+        // setResultData({ success: false, message: error.message || 'Failed to send message' })
       }
-      setShowResultModal(true)
+      // result shown via toast
     } finally {
       setSending(false)
     }
@@ -1597,47 +1614,7 @@ export default function SendMessageClean() {
         </div>
       )}
 
-      {/* Result Modal */}
-      {showResultModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-            <div className="text-center">
-              <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                resultData?.success ? 'bg-green-100' : 'bg-red-100'
-              }`}>
-                {resultData?.success ? (
-                  <FiCheck className="text-3xl text-green-600" />
-                ) : (
-                  <FiX className="text-3xl text-red-600" />
-                )}
-              </div>
-              
-              <h3 className={`text-lg font-semibold mb-2 ${
-                resultData?.success ? 'text-green-800' : 'text-red-800'
-              }`}>
-                {resultData?.success ? 'Success!' : 'Error!'}
-              </h3>
-              
-              <p className="text-gray-600 mb-4">{resultData?.message}</p>
-              
-              {resultData?.details && (
-                <p className="text-sm text-gray-500 mb-4">{resultData.details}</p>
-              )}
-              
-              <button
-                onClick={() => setShowResultModal(false)}
-                className={`px-6 py-2 rounded-lg text-white font-medium ${
-                  resultData?.success 
-                    ? 'bg-green-600 hover:bg-green-700' 
-                    : 'bg-red-600 hover:bg-red-700'
-                }`}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Result shown via toast notifications */}
     </div>
   )
 }
