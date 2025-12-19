@@ -719,6 +719,13 @@ const exportToExcel = () => {
                     <div className="text-3xl font-bold text-gray-900 mb-1">{selectedOrder.results?.filter(r => r.messaestatus === "MESSAGE_DELIVERED").length || 0}</div>
                     <div className="text-sm text-gray-500 font-medium">Delivered</div>
                   </div>
+                    <div className="text-center">
+                    <div className="flex items-center justify-center w-16 h-16 bg-blue-200 rounded-full mx-auto mb-3">
+                      <span className="text-red-600 text-2xl mb-2">❗</span>
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1 ms-2">{modalPanddingCount }</div>
+                    <div className="text-sm text-gray-500 font-medium ms-2">Pending</div>
+                  </div>
                   <div className="text-center">
                     <div className="flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mx-auto mb-3">
                       <span className="text-red-600 text-2xl mb-2">👁️</span>
@@ -747,13 +754,7 @@ const exportToExcel = () => {
                     <div className="text-3xl font-bold text-gray-900 mb-1 ms-4 ">{modalRepliedCount || 0}</div>
                     <div className="text-sm text-gray-500 font-medium ms-4">Replyed</div>
                   </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center w-16 h-16 bg-blue-200 rounded-full mx-auto mb-3">
-                      <span className="text-red-600 text-2xl mb-2">❗</span>
-                    </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1 ms-2">{modalPanddingCount }</div>
-                    <div className="text-sm text-gray-500 font-medium ms-2">Pending</div>
-                  </div>
+                
                  
                 </div>
               </div>
