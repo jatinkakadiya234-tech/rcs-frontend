@@ -208,53 +208,92 @@ export default function Orders() {
     setShowModal(true)
   }
 
+// const computeSelectedOrderMetrics = (order) => {
+//   if (!order || !order.results) return { clicked: 0, replied: 0, contentCounts: {} }
+//   let clicked = 0
+//   let replied = 0
+//   const suggestionCounts = {}
+//   const isPlainText = {}
+
+//   // Aggregate suggestion responses across all user messages
+//   order.results.forEach(r => {
+//     if (r.entityType === 'USER_MESSAGE') {
+//       const suggestions = r.suggestionResponse || []
+//       suggestions.forEach(s => {
+//         const key = s.plainText || s.postBack?.data || s.type || 'unknown'
+//         suggestionCounts[key] = (suggestionCounts[key] || 0) + 1
+//         if (s.plainText) isPlainText[key] = true
+//       })
+//       // Count explicit user replies (userReplay may be array or single value)
+//       if (Array.isArray(r.userReplay)) {
+//         replied += r.userReplay.length
+//       } else if (r.userReplay) {
+//         replied += 1
+//       }
+//     }
+//   })
+
+//   // Apply counting rules for suggestion responses:
+//   // - If a suggestion (by plainText key) appears once => count as 1 click
+//   // - If a plainText suggestion appears >=2 times => count as 1 click + 1 reply
+//   // - Non-plain suggestions count fully towards clicks
+//   Object.keys(suggestionCounts).forEach(key => {
+//     const count = suggestionCounts[key]
+//     if (isPlainText[key]) {
+//       if (count === 1) {
+//         clicked += 1
+//       } else if (count >= 2) {
+//         clicked += 1
+//         replied += 1
+//       }
+//     } else {
+//       clicked += count
+//     }
+//   })
+
+//   return { clicked, replied, contentCounts: suggestionCounts }
+// }
+
+
+
+  // const { clicked: modalClickedCount, replied: modalRepliedCount, contentCounts: modalContentCounts } = computeSelectedOrderMetrics(selectedOrder)
+
 const computeSelectedOrderMetrics = (order) => {
-  if (!order || !order.results) return { clicked: 0, replied: 0, contentCounts: {} }
+  if (!order || !order.results) {
+    return { clicked: 0, replied: 0, contentCounts: {} }
+  }
+
+  const contentCounts = {}
   let clicked = 0
   let replied = 0
-  const suggestionCounts = {}
-  const isPlainText = {}
 
-  // Aggregate suggestion responses across all user messages
   order.results.forEach(r => {
     if (r.entityType === 'USER_MESSAGE') {
       const suggestions = r.suggestionResponse || []
+
       suggestions.forEach(s => {
-        const key = s.plainText || s.postBack?.data || s.type || 'unknown'
-        suggestionCounts[key] = (suggestionCounts[key] || 0) + 1
-        if (s.plainText) isPlainText[key] = true
+        const key = s.plainText || 'unknown'
+        contentCounts[key] = (contentCounts[key] || 0) + 1
       })
-      // Count explicit user replies (userReplay may be array or single value)
-      if (Array.isArray(r.userReplay)) {
-        replied += r.userReplay.length
-      } else if (r.userReplay) {
-        replied += 1
-      }
     }
   })
 
-  // Apply counting rules for suggestion responses:
-  // - If a suggestion (by plainText key) appears once => count as 1 click
-  // - If a plainText suggestion appears >=2 times => count as 1 click + 1 reply
-  // - Non-plain suggestions count fully towards clicks
-  Object.keys(suggestionCounts).forEach(key => {
-    const count = suggestionCounts[key]
-    if (isPlainText[key]) {
-      if (count === 1) {
-        clicked += 1
-      } else if (count >= 2) {
-        clicked += 1
-        replied += 1
-      }
-    } else {
-      clicked += count
+  Object.keys(contentCounts).forEach(key => {
+    const count = contentCounts[key]
+
+    if (count >= 1) {
+      clicked += 1          // first click
+    }
+    if (count > 1) {
+      replied += (count - 1) // remaining replies
     }
   })
 
-  return { clicked, replied, contentCounts: suggestionCounts }
+  return { clicked, replied, contentCounts }
 }
+const { clicked:modalClickedCount, replied:modalRepliedCount } = computeSelectedOrderMetrics(selectedOrder)
 
-  const { clicked: modalClickedCount, replied: modalRepliedCount, contentCounts: modalContentCounts } = computeSelectedOrderMetrics(selectedOrder)
+
 
   const closeModal = () => {
     setShowModal(false)
@@ -674,6 +713,7 @@ const computeSelectedOrderMetrics = (order) => {
                     <div className="text-3xl font-bold text-gray-900 mb-1">{modalRepliedCount || 0}</div>
                     <div className="text-sm text-gray-500 font-medium">Replyed</div>
                   </div>
+                 
                 </div>
               </div>
             </div>
