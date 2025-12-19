@@ -208,96 +208,7 @@ export default function Orders() {
     setShowModal(true)
   }
 
-// const computeSelectedOrderMetrics = (order) => {
-//   if (!order || !order.results) return { clicked: 0, replied: 0, contentCounts: {} }
-//   let clicked = 0
-//   let replied = 0
-//   const suggestionCounts = {}
-//   const isPlainText = {}
 
-//   // Aggregate suggestion responses across all user messages
-//   order.results.forEach(r => {
-//     if (r.entityType === 'USER_MESSAGE') {
-//       const suggestions = r.suggestionResponse || []
-//       suggestions.forEach(s => {
-//         const key = s.plainText || s.postBack?.data || s.type || 'unknown'
-//         suggestionCounts[key] = (suggestionCounts[key] || 0) + 1
-//         if (s.plainText) isPlainText[key] = true
-//       })
-//       // Count explicit user replies (userReplay may be array or single value)
-//       if (Array.isArray(r.userReplay)) {
-//         replied += r.userReplay.length
-//       } else if (r.userReplay) {
-//         replied += 1
-//       }
-//     }
-//   })
-
-//   // Apply counting rules for suggestion responses:
-//   // - If a suggestion (by plainText key) appears once => count as 1 click
-//   // - If a plainText suggestion appears >=2 times => count as 1 click + 1 reply
-//   // - Non-plain suggestions count fully towards clicks
-//   Object.keys(suggestionCounts).forEach(key => {
-//     const count = suggestionCounts[key]
-//     if (isPlainText[key]) {
-//       if (count === 1) {
-//         clicked += 1
-//       } else if (count >= 2) {
-//         clicked += 1
-//         replied += 1
-//       }
-//     } else {
-//       clicked += count
-//     }
-//   })
-
-//   return { clicked, replied, contentCounts: suggestionCounts }
-// }
-
-
-
-  // const { clicked: modalClickedCount, replied: modalRepliedCount, contentCounts: modalContentCounts } = computeSelectedOrderMetrics(selectedOrder)
-
-// const computeSelectedOrderMetrics = (order) => {
-//   if (!order || !order.results) {
-//     return { clicked: 0, replied: 0, contentCounts: {} }
-//   }
-
-//   const contentCounts = {}
-//   let clicked = 0
-//   let replied = 0
-
-//   order.results.forEach(r => {
-//     if (r.entityType === 'USER_MESSAGE') {
-//       const suggestions = r.suggestionResponse || []
-
-//       suggestions.forEach(s => {
-//         const key = s.plainText || 'unknown'
-//         contentCounts[key] = (contentCounts[key] || 0) + 1
-//       })
-//     }
-//   })
-
-//   Object.keys(contentCounts).forEach(key => {
-//     const count = contentCounts[key]
-
-//     if (count >= 1) {
-//       clicked += 1          // first click
-//     }
-//     if (count > 1) {
-//       replied += (count - 1) // remaining replies
-//     }
-//   })
-
-//   let succsescont = order.results?.filter(r => r.messaestatus === "MESSAGE_DELIVERED" || r.messaestatus === "SEND_MESSAGE_SUCCESS" || r.messaestatus === "MESSAGE_READ").length || 0;
-//   let failedcont = order.results?.filter(r => r.messaestatus === "SEND_MESSAGE_FAILURE"  ? r.messaestatus : r.status === 500 ? r.status : r.error === true).length || 0;
-//   let totalcount = succsescont + failedcont;
-//   let panddingcount = totalcount - (succsescont + failedcont);
-  
-
-
-//   return { clicked, replied, contentCounts , panddingcount ,failedcont}
-// }
 
 const computeSelectedOrderMetrics = (order) => {
   if (!order || !order.results) {
@@ -369,7 +280,7 @@ const computeSelectedOrderMetrics = (order) => {
 }
 
 
-const { clicked:modalClickedCount, replied:modalRepliedCount, panddingcount:modalPanddingCount ,failedcont:modelFildCount } = computeSelectedOrderMetrics(selectedOrder)
+const { clicked:modalClickedCount, replied:modalRepliedCount, pendingcount:modalPanddingCount ,failedcont:modelFildCount } = computeSelectedOrderMetrics(selectedOrder)
 
   const closeModal = () => {
     setShowModal(false)
@@ -389,32 +300,79 @@ const { clicked:modalClickedCount, replied:modalRepliedCount, panddingcount:moda
     }
   }
 
-  const exportToExcel = () => {
-    try {
-      const exportData = filteredOrders.map((order, idx) => ({
-        'ID': `#${idx + 1}`,
-        "CampaignName": order.campaignName || 'N/A',
-        'Message Type': order.type || 'N/A',
-        'Total Recipients': order.phoneNumbers?.length || 0,
-        'Successful': order.results?.filter(r => r.messaestatus === "MESSAGE_DELIVERED" || r.messaestatus === "SEND_MESSAGE_SUCCESS" || r.messaestatus === "MESSAGE_READ").length || 0,
-        'Failed': order.results?.filter(r => r.messaestatus === "MESSAGE_FAILED" || r.messaestatus === "SEND_MESSAGE_FAILED").length || 0,
-        'Status': order.results?.some(r => r.messaestatus === "MESSAGE_DELIVERED" || r.messaestatus === "SEND_MESSAGE_SUCCESS" || r.messaestatus === "MESSAGE_READ") ? 
-                  (order.results?.some(r => r.messaestatus === "MESSAGE_FAILED" || r.messaestatus === "SEND_MESSAGE_FAILED") ? 'Failed' : 'Success') : 
-                  (order.results?.length > 0 ? 'Failed' : 'Pending'),
-        'Created Date': new Date(order.createdAt).toLocaleDateString(),
-        'Created Time': new Date(order.createdAt).toLocaleTimeString(),
-        'Phone Numbers': order.phoneNumbers?.join(', ') || 'No numbers'
-      }))
-
-      const ws = XLSX.utils.json_to_sheet(exportData)
-      const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, 'Orders Report')
-      XLSX.writeFile(wb, `orders-report-${new Date().toISOString().split('T')[0]}.xlsx`)
-      toast.success('Report exported successfully')
-    } catch (err) {
-      toast.error('Failed to export report')
+const exportToExcel = () => {
+  try {
+    if (!filteredOrders || filteredOrders.length === 0) {
+      toast.error("No data to export")
+      return
     }
+
+    const exportData = filteredOrders.map((order, idx) => {
+      const results = order?.results || []
+
+      // ✅ Success count
+      const successCount = results.filter(
+        r =>
+          r?.messaestatus === "MESSAGE_DELIVERED" ||
+          r?.messaestatus === "SEND_MESSAGE_SUCCESS" ||
+          r?.messaestatus === "MESSAGE_READ"
+      ).length
+
+      // ❌ Failed count
+      const failedCount = results.filter(
+        r =>
+          r?.messaestatus === "SEND_MESSAGE_FAILURE" ||
+          r?.status === 500 ||
+          r?.error === true
+      ).length
+
+      // ⏳ Pending count
+      const pendingCount =
+        results.length > 0
+          ? results.length - (successCount + failedCount)
+          : 0
+
+      // 📌 Final Status
+      let finalStatus = "Pending"
+      if (successCount > 0 && failedCount === 0) finalStatus = "Success"
+      else if (failedCount > 0) finalStatus = "Failed"
+
+      return {
+        ID: `#${idx + 1}`,
+        CampaignName: order?.CampaignName || "N/A",
+        MessageType: order?.type || "N/A",
+        TotalRecipients: order?.phoneNumbers?.length || 0,
+        Successful: successCount,
+        Failed: failedCount,
+        Pending: pendingCount,
+        Status: finalStatus,
+        CreatedDate: order?.createdAt
+          ? new Date(order.createdAt).toLocaleDateString()
+          : "N/A",
+        CreatedTime: order?.createdAt
+          ? new Date(order.createdAt).toLocaleTimeString()
+          : "N/A"
+      }
+    })
+
+    // 📄 Create Excel
+    const worksheet = XLSX.utils.json_to_sheet(exportData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Orders Report")
+
+    // 💾 Save file
+    XLSX.writeFile(
+      workbook,
+      `orders-report-${new Date().toISOString().split("T")[0]}.xlsx`
+    )
+
+    toast.success("Report exported successfully")
+  } catch (error) {
+    console.error("Excel export error:", error)
+    toast.error("Failed to export report")
   }
+}
+
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -631,7 +589,7 @@ const { clicked:modalClickedCount, replied:modalRepliedCount, panddingcount:moda
                   ) : (
                     filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((order, idx) => {
                       const successCount = order.results?.filter(r => r.messaestatus === "MESSAGE_DELIVERED" || r.messaestatus === "SEND_MESSAGE_SUCCESS" || r.messaestatus === "MESSAGE_READ").length || 0
-                      const failedCount = order.results?.filter(r => r.messaestatus === "SEND_MESSAGE_FAILURE" ).length || 0
+                      const failedCount = order.results?.filter(r => r.messaestatus === "SEND_MESSAGE_FAILURE" || r.status === 500 ).length || 0
                       
                       return (
                         <tr key={order._id || idx} className="border-t hover:bg-gray-50 transition-colors">
@@ -738,7 +696,7 @@ const { clicked:modalClickedCount, replied:modalRepliedCount, panddingcount:moda
             {/* Stats Cards */}
             <div className="p-6 border-b bg-gray-50">
               <div className="flex justify-center">
-                <div className="grid grid-cols-7 gap-11  max-w-2xl">
+                <div className="grid grid-cols-8 gap-11  max-w-2xl">
                   <div className="text-center">
                     <div className="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mx-auto mb-3">
                       <span className="text-blue-600 text-2xl">💬</span>
@@ -779,23 +737,23 @@ const { clicked:modalClickedCount, replied:modalRepliedCount, panddingcount:moda
                     <div className="flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mx-auto mb-3">
                       <span className="text-red-600 text-2xl ">👆</span>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">{modalClickedCount || 0} {console.log(modalClickedCount,"=============")}</div>
-                    <div className="text-sm text-gray-500 font-medium">Clickd</div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1 ms-4">{modalClickedCount || 0}</div>
+                    <div className="text-sm text-gray-500 font-medium ms-4">Clickd</div>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center justify-center w-16 h-16 bg-blue-200 rounded-full mx-auto mb-3">
                       <span className="text-red-600 text-2xl mb-2">🔁</span>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">{modalRepliedCount || 0}</div>
-                    <div className="text-sm text-gray-500 font-medium">Replyed</div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1 ms-4 ">{modalRepliedCount || 0}</div>
+                    <div className="text-sm text-gray-500 font-medium ms-4">Replyed</div>
                   </div>
-                  {/* <div className="text-center">
+                  <div className="text-center">
                     <div className="flex items-center justify-center w-16 h-16 bg-blue-200 rounded-full mx-auto mb-3">
                       <span className="text-red-600 text-2xl mb-2">❗</span>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">{modalPanddingCount }</div>
-                    <div className="text-sm text-gray-500 font-medium">Pending</div>
-                  </div> */}
+                    <div className="text-3xl font-bold text-gray-900 mb-1 ms-2">{modalPanddingCount }</div>
+                    <div className="text-sm text-gray-500 font-medium ms-2">Pending</div>
+                  </div>
                  
                 </div>
               </div>
@@ -852,13 +810,13 @@ const { clicked:modalClickedCount, replied:modalRepliedCount, panddingcount:moda
                         </td>
                         <td className="py-3 px-4 text-sm">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            result?.messaestatus === "MESSAGE_DELIVERED" || result?.messaestatus === "SEND_MESSAGE_SUCCESS" || result?.messaestatus === "MESSAGE_READ" ? 'bg-green-100 text-green-800' : result?.messaestatus === "SEND_MESSAGE_FAILURE" ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                            result?.messaestatus === "MESSAGE_DELIVERED" || result?.messaestatus === "SEND_MESSAGE_SUCCESS" || result?.messaestatus === "MESSAGE_READ" ? 'bg-green-100 text-green-800' : result?.messaestatus === "SEND_MESSAGE_FAILURE" || result.status === 500 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
                           }`}>
                             {result?.messaestatus === "MESSAGE_DELIVERED" ? "Delivered" :
                              result?.messaestatus === "SEND_MESSAGE_SUCCESS" ? "Sent" :
                              result?.messaestatus === "MESSAGE_READ" ? "Read" :
-                             result?.messaestatus === "SEND_MESSAGE_FAILURE" ? "Failed" :
-                             result?.messaestatus || 'Sent'}
+                             result?.messaestatus === "SEND_MESSAGE_FAILURE" || result.status === 500 ? "Failed" :
+                             result?.messaestatus || 'Panding'}
                           </span>
                         </td>
            
@@ -908,7 +866,18 @@ const { clicked:modalClickedCount, replied:modalRepliedCount, panddingcount:moda
                         'Instance': '-',
                         'Instance Number': phone,
                         'Message Type': selectedOrder.type,
-                        'Status': result?.status === 201 ? 'Sent' : 'Failed',
+                       Status:
+                            result?.messaestatus === "MESSAGE_READ"
+                              ? "Read"
+                              : result?.messaestatus === "MESSAGE_DELIVERED"
+                              ? "Delivered"
+                              : result?.messaestatus === "SEND_MESSAGE_SUCCESS"
+                              ? "Sent"
+                              : result?.messaestatus ===
+                                  "SEND_MESSAGE_FAILURE" ||
+                                result?.status === 500
+                              ? "Failed"
+                              : "Pending",
                         'Created At': new Date(selectedOrder.createdAt).toLocaleString(),
                         'Sent At': result?.timestamp ? new Date(result.timestamp).toLocaleString() : '-'
                       }
