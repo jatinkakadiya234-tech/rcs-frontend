@@ -80,7 +80,7 @@ export default function Layout() {
                 </div>
                 <div className="hidden sm:block">
                   <h2 className="font-bold text-base sm:text-lg lg:text-xl">RCS Dashboard</h2>
-                  <p className="text-white/70 text-xs lg:text-sm">Admin Panel</p>
+                  <p className="text-white/70 text-xs lg:text-sm">{user.companyname}</p>
                 </div>
               </div>
               
@@ -153,7 +153,7 @@ export default function Layout() {
                   </button>
                 )}
                 <div className="min-w-0">
-                  <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-gray-900 truncate">Dashboard</h2>
+                  <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-gray-900 truncate">Dashboard - {user.companyname}</h2>
                 </div>
               </div>
 

@@ -34,6 +34,7 @@ export default function SendMessageClean() {
   const [mediaUrl, setMediaUrl] = useState('')
   const [mediaFile, setMediaFile] = useState(null)
   const [footer, setFooter] = useState('')
+  const [cardDescription, setCardDescription] = useState('')
   const [buttons, setButtons] = useState([])
   
   // Carousel
@@ -92,6 +93,7 @@ export default function SendMessageClean() {
       setCarouselCards([])
       setMediaUrl('')
       setFooter('')
+      setCardDescription('')
       return
     }
 
@@ -106,13 +108,19 @@ export default function SendMessageClean() {
       setMessage('')
       setMediaUrl('')
       setFooter('')
+      setCardDescription('')
       setButtons([])
       setCarouselCards([])
       
       // Set message based on type
       if (templateData.text) setMessage(templateData.text)
       if (templateData.richCard?.title) setMessage(templateData?.richCard?.title)
-      if (templateData.richCard?.subtitle) setFooter(templateData?.richCard?.subtitle)
+      if (templateData.richCard?.subtitle) setCardDescription(templateData?.richCard?.subtitle)
+      if (templateData.richCard?.description) {
+        setCardDescription(templateData?.richCard?.description)
+      } else if (templateData.richCard?.subtitle) {
+        setCardDescription(templateData?.richCard?.subtitle)
+      }
       if (templateData.richCard?.imageUrl) setMediaUrl(templateData?.richCard?.imageUrl)
       if (templateData.imageUrl) setMediaUrl(templateData?.imageUrl)
       
@@ -743,6 +751,7 @@ export default function SendMessageClean() {
             cardOrientation: 'VERTICAL',
             content: {
               cardTitle: message,
+              cardDescription: cardDescription,
               cardMedia: {
                 mediaHeight: 'TALL',
                 contentInfo: {
@@ -994,13 +1003,7 @@ export default function SendMessageClean() {
     if (messageType === 'rcs') {
       return (
         <div className="space-y-4">
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Enter your message"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            rows={4}
-          />
+          
           
           <div className="border-2 border-dashed border-purple-600 rounded-lg p-6 bg-gradient-to-br from-blue-50 to-purple-50 hover:border-blue-400 transition-colors">
             <label className="cursor-pointer">
@@ -1036,12 +1039,27 @@ export default function SendMessageClean() {
             )}
           </div>
           
-          <input
+          {/* <input
             type="text"
             value={footer}
             onChange={(e) => setFooter(e.target.value)}
             placeholder="Footer text (optional)"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          /> */}
+          <input
+            type="text"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Enter your message"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            rows={4}
+          />
+          <textarea
+            value={cardDescription}
+            onChange={(e) => setCardDescription(e.target.value)}
+            placeholder="Card Description (optional)"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            rows={2}
           />
           
           <div>

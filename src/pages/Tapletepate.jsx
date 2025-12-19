@@ -28,6 +28,11 @@ export default function Tapletepate() {
   const [previewData, setPreviewData] = useState(null)
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [importJson, setImportJson] = useState('')
+  const [imageCropModalOpen, setImageCropModalOpen] = useState(false)
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 })
+  const [tempImageFile, setTempImageFile] = useState(null)
+  const [cropCoords, setCropCoords] = useState({ x: 0, y: 0, width: 0, height: 0 })
+  const [cropTarget, setCropTarget] = useState({ type: 'richCard', index: null })
 
   const uploadFile = async (file) => {
     try {
@@ -38,6 +43,90 @@ export default function Tapletepate() {
       toast.error('File upload failed: ' + error.message)
       return null
     }
+  }
+
+  const handleImageSelect = (file, target = 'richCard', index = null) => {
+    if (file) {
+      setCropTarget({ type: target, index })
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
+          setImageDimensions({ width: img.width, height: img.height })
+          setCropCoords({ x: 0, y: 0, width: img.width, height: img.height })
+          setTempImageFile(file)
+          setImageCropModalOpen(true)
+        }
+        img.src = e.target.result
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const cropImage = async () => {
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width = cropCoords.width
+          canvas.height = cropCoords.height
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(
+            img,
+            cropCoords.x,
+            cropCoords.y,
+            cropCoords.width,
+            cropCoords.height,
+            0,
+            0,
+            cropCoords.width,
+            cropCoords.height
+          )
+          canvas.toBlob((blob) => {
+            const croppedFile = new File([blob], tempImageFile.name, { type: 'image/jpeg' })
+            resolve(croppedFile)
+          }, 'image/jpeg', 0.95)
+        }
+        img.src = e.target.result
+      }
+      reader.readAsDataURL(tempImageFile)
+    })
+  }
+
+  const handleCropConfirm = async () => {
+    if (tempImageFile) {
+      const croppedFile = await cropImage()
+      const uploadedUrl = await uploadFile(croppedFile)
+      if (uploadedUrl) {
+        if (cropTarget.type === 'richCard') {
+          setRichCard({...richCard, imageUrl: uploadedUrl, imageFile: croppedFile})
+        } else if (cropTarget.type === 'carousel' && cropTarget.index !== null) {
+          const newItems = [...carouselItems]
+          newItems[cropTarget.index] = {
+            ...newItems[cropTarget.index],
+            imageUrl: uploadedUrl,
+            imageFile: croppedFile
+          }
+          setCarouselItems(newItems)
+        }
+        setImageCropModalOpen(false)
+        setTempImageFile(null)
+      }
+    }
+  }
+
+  const handleDeleteImage = (target = 'richCard', index = null) => {
+    if (target === 'richCard') {
+      setRichCard({...richCard, imageUrl: '', imageFile: null})
+    } else if (target === 'carousel' && index !== null) {
+      const newItems = [...carouselItems]
+      newItems[index] = { ...newItems[index], imageUrl: '', imageFile: null }
+      setCarouselItems(newItems)
+    }
+    setImageDimensions({ width: 0, height: 0 })
+    toast.success('Image deleted')
   }
 
   useEffect(() => {
@@ -797,13 +886,10 @@ export default function Tapletepate() {
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={async (e) => {
+                          onChange={(e) => {
                             const file = e.target.files[0]
                             if (file) {
-                              const uploadedUrl = await uploadFile(file)
-                              if (uploadedUrl) {
-                                setRichCard({...richCard, imageUrl: uploadedUrl, imageFile: file})
-                              }
+                              handleImageSelect(file)
                             }
                           }}
                           className="hidden"
@@ -823,7 +909,37 @@ export default function Tapletepate() {
                         <p className="mt-2 text-xs text-gray-500 text-right">{richCard.imageFile ? `📎 ${richCard.imageFile.name}` : 'No selected File'}</p>
                         {richCard.imageFile && richCard.imageUrl && (
                           <div className="mt-3">
-                            <img src={richCard.imageUrl} alt="Preview" className="max-w-xs rounded-lg border-2 border-gray-300" />
+                            <div className="relative inline-block">
+                              <img 
+                                src={richCard.imageUrl} 
+                                alt="Preview" 
+                                className="max-w-xs rounded-lg border-2 border-gray-300" 
+                                onLoad={(e) => {
+                                  setImageDimensions({ width: e.target.naturalWidth, height: e.target.naturalHeight })
+                                }} 
+                              />
+                              {imageDimensions.width > 0 && (
+                                <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs font-semibold">
+                                  {imageDimensions.width}×{imageDimensions.height}px
+                                </div>
+                              )}
+                            </div>
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => document.getElementById('richcard-image-upload').click()}
+                                className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 font-medium"
+                              >
+                                📷 Crop/Change
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleDeleteImage}
+                                className="px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 font-medium"
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -948,13 +1064,7 @@ export default function Tapletepate() {
                               onChange={async (e) => {
                                 const file = e.target.files[0]
                                 if (file) {
-                                  const uploadedUrl = await uploadFile(file)
-                                  if (uploadedUrl) {
-                                    const newItems = [...carouselItems]
-                                    newItems[index].imageUrl = uploadedUrl
-                                    newItems[index].imageFile = file
-                                    setCarouselItems(newItems)
-                                  }
+                                  handleImageSelect(file, 'carousel', index)
                                 }
                               }}
                               className="hidden"
@@ -972,9 +1082,39 @@ export default function Tapletepate() {
                               </div>
                             </label>
                             <p className="mt-2 text-xs text-gray-500 text-right">{item.imageFile ? `📎 ${item.imageFile.name}` : 'No selected File'}</p>
-                            {item.imageUrl && (
+                            {item.imageFile && item.imageUrl && (
                               <div className="mt-3">
-                                <img src={item.imageUrl} alt="Preview" className="w-full rounded-lg border-2 h-30 border-gray-300" />
+                                <div className="relative inline-block">
+                                  <img
+                                    src={item.imageUrl}
+                                    alt="Preview"
+                                    className="w-full rounded-lg border-2 h-30 border-gray-300"
+                                    onLoad={(e) => {
+                                      setImageDimensions({ width: e.target.naturalWidth, height: e.target.naturalHeight })
+                                    }}
+                                  />
+                                  {imageDimensions.width > 0 && (
+                                    <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs font-semibold">
+                                      {imageDimensions.width}×{imageDimensions.height}px
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="mt-3 flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => document.getElementById(`carousel-image-${index}`).click()}
+                                    className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 font-medium"
+                                  >
+                                    📷 Crop/Change
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteImage('carousel', index)}
+                                    className="px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 font-medium"
+                                  >
+                                    🗑️ Delete
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -1299,6 +1439,199 @@ export default function Tapletepate() {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Crop Modal */}
+      {imageCropModalOpen && tempImageFile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Crop Image</h3>
+              <button
+                onClick={() => {
+                  setImageCropModalOpen(false)
+                  setTempImageFile(null)
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <FaTimes size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Image Preview with Crop Area */}
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 overflow-x-auto">
+                <div className="relative inline-block">
+                  <img
+                    id="cropImage"
+                    src={URL.createObjectURL(tempImageFile)}
+                    alt="Crop Preview"
+                    className="max-w-full rounded-lg"
+                    onLoad={(e) => {
+                      setImageDimensions({
+                        width: e.target.naturalWidth,
+                        height: e.target.naturalHeight
+                      })
+                      if (cropCoords.width === 0) {
+                        setCropCoords({
+                          x: 0,
+                          y: 0,
+                          width: e.target.naturalWidth,
+                          height: e.target.naturalHeight
+                        })
+                      }
+                    }}
+                  />
+                  {/* Crop Area Overlay */}
+                  <svg
+                    className="absolute top-0 left-0 pointer-events-none"
+                    id="cropOverlay"
+                    style={{
+                      width: imageDimensions.width,
+                      height: imageDimensions.height
+                    }}
+                  >
+                    <defs>
+                      <mask id="cropMask">
+                        <rect width={imageDimensions.width} height={imageDimensions.height} fill="white" />
+                        <rect
+                          x={cropCoords.x}
+                          y={cropCoords.y}
+                          width={cropCoords.width}
+                          height={cropCoords.height}
+                          fill="black"
+                        />
+                      </mask>
+                    </defs>
+                    <rect
+                      width={imageDimensions.width}
+                      height={imageDimensions.height}
+                      fill="black"
+                      opacity="0.5"
+                      mask="url(#cropMask)"
+                    />
+                    <rect
+                      x={cropCoords.x}
+                      y={cropCoords.y}
+                      width={cropCoords.width}
+                      height={cropCoords.height}
+                      fill="none"
+                      stroke="#3b82f6"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Crop Controls */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">X Position</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max={Math.max(0, imageDimensions.width - cropCoords.width)}
+                    value={cropCoords.x}
+                    onChange={(e) => setCropCoords({...cropCoords, x: parseInt(e.target.value)})}
+                    className="w-full mt-1"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">{cropCoords.x}px</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Y Position</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max={Math.max(0, imageDimensions.height - cropCoords.height)}
+                    value={cropCoords.y}
+                    onChange={(e) => setCropCoords({...cropCoords, y: parseInt(e.target.value)})}
+                    className="w-full mt-1"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">{cropCoords.y}px</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Width</label>
+                  <input
+                    type="range"
+                    min="50"
+                    max={imageDimensions.width}
+                    value={cropCoords.width}
+                    onChange={(e) => setCropCoords({...cropCoords, width: parseInt(e.target.value)})}
+                    className="w-full mt-1"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">{cropCoords.width}px</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Height</label>
+                  <input
+                    type="range"
+                    min="50"
+                    max={imageDimensions.height}
+                    value={cropCoords.height}
+                    onChange={(e) => setCropCoords({...cropCoords, height: parseInt(e.target.value)})}
+                    className="w-full mt-1"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">{cropCoords.height}px</p>
+                </div>
+              </div>
+
+              {/* Crop Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 mb-2">Image Information</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-blue-700">Original Size</p>
+                    <p className="text-lg font-bold text-blue-900">{imageDimensions.width}×{imageDimensions.height}px</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700">Crop Size</p>
+                    <p className="text-lg font-bold text-blue-900">{cropCoords.width}×{cropCoords.height}px</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700">Aspect Ratio</p>
+                    <p className="text-lg font-bold text-blue-900">{(cropCoords.width / cropCoords.height).toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700">Coverage</p>
+                    <p className="text-lg font-bold text-blue-900">{Math.round((cropCoords.width * cropCoords.height) / (imageDimensions.width * imageDimensions.height) * 100)}%</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setImageCropModalOpen(false)
+                    setTempImageFile(null)
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setCropCoords({
+                      x: 0,
+                      y: 0,
+                      width: imageDimensions.width,
+                      height: imageDimensions.height
+                    })
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={handleCropConfirm}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  ✓ Crop & Upload
+                </button>
               </div>
             </div>
           </div>
