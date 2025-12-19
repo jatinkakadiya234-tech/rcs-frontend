@@ -314,7 +314,7 @@ const computeSelectedOrderMetrics = (order) => {
   order.results.forEach(r => {
     if (r.entityType !== 'USER_MESSAGE') return
 
-    const userId = r.userPhone || r.from || r.msisdn
+    const userId = r.phone || r.from || r.msisdn
     if (!userId) return
 
     if (!userClickMap[userId]) {
@@ -779,7 +779,7 @@ const { clicked:modalClickedCount, replied:modalRepliedCount, panddingcount:moda
                     <div className="flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mx-auto mb-3">
                       <span className="text-red-600 text-2xl ">👆</span>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">{modalClickedCount || 0}</div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">{modalClickedCount || 0} {console.log(modalClickedCount,"=============")}</div>
                     <div className="text-sm text-gray-500 font-medium">Clickd</div>
                   </div>
                   <div className="text-center">
