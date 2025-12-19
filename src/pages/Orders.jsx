@@ -258,42 +258,118 @@ export default function Orders() {
 
   // const { clicked: modalClickedCount, replied: modalRepliedCount, contentCounts: modalContentCounts } = computeSelectedOrderMetrics(selectedOrder)
 
+// const computeSelectedOrderMetrics = (order) => {
+//   if (!order || !order.results) {
+//     return { clicked: 0, replied: 0, contentCounts: {} }
+//   }
+
+//   const contentCounts = {}
+//   let clicked = 0
+//   let replied = 0
+
+//   order.results.forEach(r => {
+//     if (r.entityType === 'USER_MESSAGE') {
+//       const suggestions = r.suggestionResponse || []
+
+//       suggestions.forEach(s => {
+//         const key = s.plainText || 'unknown'
+//         contentCounts[key] = (contentCounts[key] || 0) + 1
+//       })
+//     }
+//   })
+
+//   Object.keys(contentCounts).forEach(key => {
+//     const count = contentCounts[key]
+
+//     if (count >= 1) {
+//       clicked += 1          // first click
+//     }
+//     if (count > 1) {
+//       replied += (count - 1) // remaining replies
+//     }
+//   })
+
+//   let succsescont = order.results?.filter(r => r.messaestatus === "MESSAGE_DELIVERED" || r.messaestatus === "SEND_MESSAGE_SUCCESS" || r.messaestatus === "MESSAGE_READ").length || 0;
+//   let failedcont = order.results?.filter(r => r.messaestatus === "SEND_MESSAGE_FAILURE"  ? r.messaestatus : r.status === 500 ? r.status : r.error === true).length || 0;
+//   let totalcount = succsescont + failedcont;
+//   let panddingcount = totalcount - (succsescont + failedcont);
+  
+
+
+//   return { clicked, replied, contentCounts , panddingcount ,failedcont}
+// }
+
 const computeSelectedOrderMetrics = (order) => {
   if (!order || !order.results) {
-    return { clicked: 0, replied: 0, contentCounts: {} }
+    return { clicked: 0, replied: 0, contentCounts: {}, pendingcount: 0, failedcont: 0 }
   }
 
-  const contentCounts = {}
   let clicked = 0
   let replied = 0
 
+  const contentCounts = {}
+  const userClickMap = {} // { userId: totalClicks }
+
+  // STEP 1️⃣ : collect user clicks
   order.results.forEach(r => {
-    if (r.entityType === 'USER_MESSAGE') {
-      const suggestions = r.suggestionResponse || []
+    if (r.entityType !== 'USER_MESSAGE') return
 
-      suggestions.forEach(s => {
-        const key = s.plainText || 'unknown'
-        contentCounts[key] = (contentCounts[key] || 0) + 1
-      })
+    const userId = r.userPhone || r.from || r.msisdn
+    if (!userId) return
+
+    if (!userClickMap[userId]) {
+      userClickMap[userId] = 0
+    }
+
+    const suggestions = r.suggestionResponse || []
+
+    suggestions.forEach(s => {
+      const key = s.plainText || 'unknown'
+      contentCounts[key] = (contentCounts[key] || 0) + 1
+
+      userClickMap[userId] += 1
+    })
+  })
+
+  // STEP 2️⃣ : apply rules
+  Object.values(userClickMap).forEach(clickCount => {
+    if (clickCount >= 1) {
+      clicked += 1          // 👈 first click of each user
+    }
+    if (clickCount > 1) {
+      replied += (clickCount - 1) // 👈 repeat clicks
     }
   })
 
-  Object.keys(contentCounts).forEach(key => {
-    const count = contentCounts[key]
+  // STEP 3️⃣ : delivery stats
+  const successcont =
+    order.results.filter(r =>
+      r.messaestatus === "MESSAGE_DELIVERED" ||
+      r.messaestatus === "SEND_MESSAGE_SUCCESS" ||
+      r.messaestatus === "MESSAGE_READ"
+    ).length
 
-    if (count >= 1) {
-      clicked += 1          // first click
-    }
-    if (count > 1) {
-      replied += (count - 1) // remaining replies
-    }
-  })
+  const failedcont =
+    order.results.filter(r =>
+      r.messaestatus === "SEND_MESSAGE_FAILURE" ||
+      r.status === 500 ||
+      r.error === true
+    ).length
 
-  return { clicked, replied, contentCounts }
+  const totalcount = order.results.length
+  const pendingcount = totalcount - (successcont + failedcont)
+
+  return {
+    clicked,
+    replied,
+    contentCounts,
+    pendingcount,
+    failedcont
+  }
 }
-const { clicked:modalClickedCount, replied:modalRepliedCount } = computeSelectedOrderMetrics(selectedOrder)
 
 
+const { clicked:modalClickedCount, replied:modalRepliedCount, panddingcount:modalPanddingCount ,failedcont:modelFildCount } = computeSelectedOrderMetrics(selectedOrder)
 
   const closeModal = () => {
     setShowModal(false)
@@ -696,7 +772,7 @@ const { clicked:modalClickedCount, replied:modalRepliedCount } = computeSelected
                     <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-3">
                       <span className="text-red-600 text-2xl v">⚠</span>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">{selectedOrder.results?.filter(r => r.messaestatus === "SEND_MESSAGE_FAILURE").length || 0}</div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">{modelFildCount}</div>
                     <div className="text-sm text-gray-500 font-medium">Failed</div>
                   </div>
                   <div className="text-center">
@@ -713,6 +789,13 @@ const { clicked:modalClickedCount, replied:modalRepliedCount } = computeSelected
                     <div className="text-3xl font-bold text-gray-900 mb-1">{modalRepliedCount || 0}</div>
                     <div className="text-sm text-gray-500 font-medium">Replyed</div>
                   </div>
+                  {/* <div className="text-center">
+                    <div className="flex items-center justify-center w-16 h-16 bg-blue-200 rounded-full mx-auto mb-3">
+                      <span className="text-red-600 text-2xl mb-2">❗</span>
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">{modalPanddingCount }</div>
+                    <div className="text-sm text-gray-500 font-medium">Pending</div>
+                  </div> */}
                  
                 </div>
               </div>
