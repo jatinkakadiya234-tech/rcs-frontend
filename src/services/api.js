@@ -1,8 +1,8 @@
 import axios from "axios";
 import { getCookie } from "../utils/cookieUtils";
 
-// const API_BASE_URL = "https://rcssender.com/api";
-const API_BASE_URL = "http://localhost:8888/api";
+const API_BASE_URL = "https://rcssender.com/api";
+// const API_BASE_URL = "http://localhost:8888/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
