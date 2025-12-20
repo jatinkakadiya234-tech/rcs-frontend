@@ -1331,7 +1331,7 @@ export default function SendMessageClean() {
                 <button onClick={() => setShowManualImport(true)} className={`px-2 md:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1 md:gap-2 text-sm md:text-base ${checkingCapability ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={checkingCapability}>
                   <FiPlus /> Manual Import
                 </button>
-                <div className="w-48">
+                {/* <div className="w-48">
                   <BatchFileUpload 
                     onNumbersLoaded={(numbers) => {
                       const newContacts = numbers.map(num => ({
@@ -1345,7 +1345,7 @@ export default function SendMessageClean() {
                     }}
                     maxNumbers={10000}
                   />
-                </div>
+                </div> */}
                 {/* <button onClick={() => setShowCountryCode(true)} className="px-2 md:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
                   Insert Country Code
                 </button> */}
