@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { FiCheck, FiUpload, FiX, FiEye, FiSend, FiPlus, FiTrash2 } from 'react-icons/fi'
 import * as XLSX from 'xlsx'
 import ModernTemplatePreview from '../components/ModernTemplatePreview'
+import BatchFileUpload from '../components/BatchFileUpload'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
@@ -47,6 +48,7 @@ export default function SendMessageClean() {
   const [checkingCapability, setCheckingCapability] = useState(false)
   const [sending, setSending] = useState(false)
   const [resultData, setResultData] = useState(null)
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, visible: false })
 
   const showResult = (res) => {
     setResultData(res)
@@ -664,6 +666,14 @@ export default function SendMessageClean() {
       return
     }
     
+    // Show batch progress popup for 100+ numbers
+    if (phoneCount >= 100) {
+      const batchSize = 100
+      const totalBatches = Math.ceil(phoneCount / batchSize)
+      setBatchProgress({ current: 0, total: totalBatches, visible: true })
+      toast.success(`Processing ${phoneCount} numbers in ${totalBatches} batches of ${batchSize}`)
+    }
+    
     setSending(true)
     
     console.log('Selected Message Type:', messageType)
@@ -678,6 +688,7 @@ export default function SendMessageClean() {
     if (messageType === 'carousel') {
       if (carouselCards.length < 2) {
         setSending(false)
+        setBatchProgress({ current: 0, total: 0, visible: false })
         showResult({ success: false, message: 'Carousel requires minimum 2 cards' })
         return
       }
@@ -686,6 +697,7 @@ export default function SendMessageClean() {
       
       if (validCards.length < 2) {
         setSending(false)
+        setBatchProgress({ current: 0, total: 0, visible: false })
         showResult({ success: false, message: 'At least 2 cards must have title, description and image' })
         return
       }
@@ -723,11 +735,13 @@ export default function SendMessageClean() {
     } else if (messageType === 'rcs') {
       if (!mediaUrl) {
         setSending(false)
+        setBatchProgress({ current: 0, total: 0, visible: false })
         showResult({ success: false, message: 'Please upload a valid media file' })
         return
       }
       if (buttons.length === 0) {
         setSending(false)
+        setBatchProgress({ current: 0, total: 0, visible: false })
         showResult({ success: false, message: 'Please add at least one button for RCS message' })
         return
       }
@@ -741,6 +755,7 @@ export default function SendMessageClean() {
       
       if (validButtons.length === 0) {
         setSending(false)
+        setBatchProgress({ current: 0, total: 0, visible: false })
         showResult({ success: false, message: 'Please add at least one valid button (URL or Call)' })
         return
       }
@@ -783,6 +798,7 @@ export default function SendMessageClean() {
     } else if (messageType === 'text-with-action') {
       if (buttons.length === 0) {
         setSending(false)
+        setBatchProgress({ current: 0, total: 0, visible: false })
         showResult({ success: false, message: 'Please add at least one button for text with action' })
         return
       }
@@ -791,6 +807,7 @@ export default function SendMessageClean() {
       
       if (validButtons.length === 0) {
         setSending(false)
+        setBatchProgress({ current: 0, total: 0, visible: false })
         showResult({ success: false, message: 'Please add at least one valid button' })
         return
       }
@@ -829,6 +846,7 @@ export default function SendMessageClean() {
     } else if (messageType === 'webview') {
       if (buttons.length === 0) {
         setSending(false)
+        setBatchProgress({ current: 0, total: 0, visible: false })
         showResult({ success: false, message: 'Please add at least one button for webview message' })
         return
       }
@@ -841,6 +859,7 @@ export default function SendMessageClean() {
       
       if (validButtons.length === 0) {
         setSending(false)
+        setBatchProgress({ current: 0, total: 0, visible: false })
         showResult({ success: false, message: 'Please add at least one valid button' })
         return
       }
@@ -863,6 +882,7 @@ export default function SendMessageClean() {
     } else if (messageType === 'dialer-action') {
       if (buttons.length === 0) {
         setSending(false)
+        setBatchProgress({ current: 0, total: 0, visible: false })
         showResult({ success: false, message: 'Please add at least one dialer button' })
         return
       }
@@ -870,6 +890,7 @@ export default function SendMessageClean() {
       const validButtons = buttons.filter(btn => btn.title && btn.value && btn.value.startsWith('+'))
       if (validButtons.length === 0) {
         setSending(false)
+        setBatchProgress({ current: 0, total: 0, visible: false })
         showResult({ success: false, message: 'Please add at least one button with valid phone number starting with +' })
         return
       }
@@ -894,11 +915,19 @@ export default function SendMessageClean() {
     }
     
     try {
-     
       const response = await api.sendMessage(payload)
-       console.log(response,"sscscssc");
+      console.log(response,"sscscssc");
+      
       if (response.data.success) {
-        toast.success(`Messages sent successfully!`)
+        const { data } = response.data
+        setBatchProgress({ current: 0, total: 0, visible: false })
+        
+        if (data.batchInfo) {
+          toast.success(`✅ Campaign sent successfully in ${data.batchInfo.totalBatches} batches! Success: ${data.successCount}, Failed: ${data.failedCount}`)
+        } else {
+          toast.success(`Messages sent successfully!`)
+        }
+        
         await refreshUser()
         
         // Redirect to reports page after 1.5 seconds
@@ -906,10 +935,9 @@ export default function SendMessageClean() {
           navigate('/reports')
         }, 1000)
       }
-     
-    
-
     } catch (error) {
+      setBatchProgress({ current: 0, total: 0, visible: false })
+      
       if (error.response?.data?.message === 'Insufficient balance') {
         toast.error(`Insufficient credits! Required: ₹${error.response.data.required}, Available: ₹${error.response.data.available}`)
         showResult({ 
@@ -919,9 +947,7 @@ export default function SendMessageClean() {
       } else {
         console.log(error);
         toast.error(error?.response?.data?.message || 'Failed to send message')
-        // setResultData({ success: false, message: error.message || 'Failed to send message' })
       }
-      // result shown via toast
     } finally {
       setSending(false)
     }
@@ -1305,6 +1331,21 @@ export default function SendMessageClean() {
                 <button onClick={() => setShowManualImport(true)} className={`px-2 md:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1 md:gap-2 text-sm md:text-base ${checkingCapability ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={checkingCapability}>
                   <FiPlus /> Manual Import
                 </button>
+                <div className="w-48">
+                  <BatchFileUpload 
+                    onNumbersLoaded={(numbers) => {
+                      const newContacts = numbers.map(num => ({
+                        id: Date.now() + Math.random(),
+                        number: num,
+                        vars: {},
+                        capable: true
+                      }))
+                      setContacts([...contacts, ...newContacts])
+                      toast.success(`${numbers.length} numbers added from file`)
+                    }}
+                    maxNumbers={10000}
+                  />
+                </div>
                 {/* <button onClick={() => setShowCountryCode(true)} className="px-2 md:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-1 md:gap-2 text-sm md:text-base">
                   Insert Country Code
                 </button> */}
@@ -1626,6 +1667,38 @@ export default function SendMessageClean() {
                 >
                   {checkingCapability ? 'Checking...' : 'Import'}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Progress Modal */}
+      {batchProgress.visible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-96 max-w-md mx-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Processing Messages in Batches</h3>
+              <p className="text-gray-600 mb-4">Sending messages in batches of 100 for optimal delivery</p>
+              
+              <div className="bg-gray-200 rounded-full h-2 mb-2">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${batchProgress.total > 0 ? (batchProgress.current / batchProgress.total) * 100 : 0}%` }}
+                ></div>
+              </div>
+              
+              <p className="text-sm text-gray-500">
+                Batch {batchProgress.current} of {batchProgress.total}
+              </p>
+              
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  🚀 Optimized batch processing ensures better delivery rates and prevents API overload
+                </p>
               </div>
             </div>
           </div>

@@ -1,8 +1,8 @@
 import axios from "axios";
 import { getCookie } from "../utils/cookieUtils";
 
-const API_BASE_URL = "https://rcssender.com/api";
-// const API_BASE_URL = "http://localhost:8888/api";
+// const API_BASE_URL = "https://rcssender.com/api";
+const API_BASE_URL = "http://localhost:8888/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -50,6 +50,10 @@ class ApiService {
 
   async sendMessage(campaignData) {
     return await api.post("/sendMessage", campaignData);
+  }
+  
+  async sendBatchMessage(campaignData) {
+    return await api.post("/sendBatchMessage", campaignData);
   }
   async chackcapebalNumber(phoneNumbers, userId) {
     return await api.post("/checkAvablityNumber", {
