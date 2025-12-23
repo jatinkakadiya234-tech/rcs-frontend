@@ -156,12 +156,19 @@ export default function Orders() {
   };
 
   const getStatusBadge = (order) => {
-    if (!order.results || order.results.length === 0) {
+    if (order.successCount > order.failedCount) {
       return (
-        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium">
-          Pending
+        <span className="px-2 py-1 bg-green-600 text-white text-xs rounded-full font-medium">
+          Success
         </span>
       );
+    }
+    if (order.failedCount > 0) {
+      return (
+        <span className="px-2 py-1 bg-red-600 text-white text-xs rounded-full font-medium">
+          Failed
+        </span>
+      )
     }
 
     const successCount = order?.results?.filter(
