@@ -475,7 +475,7 @@ export default function Dashboard() {
 
       setStats({
         totalMessages: statsData.data?.totalMessages || 0,
-        sentMessages: statsData.data?.sentMessages || 0,
+        sentMessages:messages.length || 0,
         pendingMessages: statsData.data?.pendingMessages || 0,
         failedMessages: statsData.data?.failedMessages || 0,
         totalTemplates: statsData?.data?.sendtoteltemplet || 0,
@@ -721,7 +721,7 @@ export default function Dashboard() {
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                               <span className="text-purple-600 text-xs font-bold">
-                                {message.phoneNumbers?.length || 0}
+                                {message?.cost || 0}
                               </span>
                             </div>
                             <span className="text-slate-600 text-sm">contacts</span>
@@ -731,24 +731,24 @@ export default function Dashboard() {
                           <div className="flex items-center gap-2">
                             <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
                               <FiCheckCircle className="text-sm" />
-                              {message.status === "sent" ? message.successCount : 0}
+                              { message?.successCount || 0}
                             </span>
                             <span className="text-slate-400">/</span>
                             <span className="flex items-center gap-1.5 text-rose-600 font-semibold">
                               <FiXCircle className="text-sm" />
-                              {message.failedCount || 0}
+                              {message?.failedCount || 0}
                             </span>
                           </div>
                         </td>
                         <td className="py-4 px-6">
                           <span
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 ${
-                              message.status === "sent"
+                              message?.successCount >= message?.failedCount
                                 ? "bg-emerald-100 text-emerald-700"
                                 : "bg-rose-100 text-rose-700"
                             }`}
                           >
-                            {message.status === "sent" ? <FiCheckCircle /> : <FiAlertCircle />}
+                           { message?.successCount >= message?.failedCount ? <FiCheckCircle /> : <FiAlertCircle />}
                             {message.status}
                           </span>
                         </td>

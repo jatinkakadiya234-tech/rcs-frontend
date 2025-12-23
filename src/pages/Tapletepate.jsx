@@ -506,7 +506,7 @@ export default function Tapletepate() {
                 
                 <div className="bg-white p-4">
                   {/* Plain Text Message */}
-                  {previewData?.messageType === 'plain-text' && previewData?.text && (
+                  {previewData?.messageType === 'text' && previewData?.text && (
                     <div className="bg-gray-100 p-3 rounded-lg max-w-xs">
                       <p className="text-sm text-gray-800 whitespace-pre-wrap">{previewData.text}</p>
                     </div>
@@ -748,7 +748,7 @@ export default function Tapletepate() {
                 </div>
 
                 {/* Message Editor - Only for text and text-with-action */}
-                {(messageType === 'text' || messageType === 'text-with-action') && (
+                {(messageType === 'text') && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <span className="text-red-500">*</span> Text
@@ -1314,7 +1314,7 @@ export default function Tapletepate() {
                 
                 <div className="p-4 min-h-600px]">
                   {/* Plain Text Preview */}
-                  {messageType === 'plain-text' && formData.text && (
+                  {messageType === 'text' && formData.text && (
                     <div className="bg-gray-100 p-3 rounded-lg max-w-xs">
                       <p className="text-sm text-gray-800 whitespace-pre-wrap">{formData.text}</p>
                     </div>
@@ -1431,7 +1431,12 @@ export default function Tapletepate() {
                   )}
                   
                   {/* Empty State */}
-                  {!formData.text && (
+                  {!formData.text && messageType === 'text' && (
+                    <div className="bg-gray-100 p-3 rounded-lg max-w-xs">
+                      <p className="text-sm text-gray-500 italic">Type your message here...</p>
+                    </div>
+                  )}
+                  {!formData.text && messageType !== 'text' && (
                     <div className="flex items-center justify-center h-full text-gray-400">
                       <div className="text-center">
                         <p className="text-sm">Start typing to see preview</p>

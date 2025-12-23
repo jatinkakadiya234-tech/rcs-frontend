@@ -10,8 +10,7 @@ export default function ModernTemplatePreview({
   carouselCards,
   listMenuItems 
 }) {
-  if (!selectedTemplate) return null
-
+console.log(message,"======================");
   return (
     <div className="mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200 shadow-lg">
       <div className="flex items-center justify-between mb-4">
@@ -20,7 +19,7 @@ export default function ModernTemplatePreview({
           Live Preview
         </h3>
         <span className="px-3 py-1 bg-blue-500 text-white text-xs font-semibold rounded-full">
-          {selectedTemplate.name}
+          {selectedTemplate?.name || messageType || 'Preview'}
         </span>
       </div>
       
@@ -41,9 +40,9 @@ export default function ModernTemplatePreview({
         <div className="p-4 bg-gray-50">
           <div className="bg-white rounded-lg shadow-md p-4 max-w-sm">
             {/* Message Text */}
-            {message && (
-              <p className="text-gray-800 text-sm mb-3 whitespace-pre-wrap">{message}</p>
-            )}
+            <p className="text-gray-800 text-sm mb-3 whitespace-pre-wrap">
+              {message || 'Type your message here...'}
+            </p>
             
             {/* Media Preview */}
             {templateMedia && ['RCS Rich Card', 'Carousel', 'List With Media'].includes(messageType) && (
