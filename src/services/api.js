@@ -48,11 +48,6 @@ class ApiService {
     return data;
   }
 
-  async getMessageStatus(userId, campaignName) {
-    const { data } = await api.get(`/message-status/${userId}/${campaignName}`);
-    return data;
-  }
-
   async sendMessage(campaignData) {
     return await api.post("/v1/send-message/send", campaignData);
   }
