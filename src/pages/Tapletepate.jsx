@@ -1640,3 +1640,1269 @@ export default function Tapletepate() {
     </div>
   )
 }
+
+
+
+
+
+// "use client"
+
+// import { useState, useEffect } from "react"
+// import { FaEdit, FaTrash, FaTimes, FaPlus, FaEye, FaImage, FaFileAlt, FaLayerGroup, FaUpload } from "react-icons/fa"
+
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api/templates"
+
+// // Mock utility function - replace with your actual implementation
+// const getMessageTypeLabel = (type) => {
+//   const labels = {
+//     text: "Plain Text",
+//     "plain-text": "Plain Text",
+//     "text-with-action": "Text with Actions",
+//     rcs: "RCS Rich Card",
+//     carousel: "Carousel",
+//     image: "Image",
+//     button: "Button",
+//   }
+//   return labels[type] || type
+// }
+
+// export default function TemplateManager() {
+//   const [templates, setTemplates] = useState([])
+//   const [loading, setLoading] = useState(false)
+//   const [error, setError] = useState("")
+
+//   const [isModalOpen, setIsModalOpen] = useState(false)
+//   const [editingTemplate, setEditingTemplate] = useState(null)
+//   const [formData, setFormData] = useState({
+//     name: "",
+//     text: "",
+//     imageUrl: "",
+//   })
+//   const [messageType, setMessageType] = useState("text")
+//   const [actions, setActions] = useState([{ type: "reply", title: "", payload: "" }])
+//   const [richCard, setRichCard] = useState({ title: "", subtitle: "", imageUrl: "", actions: [] })
+//   const [carouselItems, setCarouselItems] = useState([{ title: "", subtitle: "", imageUrl: "", actions: [] }])
+//   const [carouselSuggestions, setCarouselSuggestions] = useState([])
+//   const [previewOpen, setPreviewOpen] = useState(false)
+//   const [previewData, setPreviewData] = useState(null)
+//   const [uploadingFile, setUploadingFile] = useState(false)
+
+//   useEffect(() => {
+//     fetchTemplates()
+//   }, [])
+
+//   const fetchTemplates = async () => {
+//     setLoading(true)
+//     setError("")
+//     try {
+//       const response = await fetch(API_BASE_URL)
+//       if (!response.ok) throw new Error("Failed to fetch templates")
+//       const data = await response.json()
+//       setTemplates(data)
+//     } catch (err) {
+//       setError(err.message)
+//       console.error("Error fetching templates:", err)
+//     } finally {
+//       setLoading(false)
+//     }
+//   }
+
+//   const handleFileUpload = async (file, target = "richCard") => {
+//     if (!file) return
+
+//     setUploadingFile(true)
+//     const formData = new FormData()
+//     formData.append("file", file)
+
+//     try {
+//       const response = await fetch("/api/upload", {
+//         method: "POST",
+//         body: formData,
+//       })
+
+//       if (!response.ok) throw new Error("File upload failed")
+
+//       const data = await response.json()
+//       const fileUrl = data.url
+
+//       // Update the appropriate state based on target
+//       if (target === "richCard") {
+//         setRichCard({ ...richCard, imageUrl: fileUrl })
+//       } else if (target.startsWith("carousel-")) {
+//         const index = Number.parseInt(target.split("-")[1])
+//         const newItems = [...carouselItems]
+//         newItems[index].imageUrl = fileUrl
+//         setCarouselItems(newItems)
+//       }
+//     } catch (err) {
+//       setError(err.message)
+//       console.error("Error uploading file:", err)
+//     } finally {
+//       setUploadingFile(false)
+//     }
+//   }
+
+//   const handlePreview = (template) => {
+//     setPreviewData(template)
+//     setPreviewOpen(true)
+//   }
+
+//   const handleEdit = (template) => {
+//     setEditingTemplate(template)
+//     setFormData({
+//       name: template.name,
+//       text: template.text || "",
+//       imageUrl: template.imageUrl || "",
+//     })
+//     setMessageType(template.messageType)
+//     setActions(template.actions || [{ type: "reply", title: "", payload: "" }])
+//     setRichCard(template.richCard || { title: "", subtitle: "", imageUrl: "", actions: [] })
+//     setCarouselItems(template.carouselItems || [{ title: "", subtitle: "", imageUrl: "", actions: [] }])
+//     setCarouselSuggestions(template.carouselSuggestions || [])
+//     setIsModalOpen(true)
+//   }
+
+//   const handleDelete = async (id) => {
+//     if (!window.confirm("Are you sure you want to delete this template?")) return
+
+//     try {
+//       const response = await fetch(`${API_BASE_URL}/${id}`, {
+//         method: "DELETE",
+//       })
+
+//       if (!response.ok) throw new Error("Failed to delete template")
+
+//       setTemplates(templates.filter((t) => t._id !== id))
+//     } catch (err) {
+//       setError(err.message)
+//       console.error("Error deleting template:", err)
+//     }
+//   }
+
+//   const resetForm = () => {
+//     setFormData({ name: "", text: "", imageUrl: "" })
+//     setMessageType("text")
+//     setActions([{ type: "reply", title: "", payload: "" }])
+//     setRichCard({ title: "", subtitle: "", imageUrl: "", actions: [] })
+//     setCarouselItems([{ title: "", subtitle: "", imageUrl: "", actions: [] }])
+//     setCarouselSuggestions([])
+//     setEditingTemplate(null)
+//   }
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault()
+
+//     if (!formData.name.trim()) {
+//       setError("Template name is required")
+//       return
+//     }
+
+//     const templateData = {
+//       name: formData.name.trim(),
+//       messageType,
+//       text: formData.text.trim(),
+//       imageUrl: formData.imageUrl.trim(),
+//       actions,
+//       richCard,
+//       carouselItems,
+//       carouselSuggestions,
+//     }
+
+//     try {
+//       const url = editingTemplate ? `${API_BASE_URL}/${editingTemplate._id}` : API_BASE_URL
+//       const method = editingTemplate ? "PUT" : "POST"
+
+//       const response = await fetch(url, {
+//         method,
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.JSON.stringify(templateData),
+//       })
+
+//       if (!response.ok) throw new Error("Failed to save template")
+
+//       const savedTemplate = await response.json()
+
+//       if (editingTemplate) {
+//         setTemplates(templates.map((t) => (t._id === editingTemplate._id ? savedTemplate : t)))
+//       } else {
+//         setTemplates([...templates, savedTemplate])
+//       }
+
+//       resetForm()
+//       setIsModalOpen(false)
+//       setError("")
+//     } catch (err) {
+//       setError(err.message)
+//       console.error("Error saving template:", err)
+//     }
+//   }
+
+//   const addAction = (target = "main") => {
+//     const newAction = { type: "reply", title: "", payload: "" }
+//     if (target === "main") {
+//       setActions([...actions, newAction])
+//     } else if (target === "richCard") {
+//       setRichCard({ ...richCard, actions: [...richCard.actions, newAction] })
+//     }
+//   }
+
+//   const removeAction = (index, target = "main") => {
+//     if (target === "main") {
+//       setActions(actions.filter((_, i) => i !== index))
+//     } else if (target === "richCard") {
+//       setRichCard({ ...richCard, actions: richCard.actions.filter((_, i) => i !== index) })
+//     }
+//   }
+
+//   const addCarouselAction = (carouselIndex) => {
+//     const newItems = [...carouselItems]
+//     newItems[carouselIndex].actions.push({ title: "", type: "reply", value: "" })
+//     setCarouselItems(newItems)
+//   }
+
+//   const removeCarouselAction = (carouselIndex, actionIndex) => {
+//     const newItems = [...carouselItems]
+//     newItems[carouselIndex].actions = newItems[carouselIndex].actions.filter((_, i) => i !== actionIndex)
+//     setCarouselItems(newItems)
+//   }
+
+//   const removeCarouselItem = (index) => {
+//     setCarouselItems(carouselItems.filter((_, i) => i !== index))
+//   }
+
+//   const addCarouselItem = () => {
+//     setCarouselItems([...carouselItems, { title: "", subtitle: "", imageUrl: "", actions: [] }])
+//   }
+
+//   return (
+//     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+//       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+//         {/* Header Section */}
+//         <div className="mb-8">
+//           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+//             <div>
+//               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+//                 Message Templates
+//               </h1>
+//               <p className="mt-2 text-sm sm:text-base text-slate-600">Create and manage your messaging templates</p>
+//             </div>
+//             <button
+//               onClick={() => setIsModalOpen(true)}
+//               className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
+//             >
+//               <FaPlus className="text-sm" />
+//               <span>Create Template</span>
+//             </button>
+//           </div>
+//         </div>
+
+//         {error && (
+//           <div className="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 flex items-center justify-between">
+//             <span>{error}</span>
+//             <button onClick={() => setError("")} className="text-red-700 hover:text-red-900">
+//               <FaTimes />
+//             </button>
+//           </div>
+//         )}
+
+//         {/* Table Container */}
+//         <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+//           {/* Desktop Table View */}
+//           <div className="hidden lg:block overflow-x-auto">
+//             <table className="w-full">
+//               <thead>
+//                 <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
+//                   <th className="text-left py-4 px-6 font-semibold text-white text-sm uppercase tracking-wide">#</th>
+//                   <th className="text-left py-4 px-6 font-semibold text-white text-sm uppercase tracking-wide">Name</th>
+//                   <th className="text-left py-4 px-6 font-semibold text-white text-sm uppercase tracking-wide">Type</th>
+//                   <th className="text-left py-4 px-6 font-semibold text-white text-sm uppercase tracking-wide">
+//                     Preview
+//                   </th>
+//                   <th className="text-left py-4 px-6 font-semibold text-white text-sm uppercase tracking-wide">
+//                     Actions
+//                   </th>
+//                   <th className="text-left py-4 px-6 font-semibold text-white text-sm uppercase tracking-wide">
+//                     Status
+//                   </th>
+//                 </tr>
+//               </thead>
+//               <tbody className="divide-y divide-slate-100">
+//                 {loading ? (
+//                   <tr>
+//                     <td colSpan="6" className="py-12 text-center text-slate-500">
+//                       <div className="flex items-center justify-center gap-2">
+//                         <div className="w-5 h-5 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+//                         Loading templates...
+//                       </div>
+//                     </td>
+//                   </tr>
+//                 ) : templates.length === 0 ? (
+//                   <tr>
+//                     <td colSpan="6" className="py-16 text-center">
+//                       <div className="flex flex-col items-center gap-3">
+//                         <FaFileAlt className="text-5xl text-slate-300" />
+//                         <p className="text-slate-500 text-lg">No templates found</p>
+//                         <button
+//                           onClick={() => setIsModalOpen(true)}
+//                           className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+//                         >
+//                           Create your first template
+//                         </button>
+//                       </div>
+//                     </td>
+//                   </tr>
+//                 ) : (
+//                   templates.map((template, index) => (
+//                     <tr key={template._id} className="hover:bg-blue-50/50 transition-colors duration-200">
+//                       <td className="py-4 px-6">
+//                         <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700 rounded-full text-sm font-bold shadow-sm">
+//                           {index + 1}
+//                         </div>
+//                       </td>
+//                       <td className="py-4 px-6">
+//                         <div className="flex items-center gap-3">
+//                           <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg shadow-sm">
+//                             {template.messageType === "rcs" ? (
+//                               <FaImage className="text-white text-sm" />
+//                             ) : template.messageType === "carousel" ? (
+//                               <FaLayerGroup className="text-white text-sm" />
+//                             ) : (
+//                               <FaFileAlt className="text-white text-sm" />
+//                             )}
+//                           </div>
+//                           <span className="font-semibold text-slate-800">{template.name}</span>
+//                         </div>
+//                       </td>
+//                       <td className="py-4 px-6">
+//                         <span className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 rounded-full text-xs font-semibold shadow-sm">
+//                           {getMessageTypeLabel(template.messageType)}
+//                         </span>
+//                       </td>
+//                       <td className="py-4 px-6">
+//                         <button
+//                           onClick={() => handlePreview(template)}
+//                           className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-blue-100 hover:text-blue-700 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow"
+//                         >
+//                           <FaEye className="text-xs" />
+//                           View
+//                         </button>
+//                       </td>
+//                       <td className="py-4 px-6">
+//                         <div className="flex items-center gap-2 flex-wrap">
+//                           <button
+//                             onClick={() => handleEdit(template)}
+//                             className="flex items-center gap-1.5 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 border border-blue-200 hover:border-blue-300 rounded-lg shadow-sm hover:shadow font-medium text-sm"
+//                           >
+//                             <FaEdit className="text-xs" />
+//                             <span className="hidden xl:inline">Edit</span>
+//                           </button>
+//                           <button
+//                             onClick={() => handleDelete(template._id)}
+//                             className="flex items-center gap-1.5 px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 border border-red-200 hover:border-red-300 rounded-lg shadow-sm hover:shadow font-medium text-sm"
+//                           >
+//                             <FaTrash className="text-xs" />
+//                             <span className="hidden xl:inline">Delete</span>
+//                           </button>
+//                           {(template.actions?.length > 0 || template.richCard?.actions?.length > 0) && (
+//                             <div className="flex gap-1 ml-2">
+//                               {[...(template.actions || []), ...(template.richCard?.actions || [])].map(
+//                                 (action, idx) => (
+//                                   <span
+//                                     key={idx}
+//                                     className="inline-flex items-center px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-semibold"
+//                                     title={action.title}
+//                                   >
+//                                     {action.type === "call" ? "📞" : action.type === "url" ? "🔗" : "💬"}
+//                                   </span>
+//                                 ),
+//                               )}
+//                             </div>
+//                           )}
+//                         </div>
+//                       </td>
+//                       <td className="py-4 px-6">
+//                         {(() => {
+//                           const createdDate = new Date(template.createdAt)
+//                           const now = new Date()
+//                           const secondsDiff = (now - createdDate) / 1000
+
+//                           if (secondsDiff < 3) {
+//                             return (
+//                               <span className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 rounded-full text-xs font-semibold shadow-sm">
+//                                 <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse"></span>
+//                                 Pending
+//                               </span>
+//                             )
+//                           } else {
+//                             return (
+//                               <span className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-full text-xs font-semibold shadow-sm">
+//                                 <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+//                                 Approved
+//                               </span>
+//                             )
+//                           }
+//                         })()}
+//                       </td>
+//                     </tr>
+//                   ))
+//                 )}
+//               </tbody>
+//             </table>
+//           </div>
+
+//           {/* Mobile Card View */}
+//           <div className="lg:hidden divide-y divide-slate-100">
+//             {loading ? (
+//               <div className="py-12 text-center text-slate-500">
+//                 <div className="flex items-center justify-center gap-2">
+//                   <div className="w-5 h-5 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+//                   Loading templates...
+//                 </div>
+//               </div>
+//             ) : templates.length === 0 ? (
+//               <div className="py-16 text-center px-4">
+//                 <FaFileAlt className="text-5xl text-slate-300 mx-auto mb-4" />
+//                 <p className="text-slate-500 text-lg mb-4">No templates found</p>
+//                 <button
+//                   onClick={() => setIsModalOpen(true)}
+//                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+//                 >
+//                   Create your first template
+//                 </button>
+//               </div>
+//             ) : (
+//               templates.map((template, index) => (
+//                 <div key={template._id} className="p-4 hover:bg-blue-50/50 transition-colors">
+//                   <div className="flex items-start justify-between mb-3">
+//                     <div className="flex items-center gap-3 flex-1">
+//                       <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700 rounded-full text-sm font-bold shadow-sm flex-shrink-0">
+//                         {index + 1}
+//                       </div>
+//                       <div className="flex-1 min-w-0">
+//                         <h3 className="font-semibold text-slate-800 truncate">{template.name}</h3>
+//                         <span className="inline-flex items-center px-2 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 rounded-full text-xs font-semibold shadow-sm mt-1">
+//                           {getMessageTypeLabel(template.messageType)}
+//                         </span>
+//                       </div>
+//                     </div>
+//                     <div className="ml-2">
+//                       {(() => {
+//                         const createdDate = new Date(template.createdAt)
+//                         const now = new Date()
+//                         const secondsDiff = (now - createdDate) / 1000
+
+//                         if (secondsDiff < 3) {
+//                           return (
+//                             <span className="inline-flex items-center px-2 py-1 bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 rounded-full text-xs font-semibold shadow-sm whitespace-nowrap">
+//                               <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full mr-1.5 animate-pulse"></span>
+//                               Pending
+//                             </span>
+//                           )
+//                         } else {
+//                           return (
+//                             <span className="inline-flex items-center px-2 py-1 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-full text-xs font-semibold shadow-sm whitespace-nowrap">
+//                               <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
+//                               Approved
+//                             </span>
+//                           )
+//                         }
+//                       })()}
+//                     </div>
+//                   </div>
+
+//                   <div className="flex items-center gap-2 flex-wrap">
+//                     <button
+//                       onClick={() => handlePreview(template)}
+//                       className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-blue-100 hover:text-blue-700 transition-all duration-200 text-xs font-medium shadow-sm"
+//                     >
+//                       <FaEye className="text-xs" />
+//                       Preview
+//                     </button>
+//                     <button
+//                       onClick={() => handleEdit(template)}
+//                       className="flex items-center gap-1.5 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 border border-blue-200 hover:border-blue-300 rounded-lg shadow-sm font-medium text-xs"
+//                     >
+//                       <FaEdit className="text-xs" />
+//                       Edit
+//                     </button>
+//                     <button
+//                       onClick={() => handleDelete(template._id)}
+//                       className="flex items-center gap-1.5 px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 border border-red-200 hover:border-red-300 rounded-lg shadow-sm font-medium text-xs"
+//                     >
+//                       <FaTrash className="text-xs" />
+//                       Delete
+//                     </button>
+//                     {(template.actions?.length > 0 || template.richCard?.actions?.length > 0) && (
+//                       <div className="flex gap-1">
+//                         {[...(template.actions || []), ...(template.richCard?.actions || [])].map((action, idx) => (
+//                           <span
+//                             key={idx}
+//                             className="inline-flex items-center px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-semibold"
+//                             title={action.title}
+//                           >
+//                             {action.type === "call" ? "📞" : action.type === "url" ? "🔗" : "💬"}
+//                           </span>
+//                         ))}
+//                       </div>
+//                     )}
+//                   </div>
+//                 </div>
+//               ))
+//             )}
+//           </div>
+
+//           {/* Pagination */}
+//           <div className="flex items-center justify-center gap-2 p-6 border-t border-slate-200 bg-slate-50">
+//             <button className="flex items-center justify-center w-10 h-10 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-slate-200 hover:border-blue-300">
+//               &lt;
+//             </button>
+//             <button className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 font-semibold transform hover:scale-105">
+//               1
+//             </button>
+//             <button className="flex items-center justify-center w-10 h-10 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-slate-200 hover:border-blue-300">
+//               2
+//             </button>
+//             <button className="flex items-center justify-center w-10 h-10 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-slate-200 hover:border-blue-300">
+//               3
+//             </button>
+//             <button className="flex items-center justify-center w-10 h-10 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-slate-200 hover:border-blue-300">
+//               &gt;
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Preview Modal */}
+//       {previewOpen && (
+//         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+//           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto">
+//             <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-2xl z-10">
+//               <div className="flex items-center justify-between">
+//                 <div>
+//                   <h2 className="text-2xl font-bold">Template Preview</h2>
+//                   <p className="text-blue-100 text-sm mt-1">{previewData?.name}</p>
+//                 </div>
+//                 <button
+//                   onClick={() => setPreviewOpen(false)}
+//                   className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+//                 >
+//                   <FaTimes className="text-xl" />
+//                 </button>
+//               </div>
+//             </div>
+
+//             <div className="p-6 bg-slate-50">
+//               <div className="bg-white rounded-xl shadow-lg p-6 max-w-md mx-auto">
+//                 {/* Plain Text Message */}
+//                 {(previewData?.messageType === "plain-text" || previewData?.messageType === "text") &&
+//                   previewData?.text && (
+//                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 shadow-sm">
+//                       <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">{previewData.text}</p>
+//                     </div>
+//                   )}
+
+//                 {/* Text with Actions */}
+//                 {previewData?.messageType === "text-with-action" && (
+//                   <div className="space-y-3">
+//                     {previewData?.text && (
+//                       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 shadow-sm">
+//                         <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">{previewData.text}</p>
+//                       </div>
+//                     )}
+//                     {previewData?.actions?.length > 0 && (
+//                       <div className="space-y-2">
+//                         {previewData.actions.map((action, index) => (
+//                           <button
+//                             key={index}
+//                             className="w-full py-3 border-2 border-blue-500 text-blue-600 hover:bg-blue-50 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow flex items-center justify-center gap-2"
+//                           >
+//                             <span>{action.type === "call" ? "📞" : action.type === "url" ? "🔗" : "💬"}</span>
+//                             <span>{action.title}</span>
+//                             <span className="text-xs bg-blue-100 px-2 py-0.5 rounded-full">{action.type}</span>
+//                           </button>
+//                         ))}
+//                       </div>
+//                     )}
+//                   </div>
+//                 )}
+
+//                 {/* RCS Rich Card */}
+//                 {previewData?.messageType === "rcs" && (
+//                   <div className="border-2 border-slate-200 rounded-xl overflow-hidden shadow-lg">
+//                     {(previewData?.imageUrl || previewData?.richCard?.imageUrl) && (
+//                       <img
+//                         src={previewData?.imageUrl || previewData?.richCard?.imageUrl}
+//                         alt="RCS Card"
+//                         className="w-full h-48 object-cover"
+//                       />
+//                     )}
+//                     <div className="p-4 bg-white">
+//                       {(previewData?.richCard?.title || previewData?.text) && (
+//                         <h4 className="font-bold text-slate-900 mb-2 text-lg">
+//                           {previewData?.richCard?.title || previewData?.text}
+//                         </h4>
+//                       )}
+//                       {previewData?.richCard?.subtitle && (
+//                         <p className="text-sm text-slate-600 mb-3">{previewData.richCard.subtitle}</p>
+//                       )}
+//                       {(previewData?.richCard?.actions || previewData?.actions)?.length > 0 && (
+//                         <div className="space-y-2">
+//                           {(previewData?.richCard?.actions || previewData?.actions).map((action, index) => (
+//                             <button
+//                               key={index}
+//                               className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+//                             >
+//                               <span>{action.type === "call" ? "📞" : action.type === "url" ? "🔗" : "💬"}</span>
+//                               <span>{action.title}</span>
+//                               <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{action.type}</span>
+//                             </button>
+//                           ))}
+//                         </div>
+//                       )}
+//                     </div>
+//                   </div>
+//                 )}
+
+//                 {/* Carousel */}
+//                 {previewData?.messageType === "carousel" && previewData?.carouselItems?.length > 0 && (
+//                   <div>
+//                     <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+//                       {previewData.carouselItems.map((item, index) => (
+//                         <div
+//                           key={index}
+//                           className="border-2 border-slate-200 rounded-xl min-w-[240px] overflow-hidden shadow-lg flex-shrink-0"
+//                         >
+//                           {item.imageUrl && (
+//                             <div className="relative">
+//                               <img
+//                                 src={item.imageUrl || "/placeholder.svg?height=150&width=240&query=carousel item"}
+//                                 alt={`Carousel ${index + 1}`}
+//                                 className="w-full h-32 object-cover"
+//                               />
+//                               <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+//                                 {index + 1}/{previewData.carouselItems.length}
+//                               </div>
+//                             </div>
+//                           )}
+//                           <div className="p-3 bg-white">
+//                             <h5 className="font-semibold text-sm text-slate-900">{item.title}</h5>
+//                             {item.subtitle && <p className="text-xs text-slate-600 mt-1">{item.subtitle}</p>}
+//                             {item.actions?.length > 0 && (
+//                               <div className="space-y-1 mt-2">
+//                                 {item.actions.map((action, actionIndex) => (
+//                                   <button
+//                                     key={actionIndex}
+//                                     className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all flex items-center justify-center gap-1"
+//                                   >
+//                                     <span>{action.type === "call" ? "📞" : action.type === "url" ? "🔗" : "💬"}</span>{" "}
+//                                     <span>{action.title}</span>
+//                                   </button>
+//                                 ))}
+//                               </div>
+//                             )}
+//                           </div>
+//                         </div>
+//                       ))}
+//                     </div>
+//                     <div className="text-xs text-slate-500 text-center mt-2 flex items-center justify-center gap-1">
+//                       <span>←</span>
+//                       <span>Swipe to see more items</span>
+//                       <span>→</span>
+//                     </div>
+//                   </div>
+//                 )}
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Create/Edit Modal */}
+//       {isModalOpen && (
+//         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in overflow-y-auto">
+//           <div className="bg-white rounded-2xl w-full max-w-6xl shadow-2xl animate-scale-in my-8 max-h-[95vh] flex flex-col">
+//             {/* Modal Header */}
+//             <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-2xl z-10 flex-shrink-0">
+//               <div className="flex items-center justify-between">
+//                 <div>
+//                   <h2 className="text-2xl sm:text-3xl font-bold">
+//                     {editingTemplate ? "Edit Template" : "Create New Template"}
+//                   </h2>
+//                   <p className="text-blue-100 text-sm mt-1">Design your perfect message template</p>
+//                 </div>
+//                 <button
+//                   onClick={() => {
+//                     setIsModalOpen(false)
+//                     resetForm()
+//                   }}
+//                   className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors flex-shrink-0"
+//                 >
+//                   <FaTimes className="text-xl" />
+//                 </button>
+//               </div>
+//             </div>
+
+//             {/* Modal Body - Scrollable */}
+//             <div className="flex-1 overflow-y-auto">
+//               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+//                 {/* Left Side - Form */}
+//                 <div className="space-y-6">
+//                   <form onSubmit={handleSubmit} className="space-y-6">
+//                     {/* Template Name & Message Type */}
+//                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//                       <div>
+//                         <label className="block text-sm font-semibold text-slate-700 mb-2">
+//                           <span className="text-red-500">*</span> Template Name
+//                         </label>
+//                         <input
+//                           type="text"
+//                           placeholder="Enter template name"
+//                           value={formData.name}
+//                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+//                           required
+//                           className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
+//                         />
+//                       </div>
+//                       <div>
+//                         <label className="block text-sm font-semibold text-slate-700 mb-2">
+//                           <span className="text-red-500">*</span> Message Type
+//                         </label>
+//                         <select
+//                           value={messageType}
+//                           onChange={(e) => setMessageType(e.target.value)}
+//                           className="w-full px-4 py-3 border-2 border-blue-500 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50 font-medium text-blue-900 transition-all"
+//                         >
+//                           <option value="text">Plain Text</option>
+//                           <option value="text-with-action">Text with Actions</option>
+//                           <option value="rcs">RCS Rich Card</option>
+//                           <option value="carousel">Carousel</option>
+//                         </select>
+//                       </div>
+//                     </div>
+
+//                     {/* Message Text */}
+//                     {(messageType === "text" || messageType === "text-with-action") && (
+//                       <div>
+//                         <label className="block text-sm font-semibold text-slate-700 mb-2">
+//                           <span className="text-red-500">*</span> Message Text
+//                         </label>
+//                         <textarea
+//                           value={formData.text}
+//                           onChange={(e) => setFormData({ ...formData, text: e.target.value })}
+//                           placeholder="Enter your message here..."
+//                           required
+//                           rows={4}
+//                           className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all bg-white"
+//                         />
+//                       </div>
+//                     )}
+
+//                     {/* Actions for text-with-action */}
+//                     {messageType === "text-with-action" && (
+//                       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-xl border-2 border-blue-200">
+//                         <div className="flex items-center justify-between mb-4">
+//                           <h3 className="text-lg font-bold text-slate-800">Quick Actions</h3>
+//                           <button
+//                             type="button"
+//                             onClick={() => addAction("main")}
+//                             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all text-sm font-medium shadow-md"
+//                           >
+//                             <FaPlus className="text-xs" /> Add Action
+//                           </button>
+//                         </div>
+//                         <div className="space-y-3">
+//                           {actions.map((action, index) => (
+//                             <div key={index} className="bg-white border-2 border-slate-200 rounded-xl p-4 shadow-sm">
+//                               <div className="flex items-center justify-between mb-3">
+//                                 <h5 className="font-semibold text-slate-800">
+//                                   Action {index + 1}
+//                                   <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+//                                     {action.type}
+//                                   </span>
+//                                 </h5>
+//                                 <button
+//                                   type="button"
+//                                   onClick={() => removeAction(index, "main")}
+//                                   className="text-red-600 hover:text-red-700 text-sm border-2 border-red-300 px-3 py-1 rounded-lg hover:bg-red-50 transition-all font-medium"
+//                                 >
+//                                   Remove
+//                                 </button>
+//                               </div>
+//                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+//                                 <select
+//                                   value={action.type}
+//                                   onChange={(e) => {
+//                                     const newActions = [...actions]
+//                                     newActions[index].type = e.target.value
+//                                     setActions(newActions)
+//                                   }}
+//                                   className="px-3 py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+//                                 >
+//                                   <option value="reply">Reply</option>
+//                                   <option value="url">URL</option>
+//                                   <option value="call">Call</option>
+//                                 </select>
+//                                 <input
+//                                   type="text"
+//                                   value={action.title}
+//                                   onChange={(e) => {
+//                                     const newActions = [...actions]
+//                                     newActions[index].title = e.target.value
+//                                     setActions(newActions)
+//                                   }}
+//                                   placeholder="Action title"
+//                                   className="px-3 py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+//                                 />
+//                                 <input
+//                                   type="text"
+//                                   value={action.payload}
+//                                   onChange={(e) => {
+//                                     const newActions = [...actions]
+//                                     newActions[index].payload = e.target.value
+//                                     setActions(newActions)
+//                                   }}
+//                                   placeholder={
+//                                     action.type === "url"
+//                                       ? "https://..."
+//                                       : action.type === "call"
+//                                         ? "+1234567890"
+//                                         : "Reply text"
+//                                   }
+//                                   className="px-3 py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+//                                 />
+//                               </div>
+//                             </div>
+//                           ))}
+//                         </div>
+//                       </div>
+//                     )}
+
+//                     {/* RCS Rich Card */}
+//                     {messageType === "rcs" && (
+//                       <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-xl border-2 border-indigo-200">
+//                         <h3 className="text-lg font-bold text-slate-800 mb-4">RCS Rich Card Content</h3>
+//                         <div className="space-y-4">
+//                           <div>
+//                             <label className="block text-sm font-semibold text-slate-700 mb-2">Card Image</label>
+//                             <div className="flex gap-2">
+//                               <input
+//                                 type="url"
+//                                 value={richCard.imageUrl}
+//                                 onChange={(e) => setRichCard({ ...richCard, imageUrl: e.target.value })}
+//                                 placeholder="Image URL"
+//                                 className="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+//                               />
+//                               <label className="flex items-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all cursor-pointer text-sm font-medium shadow-md">
+//                                 <FaUpload className="text-xs" />
+//                                 <span className="hidden sm:inline">Upload</span>
+//                                 <input
+//                                   type="file"
+//                                   accept="image/*"
+//                                   onChange={(e) => handleFileUpload(e.target.files?.[0], "richCard")}
+//                                   className="hidden"
+//                                   disabled={uploadingFile}
+//                                 />
+//                               </label>
+//                             </div>
+//                             {uploadingFile && <p className="text-xs text-indigo-600 mt-1">Uploading...</p>}
+//                           </div>
+//                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+//                             <input
+//                               type="text"
+//                               value={richCard.title}
+//                               onChange={(e) => setRichCard({ ...richCard, title: e.target.value })}
+//                               placeholder="Card title *"
+//                               className="px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+//                             />
+//                             <input
+//                               type="text"
+//                               value={richCard.subtitle}
+//                               onChange={(e) => setRichCard({ ...richCard, subtitle: e.target.value })}
+//                               placeholder="Card subtitle"
+//                               className="px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+//                             />
+//                           </div>
+
+//                           {/* Rich Card Actions */}
+//                           <div className="bg-white p-4 rounded-xl border-2 border-slate-200">
+//                             <div className="flex items-center justify-between mb-3">
+//                               <h4 className="font-semibold text-slate-800 text-sm">Card Actions</h4>
+//                               <button
+//                                 type="button"
+//                                 onClick={() => addAction("richCard")}
+//                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-xs font-medium"
+//                               >
+//                                 <FaPlus className="text-xs" /> Add
+//                               </button>
+//                             </div>
+//                             <div className="space-y-2">
+//                               {richCard.actions.map((action, index) => (
+//                                 <div key={index} className="flex gap-2">
+//                                   <select
+//                                     value={action.type}
+//                                     onChange={(e) => {
+//                                       const newActions = [...richCard.actions]
+//                                       newActions[index].type = e.target.value
+//                                       setRichCard({ ...richCard, actions: newActions })
+//                                     }}
+//                                     className="px-2 py-2 border-2 border-slate-200 rounded-lg text-xs bg-white"
+//                                   >
+//                                     <option value="reply">Reply</option>
+//                                     <option value="url">URL</option>
+//                                     <option value="call">Call</option>
+//                                   </select>
+//                                   <input
+//                                     type="text"
+//                                     value={action.title}
+//                                     onChange={(e) => {
+//                                       const newActions = [...richCard.actions]
+//                                       newActions[index].title = e.target.value
+//                                       setRichCard({ ...richCard, actions: newActions })
+//                                     }}
+//                                     placeholder="Title"
+//                                     className="flex-1 px-2 py-2 border-2 border-slate-200 rounded-lg text-xs bg-white"
+//                                   />
+//                                   <input
+//                                     type="text"
+//                                     value={action.payload}
+//                                     onChange={(e) => {
+//                                       const newActions = [...richCard.actions]
+//                                       newActions[index].payload = e.target.value
+//                                       setRichCard({ ...richCard, actions: newActions })
+//                                     }}
+//                                     placeholder="Payload"
+//                                     className="flex-1 px-2 py-2 border-2 border-slate-200 rounded-lg text-xs bg-white"
+//                                   />
+//                                   <button
+//                                     type="button"
+//                                     onClick={() => removeAction(index, "richCard")}
+//                                     className="text-red-600 hover:text-red-700 px-2"
+//                                   >
+//                                     <FaTrash className="text-xs" />
+//                                   </button>
+//                                 </div>
+//                               ))}
+//                             </div>
+//                           </div>
+//                         </div>
+//                       </div>
+//                     )}
+
+//                     {/* Carousel Items */}
+//                     {messageType === "carousel" && (
+//                       <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-5 rounded-xl border-2 border-purple-200">
+//                         <div className="flex items-center justify-between mb-4">
+//                           <h3 className="text-lg font-bold text-slate-800">Carousel Items</h3>
+//                           <button
+//                             type="button"
+//                             onClick={addCarouselItem}
+//                             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all text-sm font-medium shadow-md"
+//                           >
+//                             <FaPlus className="text-xs" /> Add Item
+//                           </button>
+//                         </div>
+//                         <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+//                           {carouselItems.map((item, index) => (
+//                             <div key={index} className="bg-white border-2 border-slate-200 rounded-xl p-4 shadow-sm">
+//                               <div className="flex items-center justify-between mb-3">
+//                                 <h5 className="font-semibold text-slate-800">Item {index + 1}</h5>
+//                                 <button
+//                                   type="button"
+//                                   onClick={() => removeCarouselItem(index)}
+//                                   className="text-red-600 hover:text-red-700 text-sm border-2 border-red-300 px-3 py-1 rounded-lg hover:bg-red-50 transition-all font-medium"
+//                                 >
+//                                   Remove
+//                                 </button>
+//                               </div>
+//                               <div className="space-y-3">
+//                                 <div>
+//                                   <div className="flex gap-2">
+//                                     <input
+//                                       type="url"
+//                                       value={item.imageUrl}
+//                                       onChange={(e) => {
+//                                         const newItems = [...carouselItems]
+//                                         newItems[index].imageUrl = e.target.value
+//                                         setCarouselItems(newItems)
+//                                       }}
+//                                       placeholder="Image URL"
+//                                       className="flex-1 px-3 py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm bg-white"
+//                                     />
+//                                     <label className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all cursor-pointer text-sm font-medium shadow-sm">
+//                                       <FaUpload className="text-xs" />
+//                                       <input
+//                                         type="file"
+//                                         accept="image/*"
+//                                         onChange={(e) => handleFileUpload(e.target.files?.[0], `carousel-${index}`)}
+//                                         className="hidden"
+//                                         disabled={uploadingFile}
+//                                       />
+//                                     </label>
+//                                   </div>
+//                                 </div>
+//                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+//                                   <input
+//                                     type="text"
+//                                     value={item.title}
+//                                     onChange={(e) => {
+//                                       const newItems = [...carouselItems]
+//                                       newItems[index].title = e.target.value
+//                                       setCarouselItems(newItems)
+//                                     }}
+//                                     placeholder="Item title *"
+//                                     className="px-3 py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm bg-white"
+//                                   />
+//                                   <input
+//                                     type="text"
+//                                     value={item.subtitle}
+//                                     onChange={(e) => {
+//                                       const newItems = [...carouselItems]
+//                                       newItems[index].subtitle = e.target.value
+//                                       setCarouselItems(newItems)
+//                                     }}
+//                                     placeholder="Item subtitle"
+//                                     className="px-3 py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm bg-white"
+//                                   />
+//                                 </div>
+
+//                                 <div className="mt-4 pt-4 border-t border-slate-200">
+//                                   <div className="flex items-center justify-between mb-3">
+//                                     <label className="text-sm font-semibold text-slate-700">Actions</label>
+//                                     <button
+//                                       type="button"
+//                                       onClick={() => addCarouselAction(index)}
+//                                       className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all text-xs font-medium"
+//                                     >
+//                                       <FaPlus className="text-xs" /> Add Action
+//                                     </button>
+//                                   </div>
+//                                   {item.actions && item.actions.length > 0 && (
+//                                     <div className="space-y-2">
+//                                       {item.actions.map((action, actionIndex) => (
+//                                         <div
+//                                           key={actionIndex}
+//                                           className="bg-slate-50 border border-slate-200 rounded-lg p-3"
+//                                         >
+//                                           <div className="flex items-center justify-between mb-2">
+//                                             <span className="text-xs font-semibold text-slate-600">
+//                                               Action {actionIndex + 1}
+//                                             </span>
+//                                             <button
+//                                               type="button"
+//                                               onClick={() => removeCarouselAction(index, actionIndex)}
+//                                               className="text-red-600 hover:text-red-700 text-xs"
+//                                             >
+//                                               Remove
+//                                             </button>
+//                                           </div>
+//                                           <div className="space-y-2">
+//                                             <input
+//                                               type="text"
+//                                               value={action.title}
+//                                               onChange={(e) => {
+//                                                 const newItems = [...carouselItems]
+//                                                 newItems[index].actions[actionIndex].title = e.target.value
+//                                                 setCarouselItems(newItems)
+//                                               }}
+//                                               placeholder="Action title *"
+//                                               className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+//                                             />
+//                                             <select
+//                                               value={action.type}
+//                                               onChange={(e) => {
+//                                                 const newItems = [...carouselItems]
+//                                                 newItems[index].actions[actionIndex].type = e.target.value
+//                                                 setCarouselItems(newItems)
+//                                               }}
+//                                               className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+//                                             >
+//                                               <option value="reply">Reply</option>
+//                                               <option value="url">URL</option>
+//                                               <option value="call">Call</option>
+//                                             </select>
+//                                             <input
+//                                               type="text"
+//                                               value={action.value}
+//                                               onChange={(e) => {
+//                                                 const newItems = [...carouselItems]
+//                                                 newItems[index].actions[actionIndex].value = e.target.value
+//                                                 setCarouselItems(newItems)
+//                                               }}
+//                                               placeholder={
+//                                                 action.type === "url"
+//                                                   ? "https://example.com"
+//                                                   : action.type === "call"
+//                                                     ? "+1234567890"
+//                                                     : "Reply text"
+//                                               }
+//                                               className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+//                                             />
+//                                           </div>
+//                                         </div>
+//                                       ))}
+//                                     </div>
+//                                   )}
+//                                   {(!item.actions || item.actions.length === 0) && (
+//                                     <p className="text-xs text-slate-500 text-center py-2">No actions added yet</p>
+//                                   )}
+//                                 </div>
+//                               </div>
+//                             </div>
+//                           ))}
+//                         </div>
+//                       </div>
+//                     )}
+
+//                     {/* Form Actions */}
+//                     <div className="flex items-center gap-3 pt-4 border-t border-slate-200 sticky bottom-0 bg-white py-4 -mx-6 px-6">
+//                       <button
+//                         type="submit"
+//                         className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl font-semibold text-base transform hover:scale-[1.02]"
+//                       >
+//                         {editingTemplate ? "Update Template" : "Create Template"}
+//                       </button>
+//                       <button
+//                         type="button"
+//                         onClick={() => {
+//                           setIsModalOpen(false)
+//                           resetForm()
+//                         }}
+//                         className="px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-semibold text-base"
+//                       >
+//                         Cancel
+//                       </button>
+//                     </div>
+//                   </form>
+//                 </div>
+
+//                 {/* Right Side - Live Preview */}
+//                 <div className="hidden lg:block">
+//                   <div className="sticky top-6">
+//                     <div className="bg-gradient-to-br from-slate-100 to-blue-100 rounded-2xl p-6 border-2 border-slate-200 shadow-lg">
+//                       <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+//                         <FaEye className="text-blue-600" />
+//                         Live Preview
+//                       </h3>
+
+//                       {/* Text Preview */}
+//                       {(messageType === "text" || messageType === "text-with-action") && formData.text && (
+//                         <div className="bg-white rounded-xl shadow-lg p-5 max-w-sm">
+//                           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 shadow-sm">
+//                             <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
+//                               {formData.text}
+//                             </p>
+//                           </div>
+//                           {messageType === "text-with-action" && actions.filter((a) => a.title.trim()).length > 0 && (
+//                             <div className="space-y-2 mt-3">
+//                               {actions
+//                                 .filter((a) => a.title.trim())
+//                                 .map((action, index) => (
+//                                   <button
+//                                     key={index}
+//                                     className="w-full py-3 border-2 border-blue-500 text-blue-600 rounded-xl text-sm font-semibold shadow-sm flex items-center justify-center gap-2"
+//                                   >
+//                                     <span>{action.type === "call" ? "📞" : action.type === "url" ? "🔗" : "💬"}</span>
+//                                     <span>{action.title}</span>
+//                                     <span className="text-xs bg-blue-100 px-2 py-0.5 rounded-full">{action.type}</span>
+//                                   </button>
+//                                 ))}
+//                             </div>
+//                           )}
+//                         </div>
+//                       )}
+
+//                       {/* RCS Preview */}
+//                       {messageType === "rcs" && richCard.title && (
+//                         <div className="bg-white rounded-xl shadow-lg overflow-hidden max-w-sm">
+//                           <div className="border-2 border-slate-200 rounded-xl overflow-hidden">
+//                             {richCard.imageUrl && (
+//                               <img
+//                                 src={richCard.imageUrl || "/placeholder.svg?height=200&width=400&query=rcs card"}
+//                                 alt="RCS Card"
+//                                 className="w-full h-40 object-cover"
+//                               />
+//                             )}
+//                             <div className="p-4 bg-white">
+//                               <h4 className="font-bold text-slate-900 mb-2">{richCard.title}</h4>
+//                               {richCard.subtitle && <p className="text-sm text-slate-600 mb-3">{richCard.subtitle}</p>}
+//                               {richCard.actions.filter((a) => a.title.trim()).length > 0 && (
+//                                 <div className="space-y-2">
+//                                   {richCard.actions
+//                                     .filter((a) => a.title.trim())
+//                                     .map((action, index) => (
+//                                       <button
+//                                         key={index}
+//                                         className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-semibold shadow-md flex items-center justify-center gap-2"
+//                                       >
+//                                         <span>
+//                                           {action.type === "call" ? "📞" : action.type === "url" ? "🔗" : "💬"}
+//                                         </span>
+//                                         <span>{action.title}</span>
+//                                         <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
+//                                           {action.type}
+//                                         </span>
+//                                       </button>
+//                                     ))}
+//                                 </div>
+//                               )}
+//                             </div>
+//                           </div>
+//                         </div>
+//                       )}
+
+//                       {/* Carousel Preview */}
+//                       {messageType === "carousel" && carouselItems.filter((item) => item.title.trim()).length > 0 && (
+//                         <div className="max-w-sm">
+//                           <div className="flex gap-3 overflow-x-auto pb-3">
+//                             {carouselItems
+//                               .filter((item) => item.title.trim())
+//                               .map((item, index) => (
+//                                 <div
+//                                   key={index}
+//                                   className="border-2 border-slate-200 rounded-xl min-w-[220px] overflow-hidden shadow-lg flex-shrink-0"
+//                                 >
+//                                   {item.imageUrl && (
+//                                     <div className="relative">
+//                                       <img
+//                                         src={item.imageUrl || "/placeholder.svg?height=120&width=220&query=carousel"}
+//                                         alt={`Item ${index + 1}`}
+//                                         className="w-full h-28 object-cover"
+//                                       />
+//                                       <div className="absolute top-1 right-1 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
+//                                         {index + 1}/{carouselItems.filter((i) => i.title.trim()).length}
+//                                       </div>
+//                                     </div>
+//                                   )}
+//                                   <div className="p-3 bg-white">
+//                                     <h5 className="font-semibold text-sm text-slate-900">{item.title}</h5>
+//                                     {item.subtitle && <p className="text-xs text-slate-600 mt-1">{item.subtitle}</p>}
+//                                   </div>
+//                                 </div>
+//                               ))}
+//                           </div>
+//                           <div className="text-xs text-slate-500 text-center mt-2">← Swipe to see more →</div>
+//                         </div>
+//                       )}
+
+//                       {/* Empty State */}
+//                       {!formData.text &&
+//                         !richCard.title &&
+//                         carouselItems.filter((i) => i.title.trim()).length === 0 && (
+//                           <div className="flex flex-col items-center justify-center h-full text-slate-400 py-16">
+//                             <FaFileAlt className="text-6xl mb-4 opacity-50" />
+//                             <p className="text-sm">Start creating to see preview</p>
+//                           </div>
+//                         )}
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   )
+// }

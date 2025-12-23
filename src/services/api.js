@@ -1,8 +1,8 @@
 import axios from "axios";
 import { getCookie } from "../utils/cookieUtils";
 
-const API_BASE_URL = "https://rcssender.com/api";
-// const API_BASE_URL = "http://localhost:8888/api";
+// const API_BASE_URL = "https://rcssender.com/api";
+const API_BASE_URL = "http://localhost:8888/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -48,13 +48,15 @@ class ApiService {
     return data;
   }
 
+  async getMessageStatus(userId, campaignName) {
+    const { data } = await api.get(`/message-status/${userId}/${campaignName}`);
+    return data;
+  }
+
   async sendMessage(campaignData) {
-    return await api.post("/sendMessage", campaignData);
+    return await api.post("/v1/send-message/send", campaignData);
   }
   
-  async sendBatchMessage(campaignData) {
-    return await api.post("/sendBatchMessage", campaignData);
-  }
   async chackcapebalNumber(phoneNumbers, userId) {
     return await api.post("/checkAvablityNumber", {
       phoneNumbers,
@@ -74,8 +76,13 @@ class ApiService {
     return data;
   }
 
-  async getMessageReportsall(userId) {
-    const { data } = await api.get(`/v1/message-reports/alls/${userId}`);
+  async getMessageReportsall(userId, page = 1, limit = 10) {
+    const { data } = await api.get(`/v1/message-reports/alls/${userId}?page=${page}&limit=${limit}`);
+    return data;
+  }
+
+  async getMessageDetails(messageId, page = 1, limit = 50) {
+    const { data } = await api.get(`/v1/message-reports/details/${messageId}?page=${page}&limit=${limit}`);
     return data;
   }
 
@@ -83,8 +90,8 @@ class ApiService {
     const { data } = await api.get(`/v1/message-reports/check/${phoneNumber}`);
     return data;
   }
-  async getMessageReports() {
-    const { data } = await api.get("/v1/message-reports/report");
+  async getMessageReports(page = 1, limit = 10) {
+    const { data } = await api.get(`/v1/message-reports/report?page=${page}&limit=${limit}`);
     return data;
   }
 
@@ -108,8 +115,8 @@ class ApiService {
     return data;
   }
 
-  async getUserMessages(userId) {
-    const { data } = await api.get(`/messages/${userId}`);
+  async getUserMessages(userId, page = 1, limit = 10) {
+    const { data } = await api.get(`/messages/${userId}?page=${page}&limit=${limit}`);
     return data;
   }
 
@@ -213,7 +220,7 @@ class ApiService {
     return data;
   }
 
-  async getUserMessages(userId, page = 1, limit = 10) {
+  async getUserAdminMessages(userId, page = 1, limit = 10) {
     const { data } = await api.get(`/admin/user-messages/${userId}?page=${page}&limit=${limit}`);
     return data;
   }
@@ -233,7 +240,7 @@ class ApiService {
     return data;
   }
 
-  async getUserOrders(userId, page = 1, limit = 20) {
+  async getUserOrders(userId, page = 1, limit = 10) {
     const { data } = await api.get(`/admin/user-orders/${userId}?page=${page}&limit=${limit}`);
     return data;
   }
