@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   FiCheck,
   FiUpload,
@@ -14,6 +14,95 @@ import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+
+// Virtual scrolling component for large lists
+const VirtualizedContactList = ({ contacts, updateContact, deleteContact }) => {
+  const [scrollTop, setScrollTop] = useState(0);
+  const itemHeight = 50;
+  const containerHeight = 384; // max-h-96 = 384px
+  const visibleCount = Math.ceil(containerHeight / itemHeight);
+  const startIndex = Math.floor(scrollTop / itemHeight);
+  const endIndex = Math.min(startIndex + visibleCount + 5, contacts.length);
+  const visibleItems = contacts.slice(startIndex, endIndex);
+  const totalHeight = contacts.length * itemHeight;
+  const offsetY = startIndex * itemHeight;
+
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div 
+        className="overflow-auto"
+        style={{ height: containerHeight }}
+        onScroll={(e) => setScrollTop(e.target.scrollTop)}
+      >
+        <div style={{ height: totalHeight, position: 'relative' }}>
+          <div style={{ transform: `translateY(${offsetY}px)` }}>
+            <table className="w-full">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">
+                    SN
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">
+                    Phone Number
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleItems.map((contact, idx) => {
+                  const actualIndex = startIndex + idx;
+                  return (
+                    <tr key={contact.id} className="hover:bg-gray-50" style={{ height: itemHeight }}>
+                      <td className="px-4 py-2 text-sm border-b">
+                        {actualIndex + 1}
+                      </td>
+                      <td className="px-4 py-2 border-b">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={contact.number}
+                            onChange={(e) => updateContact(contact.id, e.target.value)}
+                            placeholder="+91xxxxxxxxxx"
+                            className={`w-full px-2 py-1 border rounded focus:ring-1 focus:ring-blue-500 ${
+                              contact.capable === true
+                                ? "border-green-500 bg-green-50"
+                                : contact.capable === false
+                                ? "border-red-500 bg-red-50"
+                                : ""
+                            }`}
+                          />
+                          {contact.checking && (
+                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          )}
+                          {contact.capable === true && (
+                            <span className="text-green-600 text-sm">✓</span>
+                          )}
+                          {contact.capable === false && (
+                            <span className="text-red-600 text-sm">✗</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 border-b">
+                        <button
+                          onClick={() => deleteContact(contact.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const MESSAGE_TYPES = {
   text: "Plain Text",
@@ -349,7 +438,7 @@ export default function SendMessageClean() {
         }
       }
 
-      setContacts([...contacts, ...capableNumbers]);
+      setContacts(prev => [...prev, ...capableNumbers]);
       setCheckingCapability(false);
       setShowManualImport(false);
       setManualNumbers("");
@@ -376,8 +465,9 @@ export default function SendMessageClean() {
       value = "+91" + value;
     }
 
-    setContacts(
-      contacts.map((c) =>
+    // Use functional update to avoid stale closure
+    setContacts(prev => 
+      prev.map(c => 
         c.id === id ? { ...c, number: value, checking: true } : c
       )
     );
@@ -388,14 +478,12 @@ export default function SendMessageClean() {
         setCheckingCapability(true);
         const response = await checkRcsCapability([value]);
 
-        const rcsMessaging =
-          response?.data?.rcsMessaging || response?.rcsMessaging;
+        const rcsMessaging = response?.data?.rcsMessaging || response?.rcsMessaging;
         const rcsData = rcsMessaging?.[value];
-
         const isCapable = rcsData?.features && rcsData.features.length > 0;
-        console.log("Is Capable:", isCapable);
-        setContacts((prev) =>
-          prev.map((c) =>
+        
+        setContacts(prev =>
+          prev.map(c =>
             c.id === id
               ? { ...c, number: value, checking: false, capable: isCapable }
               : c
@@ -405,12 +493,12 @@ export default function SendMessageClean() {
         // Remove if not capable
         if (!isCapable) {
           setTimeout(() => {
-            setContacts((prev) => prev.filter((c) => c.id !== id));
+            setContacts(prev => prev.filter(c => c.id !== id));
           }, 1000);
         }
       } catch (error) {
-        setContacts((prev) =>
-          prev.map((c) =>
+        setContacts(prev =>
+          prev.map(c =>
             c.id === id ? { ...c, checking: false, capable: false } : c
           )
         );
@@ -418,8 +506,8 @@ export default function SendMessageClean() {
         setCheckingCapability(false);
       }
     } else {
-      setContacts((prev) =>
-        prev.map((c) =>
+      setContacts(prev =>
+        prev.map(c =>
           c.id === id ? { ...c, checking: false, capable: null } : c
         )
       );
@@ -453,67 +541,87 @@ export default function SendMessageClean() {
         const seen = new Set();
         let skippedFirst = false;
 
-        data.forEach((row, idx) => {
-          if (!row || row.length === 0) return;
+        // Process in chunks to avoid blocking UI
+        const processChunk = (startIdx, chunkSize = 1000) => {
+          return new Promise(resolve => {
+            setTimeout(() => {
+              const endIdx = Math.min(startIdx + chunkSize, data.length);
+              
+              for (let i = startIdx; i < endIdx; i++) {
+                const row = data[i];
+                if (!row || row.length === 0) continue;
 
-          // Skip header row (first row with text like "Index", "Number", etc.)
-          if (!skippedFirst) {
-            const firstCell = String(row[0] || "").toLowerCase();
-            if (
-              firstCell.includes("index") ||
-              firstCell.includes("sn") ||
-              firstCell.includes("number") ||
-              firstCell.includes("name")
-            ) {
-              skippedFirst = true;
-              return;
-            }
-          }
+                // Skip header row (first row with text like "Index", "Number", etc.)
+                if (!skippedFirst) {
+                  const firstCell = String(row[0] || "").toLowerCase();
+                  if (
+                    firstCell.includes("index") ||
+                    firstCell.includes("sn") ||
+                    firstCell.includes("number") ||
+                    firstCell.includes("name")
+                  ) {
+                    skippedFirst = true;
+                    continue;
+                  }
+                }
 
-          row.forEach((cell) => {
-            if (!cell && cell !== 0) return;
+                row.forEach((cell) => {
+                  if (!cell && cell !== 0) return;
 
-            // Convert to string and handle scientific notation
-            let num = String(cell).trim();
+                  // Convert to string and handle scientific notation
+                  let num = String(cell).trim();
 
-            // Skip if it's text header
-            if (isNaN(num.replace(/[^\d]/g, "")) && num.length < 10) return;
+                  // Skip if it's text header
+                  if (isNaN(num.replace(/[^\d]/g, "")) && num.length < 10) return;
 
-            // Remove all spaces, dashes, brackets, dots
-            num = num.replace(/[\s\-\(\)\.]/g, "");
+                  // Remove all spaces, dashes, brackets, dots
+                  num = num.replace(/[\s\-\(\)\.]/g, "");
 
-            // Extract only digits and +
-            num = num.replace(/[^\d+]/g, "");
+                  // Extract only digits and +
+                  num = num.replace(/[^\d+]/g, "");
 
-            // Remove + from middle/end, keep only at start
-            if (num.includes("+")) {
-              const parts = num.split("+");
-              num = parts[0] ? parts[0] : parts[1];
-              if (!num.startsWith("+")) num = "+" + num;
-            }
+                  // Remove + from middle/end, keep only at start
+                  if (num.includes("+")) {
+                    const parts = num.split("+");
+                    num = parts[0] ? parts[0] : parts[1];
+                    if (!num.startsWith("+")) num = "+" + num;
+                  }
 
-            // Handle different formats
-            if (num.startsWith("+91")) {
-              num = num.substring(3);
-            } else if (num.startsWith("+")) {
-              num = num.substring(1);
-              if (num.startsWith("91")) num = num.substring(2);
-            } else if (num.startsWith("91") && num.length > 10) {
-              num = num.substring(2);
-            } else if (num.startsWith("0")) {
-              num = num.substring(1);
-            }
+                  // Handle different formats
+                  if (num.startsWith("+91")) {
+                    num = num.substring(3);
+                  } else if (num.startsWith("+")) {
+                    num = num.substring(1);
+                    if (num.startsWith("91")) num = num.substring(2);
+                  } else if (num.startsWith("91") && num.length > 10) {
+                    num = num.substring(2);
+                  } else if (num.startsWith("0")) {
+                    num = num.substring(1);
+                  }
 
-            // Validate 10 digit number
-            if (/^\d{10}$/.test(num)) {
-              const fullNum = "+91" + num;
-              if (!seen.has(fullNum)) {
-                seen.add(fullNum);
-                imported.push(fullNum);
+                  // Validate 10 digit number
+                  if (/^\d{10}$/.test(num)) {
+                    const fullNum = "+91" + num;
+                    if (!seen.has(fullNum)) {
+                      seen.add(fullNum);
+                      imported.push(fullNum);
+                    }
+                  }
+                });
               }
-            }
+              
+              resolve(endIdx < data.length);
+            }, 0);
           });
-        });
+        };
+
+        // Process data in chunks
+        let currentIndex = 0;
+        while (currentIndex < data.length) {
+          const hasMore = await processChunk(currentIndex);
+          currentIndex += 1000;
+          if (!hasMore) break;
+        }
 
         if (imported.length === 0) {
           toast.error("No valid 10-digit numbers found in Excel file");
@@ -523,8 +631,7 @@ export default function SendMessageClean() {
         setCheckingCapability(true);
 
         const response = await api.chackcapebalNumber(imported, user._id);
-        const rcsMessaging =
-          response?.data?.rcsMessaging || response?.rcsMessaging;
+        const rcsMessaging = response?.data?.rcsMessaging || response?.rcsMessaging;
 
         let capableNumbers = [];
 
@@ -553,15 +660,12 @@ export default function SendMessageClean() {
           }
         }
 
-        setContacts([...contacts, ...capableNumbers]);
-        // showResult({
-        //   success: true,
-        //   message: `${capableNumbers.length} RCS capable numbers added out of ${imported.length} total numbers`
-        // })
+        setContacts(prev => [...prev, ...capableNumbers]);
         setCheckingCapability(false);
+        toast.success(`${capableNumbers.length} numbers imported successfully`);
       } catch (error) {
         setCheckingCapability(false);
-        // toast.error('Error importing Excel: ' + error.message)
+        toast.error('Error importing Excel: ' + error.message);
       }
     };
     reader.readAsArrayBuffer(file);
@@ -1748,69 +1852,11 @@ export default function SendMessageClean() {
             </div>
 
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto max-h-96">
-                <table className="w-full">
-                  <thead className="bg-gray-50 sticky top-0">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">
-                        SN
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">
-                        Phone Number
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {contacts?.map((contact, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50">
-                        <td className="px-4 py-2 text-sm border-b">
-                          {idx + 1}
-                        </td>
-                        <td className="px-4 py-2 border-b">
-                          <div className="flex items-center gap-2">
-                            <input
-                              name="updateContact"
-                              type="text"
-                              value={contact.number}
-                              onChange={(e) =>
-                                updateContact(contact.id, e.target.value)
-                              }
-                              placeholder="+91xxxxxxxxxx"
-                              className={`w-full px-2 py-1 border rounded focus:ring-1 focus:ring-blue-500 ${
-                                contact.capable === true
-                                  ? "border-green-500 bg-green-50"
-                                  : contact.capable === false
-                                  ? "border-red-500 bg-red-50"
-                                  : ""
-                              }`}
-                            />
-                            {contact.checking && (
-                              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                            )}
-                            {contact.capable === true && (
-                              <span className="text-green-600 text-sm">✓</span>
-                            )}
-                            {contact.capable === false && (
-                              <span className="text-red-600 text-sm">✗</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 border-b">
-                          <button
-                            onClick={() => deleteContact(contact.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <FiTrash2 />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <VirtualizedContactList 
+                contacts={contacts}
+                updateContact={updateContact}
+                deleteContact={deleteContact}
+              />
             </div>
           </div>
 
