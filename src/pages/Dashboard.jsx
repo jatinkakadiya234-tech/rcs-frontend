@@ -22,8 +22,6 @@
 //     totalTemplates: 0,
 //   });
 
-
-
 //   useEffect(() => {
 //     if (user?._id) {
 //       fetchMessageReports();
@@ -41,7 +39,7 @@
 
 //       const messages = reportsData.data || [];
 //       setMessageReports(messages);
-     
+
 //       setStats({
 //         totalMessages: statsData.data?.totalMessages || 0,
 //         sentMessages: statsData.data?.sentMessages || 0,
@@ -418,15 +416,12 @@
 //   );
 // }
 
+"use client";
 
-
-
-"use client"
-
-import { useState, useEffect } from "react"
-import api from "../services/api"
-import { useAuth } from "../context/AuthContext"
-import toast from "react-hot-toast"
+import { useState, useEffect } from "react";
+import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
+import toast from "react-hot-toast";
 import {
   FiCreditCard,
   FiPlus,
@@ -438,55 +433,65 @@ import {
   FiClock,
   FiCheckCircle,
   FiXCircle,
-} from "react-icons/fi"
+} from "react-icons/fi";
 
 export default function Dashboard() {
-  const { user, refreshUser } = useAuth()
-  const [messageReports, setMessageReports] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(5)
-  const [walletBalance, setWalletBalance] = useState(0)
-  const [refreshing, setRefreshing] = useState(false)
-  const [addAmount, setAddAmount] = useState("")
-  const [showAddMoney, setShowAddMoney] = useState(false)
+  const { user, refreshUser } = useAuth();
+  const [messageReports, setMessageReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [addAmount, setAddAmount] = useState("");
+  const [showAddMoney, setShowAddMoney] = useState(false);
   const [stats, setStats] = useState({
-    totalMessages: 0,
-    sentMessages: 0,
-    pendingMessages: 0,
     failedMessages: 0,
-    totalTemplates: 0,
-  })
+    pendingMessages: 0,
+    sendtoteltemplet: 0,
+    sentMessages: 0,
+    totalCampaigns: 0,
+    totalFailedCount: 0,
+    totalMessages: 0,
+    totalSuccessCount: 0,
+  });
 
   useEffect(() => {
     if (user?._id) {
-      fetchMessageReports()
+      fetchMessageReports();
     }
-  }, [user])
+  }, [user]);
 
   const fetchMessageReports = async () => {
     try {
-      setLoading(true)
-      const [reportsData, statsData] = await Promise.all([api.getrecentorders(user._id), api.getMessageStats(user._id)])
-      toast.success("Dashboard data loaded successfully")
+      setLoading(true);
+      const [reportsData, statsData] = await Promise.all([
+        api.getrecentorders(user._id),
+        api.getMessageStats(user._id),
+      ]);
+      toast.success("Dashboard data loaded successfully");
 
-      const messages = reportsData.data || []
-      setMessageReports(messages)
+      const messages = reportsData.data || [];
+      setMessageReports(messages);
 
       setStats({
-        totalMessages: statsData.data?.totalMessages || 0,
-        sentMessages:messages.length || 0,
-        pendingMessages: statsData.data?.pendingMessages || 0,
-        failedMessages: statsData.data?.failedMessages || 0,
-        totalTemplates: statsData?.data?.sendtoteltemplet || 0,
-      })
+        failedMessages: statsData?.data?.failedMessages || 0,
+        pendingMessages: statsData?.data?.pendingMessages || 0,
+        sendtoteltemplet: statsData?.data?.sendtoteltemplet || 0,
+        sentMessages: statsData?.data?.sentMessages || 0,
+        totalCampaigns: statsData?.data?.totalCampaigns || 0,
+        totalFailedCount: statsData?.data?.totalFailedCount || 0,
+        totalMessages: statsData?.data?.totalMessages || 0,
+        totalSuccessCount: statsData?.data?.totalSuccessCount || 0,
+      });
+      console.log(statsData, "=====================statsData ");
     } catch (err) {
-      console.error("Error fetching data:", err)
-      toast.error("Failed to fetch dashboard data")
+      console.error("Error fetching data:", err);
+      toast.error("Failed to fetch dashboard data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleAddMoney = async () => {
     if (addAmount && Number.parseFloat(addAmount) > 0) {
@@ -494,21 +499,23 @@ export default function Dashboard() {
         const data = await api.addWalletRequest({
           amount: Number.parseFloat(addAmount),
           userId: user._id,
-        })
+        });
 
         if (data.success) {
-          toast.success(`Wallet recharge request of ₹${addAmount} submitted for admin approval!`)
-          setAddAmount("")
-          setShowAddMoney(false)
-          refreshUser()
+          toast.success(
+            `Wallet recharge request of ₹${addAmount} submitted for admin approval!`
+          );
+          setAddAmount("");
+          setShowAddMoney(false);
+          refreshUser();
         } else {
-          toast.error("Failed to submit request: " + data.message)
+          toast.error("Failed to submit request: " + data.message);
         }
       } catch (error) {
-        toast.error("Error submitting request: " + error.message)
+        toast.error("Error submitting request: " + error.message);
       }
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -517,7 +524,9 @@ export default function Dashboard() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
             Welcome back, {user?.companyname}
           </h1>
-          <p className="text-slate-600">Here's what's happening with your messaging campaigns today.</p>
+          <p className="text-slate-600">
+            Here's what's happening with your messaging campaigns today.
+          </p>
         </div>
 
         <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-xl p-8 text-white mb-8 relative overflow-hidden">
@@ -538,15 +547,17 @@ export default function Dashboard() {
               <div className="flex gap-3">
                 <button
                   onClick={async () => {
-                    setRefreshing(true)
-                    await refreshUser()
-                    setRefreshing(false)
+                    setRefreshing(true);
+                    await refreshUser();
+                    setRefreshing(false);
                   }}
                   disabled={refreshing}
                   className="bg-white/20 backdrop-blur-sm hover:bg-white/30 px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-200 disabled:opacity-50 border border-white/20"
                 >
                   <FiRefreshCw className={refreshing ? "animate-spin" : ""} />
-                  <span className="hidden sm:inline">{refreshing ? "Refreshing..." : "Refresh"}</span>
+                  <span className="hidden sm:inline">
+                    {refreshing ? "Refreshing..." : "Refresh"}
+                  </span>
                 </button>
                 <button
                   onClick={() => setShowAddMoney(true)}
@@ -558,7 +569,9 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="text-5xl font-bold mb-2">₹{user?.Wallet?.toFixed(2) || "0.00"}</div>
+            <div className="text-5xl font-bold mb-2">
+              ₹{user?.Wallet?.toFixed(2) || "0.00"}
+            </div>
             <div className="flex items-center gap-2 text-blue-100">
               <FiTrendingUp className="text-lg" />
               <span>Ready to use for campaigns</span>
@@ -575,7 +588,9 @@ export default function Dashboard() {
               <FiTrendingUp className="text-blue-600" />
             </div>
             <p className="text-slate-600 text-sm mb-1">Connected Devices</p>
-            <p className="text-3xl font-bold text-slate-900">{loading ? "..." : "1"}</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {loading ? "..." : "1"}
+            </p>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow duration-200">
@@ -586,7 +601,9 @@ export default function Dashboard() {
               <FiMessageSquare className="text-emerald-600" />
             </div>
             <p className="text-slate-600 text-sm mb-1">Welcome Messages</p>
-            <p className="text-3xl font-bold text-slate-900">{loading ? "..." : "0"}</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {loading ? "..." : stats.totalSuccessCount > 0 ? 1 : 0}
+            </p>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow duration-200">
@@ -597,7 +614,9 @@ export default function Dashboard() {
               <FiSend className="text-purple-600" />
             </div>
             <p className="text-slate-600 text-sm mb-1">Active Templates</p>
-            <p className="text-3xl font-bold text-slate-900">{loading ? "..." : stats.totalTemplates}</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {loading ? "..." : stats?.sendtoteltemplet}
+            </p>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow duration-200">
@@ -608,7 +627,9 @@ export default function Dashboard() {
               <FiMessageSquare className="text-amber-600" />
             </div>
             <p className="text-slate-600 text-sm mb-1">Total Campaigns</p>
-            <p className="text-3xl font-bold text-slate-900">{loading ? "..." : stats.totalMessages}</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {loading ? "..." : stats.totalCampaigns}
+            </p>
           </div>
         </div>
 
@@ -618,7 +639,9 @@ export default function Dashboard() {
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                 <FiMessageSquare className="text-blue-600 text-xl" />
               </div>
-              <span className="text-3xl font-bold text-slate-900">{loading ? "..." : stats.totalMessages}</span>
+              <span className="text-3xl font-bold text-slate-900">
+                {loading ? "..." : stats.totalMessages}
+              </span>
             </div>
             <p className="text-slate-600 font-medium">Total Messages</p>
             <p className="text-xs text-slate-500 mt-1">All time statistics</p>
@@ -629,7 +652,9 @@ export default function Dashboard() {
               <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
                 <FiClock className="text-amber-600 text-xl" />
               </div>
-              <span className="text-3xl font-bold text-slate-900">{loading ? "..." : stats.pendingMessages}</span>
+              <span className="text-3xl font-bold text-slate-900">
+                {loading ? "..." : stats.pendingMessages}
+              </span>
             </div>
             <p className="text-slate-600 font-medium">Pending Messages</p>
             <p className="text-xs text-slate-500 mt-1">In queue</p>
@@ -640,10 +665,14 @@ export default function Dashboard() {
               <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
                 <FiCheckCircle className="text-emerald-600 text-xl" />
               </div>
-              <span className="text-3xl font-bold text-slate-900">{loading ? "..." : stats.sentMessages}</span>
+              <span className="text-3xl font-bold text-slate-900">
+                {loading ? "..." : stats.totalSuccessCount}
+              </span>
             </div>
             <p className="text-slate-600 font-medium">Messages Sent</p>
-            <p className="text-xs text-slate-500 mt-1">Successfully delivered</p>
+            <p className="text-xs text-slate-500 mt-1">
+              Successfully delivered
+            </p>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-rose-500 hover:shadow-md transition-shadow duration-200">
@@ -651,7 +680,9 @@ export default function Dashboard() {
               <div className="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center">
                 <FiXCircle className="text-rose-600 text-xl" />
               </div>
-              <span className="text-3xl font-bold text-slate-900">{loading ? "..." : stats.failedMessages}</span>
+              <span className="text-3xl font-bold text-slate-900">
+                {loading ? "..." : stats.totalFailedCount}
+              </span>
             </div>
             <p className="text-slate-600 font-medium">Failed Messages</p>
             <p className="text-xs text-slate-500 mt-1">Needs attention</p>
@@ -662,8 +693,12 @@ export default function Dashboard() {
           <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-1">Today's Orders</h2>
-                <p className="text-slate-600">Recent messaging campaigns and their status</p>
+                <h2 className="text-2xl font-bold text-slate-900 mb-1">
+                  Today's Orders
+                </h2>
+                <p className="text-slate-600">
+                  Recent messaging campaigns and their status
+                </p>
               </div>
               <button
                 onClick={fetchMessageReports}
@@ -685,27 +720,49 @@ export default function Dashboard() {
               <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                 <FiMessageSquare className="text-4xl text-slate-400" />
               </div>
-              <p className="text-slate-600 text-lg font-medium">No recent messages found</p>
-              <p className="text-slate-500 text-sm">Your campaigns will appear here</p>
+              <p className="text-slate-600 text-lg font-medium">
+                No recent messages found
+              </p>
+              <p className="text-slate-500 text-sm">
+                Your campaigns will appear here
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-slate-700">Order ID</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-slate-700">Type</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-slate-700">Recipients</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-slate-700">Success/Failed</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-slate-700">Status</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-slate-700">Date</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-slate-700">
+                      Order ID
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-slate-700">
+                      Type
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-slate-700">
+                      Recipients
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-slate-700">
+                      Success/Failed
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-slate-700">
+                      Status
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-slate-700">
+                      Date
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {messageReports
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .slice(
+                      (currentPage - 1) * itemsPerPage,
+                      currentPage * itemsPerPage
+                    )
                     .map((message, idx) => (
-                      <tr key={message._id} className="hover:bg-slate-50 transition-colors duration-150">
+                      <tr
+                        key={message._id}
+                        className="hover:bg-slate-50 transition-colors duration-150"
+                      >
                         <td className="py-4 px-6">
                           <span className="font-mono text-sm font-medium text-slate-900">
                             #{(currentPage - 1) * itemsPerPage + idx + 1}
@@ -724,14 +781,16 @@ export default function Dashboard() {
                                 {message?.cost || 0}
                               </span>
                             </div>
-                            <span className="text-slate-600 text-sm">contacts</span>
+                            <span className="text-slate-600 text-sm">
+                              contacts
+                            </span>
                           </div>
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-2">
                             <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
                               <FiCheckCircle className="text-sm" />
-                              { message?.successCount || 0}
+                              {message?.successCount || 0}
                             </span>
                             <span className="text-slate-400">/</span>
                             <span className="flex items-center gap-1.5 text-rose-600 font-semibold">
@@ -748,16 +807,23 @@ export default function Dashboard() {
                                 : "bg-rose-100 text-rose-700"
                             }`}
                           >
-                           { message?.successCount >= message?.failedCount ? <FiCheckCircle /> : <FiAlertCircle />}
+                            {message?.successCount >= message?.failedCount ? (
+                              <FiCheckCircle />
+                            ) : (
+                              <FiAlertCircle />
+                            )}
                             {message.status}
                           </span>
                         </td>
                         <td className="py-4 px-6 text-slate-600 text-sm">
-                          {new Date(message.createdAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                          {new Date(message.createdAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            }
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -767,29 +833,50 @@ export default function Dashboard() {
               {messageReports.length > itemsPerPage && (
                 <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-sm text-slate-600">
-                    Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span>{" "}
+                    Showing{" "}
+                    <span className="font-semibold text-slate-900">
+                      {(currentPage - 1) * itemsPerPage + 1}
+                    </span>{" "}
                     to{" "}
                     <span className="font-semibold text-slate-900">
-                      {Math.min(currentPage * itemsPerPage, messageReports.length)}
+                      {Math.min(
+                        currentPage * itemsPerPage,
+                        messageReports.length
+                      )}
                     </span>{" "}
-                    of <span className="font-semibold text-slate-900">{messageReports.length}</span> messages
+                    of{" "}
+                    <span className="font-semibold text-slate-900">
+                      {messageReports.length}
+                    </span>{" "}
+                    messages
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
                       disabled={currentPage === 1}
                       className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors duration-200"
                     >
                       Previous
                     </button>
                     <span className="px-4 py-2 text-sm font-medium text-slate-700">
-                      Page {currentPage} of {Math.ceil(messageReports.length / itemsPerPage)}
+                      Page {currentPage} of{" "}
+                      {Math.ceil(messageReports.length / itemsPerPage)}
                     </span>
                     <button
                       onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(messageReports.length / itemsPerPage)))
+                        setCurrentPage((prev) =>
+                          Math.min(
+                            prev + 1,
+                            Math.ceil(messageReports.length / itemsPerPage)
+                          )
+                        )
                       }
-                      disabled={currentPage === Math.ceil(messageReports.length / itemsPerPage)}
+                      disabled={
+                        currentPage ===
+                        Math.ceil(messageReports.length / itemsPerPage)
+                      }
                       className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors duration-200"
                     >
                       Next
@@ -805,15 +892,23 @@ export default function Dashboard() {
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
               <div className="p-6 border-b border-slate-200">
-                <h3 className="text-2xl font-bold text-slate-900">Add Money to Wallet</h3>
-                <p className="text-slate-600 text-sm mt-1">Choose an amount or enter a custom value</p>
+                <h3 className="text-2xl font-bold text-slate-900">
+                  Add Money to Wallet
+                </h3>
+                <p className="text-slate-600 text-sm mt-1">
+                  Choose an amount or enter a custom value
+                </p>
               </div>
 
               <div className="p-6 space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Amount (₹)</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Amount (₹)
+                  </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">₹</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">
+                      ₹
+                    </span>
                     <input
                       type="number"
                       value={addAmount}
@@ -825,7 +920,9 @@ export default function Dashboard() {
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-slate-700 mb-3">Quick Select</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-3">
+                    Quick Select
+                  </p>
                   <div className="grid grid-cols-3 gap-3">
                     {[100, 500, 1000].map((amount) => (
                       <button
@@ -860,5 +957,5 @@ export default function Dashboard() {
         )}
       </div>
     </div>
-  )
+  );
 }
