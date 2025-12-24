@@ -1744,7 +1744,7 @@ export default function Orders() {
                   </div>
                 </div>
 
-                <div className="text-center p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+                {/* <div className="text-center p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
                   <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mx-auto mb-2">
                     <span className="text-2xl">⏳</span>
                   </div>
@@ -1754,7 +1754,7 @@ export default function Orders() {
                   <div className="text-xs text-gray-600 font-medium mt-1">
                     Pending
                   </div>
-                </div>
+                </div> */}
 
                 <div className="text-center p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
                   <div className="flex items-center justify-center w-12 h-12 bg-cyan-100 rounded-xl mx-auto mb-2">

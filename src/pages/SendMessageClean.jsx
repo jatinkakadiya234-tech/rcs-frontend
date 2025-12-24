@@ -1738,18 +1738,6 @@ export default function SendMessageClean() {
             />
           )}
 
-          {messageType === "text" && (
-            <ModernTemplatePreview
-              selectedTemplate={{ name: MESSAGE_TYPES[messageType] }}
-              message={message}
-              messageType={MESSAGE_TYPES[messageType]}
-              templateMedia={null}
-              templateButtons={[]}
-              templateFooter={""}
-              carouselCards={[]}
-            />
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
