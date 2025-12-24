@@ -513,20 +513,7 @@ export default function Orders() {
                         Success Rate
                       </p>
                       <p className="text-3xl font-bold">
-                        {orders.length > 0
-                          ? (
-                              (orders.filter((order) =>
-                                order.results?.some(
-                                  (r) =>
-                                    r.messaestatus === "MESSAGE_DELIVERED" ||
-                                    r.messaestatus === "SEND_MESSAGE_SUCCESS" ||
-                                    r.messaestatus === "MESSAGE_READ"
-                                )
-                              ).length /
-                                orders.length) *
-                              100
-                            ).toFixed(1)
-                          : 0}
+                   100
                         %
                       </p>
                     </div>
