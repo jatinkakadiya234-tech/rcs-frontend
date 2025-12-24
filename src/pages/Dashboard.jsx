@@ -484,7 +484,6 @@ export default function Dashboard() {
         totalMessages: statsData?.data?.totalMessages || 0,
         totalSuccessCount: statsData?.data?.totalSuccessCount || 0,
       });
-      console.log(statsData, "=====================statsData ");
     } catch (err) {
       console.error("Error fetching data:", err);
       toast.error("Failed to fetch dashboard data");
