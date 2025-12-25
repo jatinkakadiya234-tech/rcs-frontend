@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FaEdit, FaTrash, FaTimes, FaPlus } from 'react-icons/fa'
+import { FaEdit, FaTrash, FaTimes, FaPlus, FaFileAlt, FaImage, FaLayerGroup, FaEye } from 'react-icons/fa'
 import ApiService from '../services/api'
 import { getMessageTypeLabel } from '../utils/messageTypes'
 import { useAuth } from '../context/AuthContext'
@@ -310,383 +310,541 @@ export default function Tapletepate() {
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6">
-      <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+       <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Templates</h1>
-          <div className="flex gap-2">
-          
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-            >
-              Add Template
-            </button>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+              Templates
+            </h1>
+            <p className="text-slate-500 mt-2">Manage your message templates</p>
+          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="group flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-xl hover:shadow-2xl hover:from-blue-700 hover:to-indigo-700 transform hover:-translate-y-1 transition-all duration-300"
+          >
+            <FaPlus className="text-lg group-hover:scale-110 transition-transform" />
+            Add New Template
+          </button>
+        </div>
+
+        {/* 🔥 MODERN TABLE UI 🔥 */}
+        <div className="bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+                  <th className="px-8 py-6 text-left font-black text-white text-sm uppercase tracking-wider">
+                    &nbsp;  &nbsp;
+                    #
+                  </th>
+                  <th className="px-8 py-6 text-left font-black text-white text-sm uppercase tracking-wider">
+                  &nbsp;
+                    Name
+                  </th>
+                  <th className="px-8 py-6 text-left font-black text-white text-sm uppercase tracking-wider">
+                    &nbsp;  &nbsp;  &nbsp;  &nbsp;
+                    Type
+                  </th>
+                  <th className="px-8 py-6 text-left font-black text-white text-sm uppercase tracking-wider">
+                    &nbsp;  &nbsp;  &nbsp;  &nbsp;  &nbsp;
+                    Preview
+                  </th>
+                  <th className="px-8 py-6 text-left font-black text-white text-sm uppercase tracking-wider">
+                    Actions
+                  </th>
+                  <th className="px-8 py-6 text-left font-black text-white text-sm uppercase tracking-wider">
+                    &nbsp;  &nbsp;  &nbsp;  &nbsp;
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-blue-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="py-20 text-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-xl font-semibold text-slate-600">Loading templates...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : templates.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-24 text-center">
+                      <div className="flex flex-col items-center gap-6">
+                        <div className="w-24 h-24 bg-gradient-to-br from-slate-200 to-slate-300 rounded-3xl flex items-center justify-center">
+                          <FaFileAlt className="text-4xl text-slate-400" />
+                        </div>
+                        <div className="text-center">
+                          <h3 className="text-2xl font-bold text-slate-700 mb-2">No templates yet</h3>
+                          <p className="text-slate-500">Create your first template to get started</p>
+                        </div>
+                        <button
+                          onClick={() => setIsModalOpen(true)}
+                          className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:from-blue-700 hover:to-indigo-700 transform hover:-translate-y-1 transition-all duration-300"
+                        >
+                          Create First Template
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  templates.map((template, index) => (
+                    <tr
+                      key={template.id}
+                      className="group hover:bg-white/60 transition-all duration-300 border-b-4 border-blue-100 hover:border-indigo-200 hover:shadow-xl"
+                    >
+                      {/* SN */}
+                      <td className="px-8 py-6">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 text-white rounded-2xl flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-all duration-300">
+                          {index + 1}
+                        </div>
+                      </td>
+
+                      {/* Name */}
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-xl group-hover:rotate-12 transition-all duration-500">
+                            {template.messageType === 'rcs' ? (
+                              <FaImage className="text-white text-xl" />
+                            ) : template.messageType === 'carousel' ? (
+                              <FaLayerGroup className="text-white text-xl" />
+                            ) : (
+                              <FaFileAlt className="text-white text-xl" />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-black text-xl text-slate-800 group-hover:text-blue-600 transition-colors">
+                              {template.name}
+                            </h4>
+                           
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Type */}
+                      <td className="px-8 py-6">
+                        <span className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 text-blue-800 rounded-2xl font-bold text-sm shadow-lg group-hover:shadow-xl transition-all duration-300">
+                          {getMessageTypeLabel(template.messageType)}
+                        </span>
+                      </td>
+
+                      {/* Preview */}
+                      <td className="px-8 py-6 max-w-md">
+                        <div className="space-y-2">
+                          {template.messageType === 'rcs' && template.imageUrl && (
+                            <img
+                              src={template.imageUrl}
+                              alt="Preview"
+                              className="w-24 h-20 object-cover rounded-2xl shadow-lg group-hover:scale-105 transition-transform duration-300"
+                            />
+                          )}
+                          <div className="bg-gradient-to-r from-slate-100 to-blue-50 p-4 rounded-2xl shadow-md group-hover:shadow-xl transition-all duration-300">
+                             <button
+                            onClick={() => handlePreview(template)}
+                            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-teal-600 transform hover:-translate-y-1 transition-all duration-300 group-hover:scale-105"
+                          >
+                            <FaEye className="text-lg" />
+                            Preview
+                          </button>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-3">
+                         
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEdit(template)}
+                              className="p-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-indigo-600 transform hover:-translate-y-1 transition-all duration-300"
+                              title="Edit"
+                            >
+                              <FaEdit className="text-lg" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(template.id)}
+                              className="p-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl shadow-lg hover:shadow-xl hover:from-red-600 hover:to-rose-600 transform hover:-translate-y-1 transition-all duration-300"
+                              title="Delete"
+                            >
+                              <FaTrash className="text-lg" />
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-8 py-6">
+                        {(() => {
+                          const createdDate = new Date(template.createdAt);
+                          const now = new Date();
+                          const secondsDiff = (now - createdDate) / 1000;
+                          if (secondsDiff < 3) {
+                            return (
+                              <span className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 rounded-2xl font-bold text-sm shadow-lg animate-pulse">
+                                <div className="w-3 h-3 bg-yellow-500 rounded-full animate-ping"></div>
+                                Pending
+                              </span>
+                            );
+                          } else {
+                            return (
+                              <span className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 rounded-2xl font-bold text-sm shadow-lg">
+                                <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                                Approved
+                              </span>
+                            );
+                          }
+                        })()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden space-y-4 p-6">
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <span className="text-lg font-semibold text-slate-600">Loading...</span>
+              </div>
+            ) : templates.length === 0 ? (
+              <div className="text-center py-16">
+                <FaFileAlt className="text-6xl text-slate-300 mx-auto mb-6" />
+                <h3 className="text-2xl font-bold text-slate-700 mb-2">No Templates</h3>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300"
+                >
+                  Create Template
+                </button>
+              </div>
+            ) : (
+              templates.map((template, index) => (
+                <div
+                  key={template.id}
+                  className="bg-white rounded-3xl shadow-2xl hover:shadow-3xl p-6 hover:-translate-y-2 transition-all duration-500 border border-blue-100 hover:border-indigo-200"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-xl">
+                      <span className="text-white font-black text-lg">{index + 1}</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <h3 className="font-black text-xl text-slate-800">{template.name}</h3>
+                        <span className="px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 rounded-xl text-sm font-bold">
+                          {getMessageTypeLabel(template.messageType)}
+                        </span>
+                      </div>
+                      <p className="text-slate-600 mb-4 line-clamp-2">{template.text}</p>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handlePreview(template)}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                        >
+                          <FaEye />
+                          Preview
+                        </button>
+                        <button
+                          onClick={() => handleEdit(template)}
+                          className="p-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(template.id)}
+                          className="p-2.5 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 ml-auto">
+                      {(() => {
+                        const createdDate = new Date(template.createdAt);
+                        const now = new Date();
+                        const secondsDiff = (now - createdDate) / 1000;
+                        return secondsDiff < 3 ? (
+                          <span className="px-4 py-2 bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 rounded-xl font-bold text-sm shadow-lg animate-pulse">
+                            Pending
+                          </span>
+                        ) : (
+                          <span className="px-4 py-2 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 rounded-xl font-bold text-sm shadow-lg">
+                            Approved
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gradient-to-r from-purple-50 to-indigo-50 border-b-2 border-purple-200">
-                <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">SN</th>
-                <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Name</th>
-                <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Message Type</th>
-                <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm">Preview</th>
-                <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm ms-4"> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Action</th>
-                <th className="text-left py-4 px-4 font-semibold text-purple-900 text-sm ms-4"> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan="5" className="py-12 text-center text-gray-500">
-                    Loading templates...
-                  </td>
-                </tr>
-              ) : templates.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="py-12 text-center text-gray-500">
-                    No templates found
-                  </td>
-                </tr>
-              ) : (
-                templates.map((template, index) => (
-                  <tr key={template._id} className="border-b border-gray-100 hover:bg-purple-50/30 transition-all duration-200">
-                    <td className="py-4 px-4">
-                      <span className="flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
-                        {index + 1}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="font-medium text-gray-900">{template.name}</span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="inline-flex items-center px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                        {getMessageTypeLabel(template.messageType)}
-                      </span>
-                    </td>
-                    {/* <td className="py-4 px-4">
-                      <div className="max-w-xs">
-                        {template.messageType === 'plain-text' && (
-                          <div className="bg-gray-100 p-2 rounded text-xs text-gray-700 truncate">
-                            {template.text}
-                          </div>
-                        )}
-                        {template.messageType === 'text-with-action' && (
-                          <div className="space-y-1">
-                            <div className="bg-gray-100 p-2 rounded text-xs text-gray-700 truncate">
-                              {template.text}
-                            </div>
-                            <div className="flex gap-1">
-                              {template.actions?.slice(0, 2).map((action, i) => (
-                                <span key={i} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
-                                  {action.title}
-                                </span>
-                              ))}
-                              {template.actions?.length > 2 && (
-                                <span className="text-xs text-gray-500">+{template.actions.length - 2}</span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        {template.messageType === 'rcs' && (
-                          <div className="border border-gray-200 rounded overflow-hidden">
-                            {template.imageUrl && (
-                              <img src={template.imageUrl} alt="RCS" className="w-full h-16 object-cover" />
-                            )}
-                            <div className="p-1 bg-gray-50">
-                              <p className="text-xs text-gray-700 truncate">{template.text}</p>
-                            </div>
-                          </div>
-                        )}
-                        {template.messageType === 'carousel' && (
-                          <div className="flex gap-1 overflow-x-auto">
-                            {template.carouselItems?.slice(0, 3).map((item, i) => (
-                              <div key={i} className="min-w-[60px] border border-gray-200 rounded overflow-hidden">
-                                {item.imageUrl && (
-                                  <img src={item.imageUrl} alt={`Card ${i+1}`} className="w-full h-12 object-cover" />
-                                )}
-                                <div className="p-1 bg-gray-50">
-                                  <p className="text-xs text-gray-700 truncate">{item.title}</p>
-                                </div>
-                              </div>
-                            ))}
-                            {template.carouselItems?.length > 3 && (
-                              <div className="min-w-[60px] flex items-center justify-center text-xs text-gray-500">
-                                +{template.carouselItems.length - 3}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </td> */}  <button 
-                          onClick={() => handlePreview(template)}
-                          className="px-4 py-1.5 mt-5  bg-gray-100 text-gray-700 rounded-lg hover:bg-purple-100 hover:text-purple-700 transition-all duration-200 text-xs font-medium"
-                        >
-                          Preview
-                        </button>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-2">
-                      
-                        <button 
-                          onClick={() => handleEdit(template)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-gray-700 hover:text-purple-700 hover:bg-purple-50 transition-all duration-200 border border-gray-300 hover:border-purple-300 rounded-lg"
-                        >
-                          <FaEdit className="text-xs" />
-                          <span className="text-xs font-medium">Edit</span>
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(template._id)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 border border-red-300 hover:border-red-400 rounded-lg"
-                        >
-                          <FaTrash className="text-xs" />
-                          <span className="text-xs font-medium">Delete</span>
-                        </button>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      {(() => {
-                        const createdDate = new Date(template.createdAt)
-                        const now = new Date()
-                        const secondsDiff = (now - createdDate) / 1000
-                        
-                        if (secondsDiff < 3) {
-                          return <span className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Pending</span>
-                        } else {
-                          return <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">Approved</span>
-                        }
-                      })()}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
         {/* Pagination */}
-        <div className="flex items-center justify-center gap-2 mt-6">
-          <button className="flex items-center justify-center w-9 h-9 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200">
-            &lt;
+        <div className="flex items-center justify-center gap-3 mt-12">
+          <button className="w-12 h-12 bg-gradient-to-r from-slate-200 to-slate-300 text-slate-600 rounded-2xl font-bold shadow-lg hover:shadow-xl hover:from-slate-300 hover:to-slate-400 transition-all duration-300">
+            ‹
           </button>
-          <button className="flex items-center justify-center w-9 h-9 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition-all duration-200 font-medium">
+          <button className="w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-xl shadow-2xl hover:shadow-3xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300">
             1
           </button>
-          <button className="flex items-center justify-center w-9 h-9 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200">
-            &gt;
+          <button className="w-12 h-12 bg-gradient-to-r from-slate-200 to-slate-300 text-slate-600 rounded-2xl font-bold shadow-lg hover:shadow-xl hover:from-slate-300 hover:to-slate-400 transition-all duration-300">
+            ›
           </button>
         </div>
       </div>
 
 
-
       {/* Preview Modal */}
-      {previewOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md shadow-xl">
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-900">Template Preview</h2>
-                <button onClick={() => setPreviewOpen(false)} className="text-gray-400 hover:text-gray-600">
-                  <FaTimes className="text-lg" />
-                </button>
-              </div>
+ {previewOpen && (
+  <div className="fixed inset-0 bg-gradient-to-br from-black/80 via-blue-900/50 to-purple-900/50 backdrop-blur-xl flex items-center justify-center z-50 p-6">
+    <div className="group bg-white/90 backdrop-blur-2xl rounded-3xl w-full max-w-2xl max-h-[90vh] shadow-2xl border border-white/20 overflow-hidden transform hover:scale-[1.02] transition-all duration-500 hover:shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)]">
+      
+      {/* 3D Header */}
+      <div className="p-6 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent -skew-x-12 transform -translate-x-1/4"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-xl -translate-y-16 translate-x-16"></div>
+        
+        <div className="flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-2xl group-hover:rotate-12 transition-all duration-500 border border-white/50">
+              <span className="text-2xl font-black bg-gradient-to-br from-blue-400 to-purple-400 bg-clip-text text-transparent drop-shadow-lg">W</span>
+            </div>
+            <div>
+              <h2 className="text-2xl md:text-3xl font-black drop-shadow-lg">Template Preview</h2>
+              <p className="text-blue-100 font-medium">Live message preview</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setPreviewOpen(false)} 
+            className="group relative p-3 bg-white/20 backdrop-blur-sm hover:bg-white/40 rounded-2xl border border-white/30 hover:border-white/50 shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 hover:-translate-y-1"
+          >
+            <FaTimes className="text-xl text-white drop-shadow-lg" />
+            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </button>
+        </div>
+      </div>
 
-              <div className="space-y-4">
-                <div className="bg-purple-600 text-white p-3 rounded-t-lg">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                      <span className="text-purple-500 font-bold text-sm">W</span>
-                    </div>
-                    <span className="font-medium"> Template Preview</span>
-                  </div>
+      {/* 3D Content Area */}
+      <div className="p-8 space-y-6 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/30 -skew-x-3 origin-top transform translate-x-4"></div>
+        
+        {/* Message Preview Container */}
+        <div className="relative bg-gradient-to-br from-white to-slate-50/50 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/40 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500 group-hover:shadow-purple-500/25">
+          
+          {/* Plain Text Message */}
+          {previewData?.messageType === 'text' && previewData?.text && (
+            <div className="bg-gradient-to-br from-gray-100/80 to-gray-200/60 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-gray-200/50 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 hover:-translate-y-1">
+              <p className="text-base text-gray-800 font-medium leading-relaxed whitespace-pre-wrap drop-shadow-sm">
+                {previewData.text}
+              </p>
+              <div className="mt-4 pt-4 border-t-2 border-gray-200/50">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  Plain Text Message
                 </div>
-                
-                <div className="bg-white p-4">
-                  {/* Plain Text Message */}
-                  {previewData?.messageType === 'text' && previewData?.text && (
-                    <div className="bg-gray-100 p-3 rounded-lg max-w-xs">
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{previewData.text}</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Text with Actions */}
+          {previewData?.messageType === 'text-with-action' && (
+            <div className="max-w-xs mx-auto transform hover:scale-[1.01] transition-all duration-300">
+              {previewData?.text && (
+                <div className="bg-gradient-to-br from-gray-100/80 to-gray-200/60 backdrop-blur-sm p-6 rounded-2xl mb-4 shadow-xl border border-gray-200/50 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                  <p className="text-base text-gray-800 font-medium leading-relaxed whitespace-pre-wrap">
+                    {previewData.text}
+                  </p>
+                </div>
+              )}
+              {previewData?.actions?.length > 0 && (
+                <div className="space-y-2">
+                  {previewData.actions.map((action, index) => (
+                    <button 
+                      key={index} 
+                      className="group w-full py-4 px-6 bg-gradient-to-r from-blue-500/90 to-indigo-600/90 backdrop-blur-sm text-white rounded-2xl font-semibold shadow-xl hover:shadow-2xl hover:from-blue-600 hover:to-indigo-700 hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 border border-blue-300/50 transform relative overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-white/20 blur opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+                      <div className="relative flex items-center justify-center gap-3">
+                        {action.type === 'call' && <span className="text-xl">📞</span>}
+                        {action.type === 'url' && <span className="text-xl">🔗</span>}
+                        {action.type === 'reply' && <span className="text-xl">💬</span>}
+                        <span>{action.title}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* RCS Rich Card */}
+          {previewData?.messageType === 'rcs' && (
+            <div className="max-w-sm mx-auto group/card hover:scale-[1.02] transition-all duration-500">
+              <div className="bg-gradient-to-br from-white to-slate-50/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 overflow-hidden hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-2 transition-all duration-500">
+                {(previewData?.imageUrl || previewData?.richCard?.imageUrl) && (
+                  <div className="relative overflow-hidden">
+                    <img 
+                      src={previewData?.imageUrl || previewData?.richCard?.imageUrl} 
+                      alt="RCS Card" 
+                      className="w-full h-40 object-cover group-hover/card:scale-110 transition-transform duration-700"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/400x160/f8fafc/64748b?text=RCS+Rich+Card'
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                  </div>
+                )}
+                <div className="p-6">
+                  {(previewData?.richCard?.title || previewData?.text) && (
+                    <h4 className="text-xl font-black text-gray-900 mb-2 bg-gradient-to-r from-gray-900 to-slate-800 bg-clip-text">
+                      {previewData?.richCard?.title || previewData?.text}
+                    </h4>
+                  )}
+                  {previewData?.richCard?.subtitle && (
+                    <p className="text-sm text-gray-600 mb-4 font-medium">{previewData.richCard.subtitle}</p>
+                  )}
+                  {(previewData?.richCard?.actions || previewData?.actions)?.length > 0 && (
+                    <div className="space-y-3">
+                      {(previewData?.richCard?.actions || previewData?.actions).map((action, index) => (
+                        <button 
+                          key={index} 
+                          className="group w-full py-3 px-5 bg-gradient-to-r from-emerald-500/90 to-teal-600/90 backdrop-blur-sm text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-teal-700 hover:-translate-y-1 transition-all duration-300 border border-emerald-400/50"
+                        >
+                          <div className="flex items-center justify-center gap-3">
+                            {action.type === 'call' && <span className="text-lg">📞</span>}
+                            {action.type === 'url' && <span className="text-lg">🔗</span>}
+                            {action.type === 'reply' && <span className="text-lg">💬</span>}
+                            <span>{action.title}</span>
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   )}
-                  
-                  {/* Text with Actions */}
-                  {previewData?.messageType === 'text-with-action' && (
-                    <div className="max-w-xs">
-                      {previewData?.text && (
-                        <div className="bg-gray-100 p-3 rounded-lg mb-2">
-                          <p className="text-sm text-gray-800 whitespace-pre-wrap">{previewData.text}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Carousel */}
+          {previewData?.messageType === 'carousel' && previewData?.carouselItems?.length > 0 && (
+            <div className="max-w-4xl mx-auto">
+              <div className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-blue-400 scrollbar-track-blue-100">
+                {previewData.carouselItems.map((item, index) => (
+                  <div 
+                    key={index} 
+                    className="flex-none snap-center group w-64 transform hover:scale-105 hover:-translate-y-3 transition-all duration-500"
+                  >
+                    <div className="bg-gradient-to-br from-white to-slate-50/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 overflow-hidden hover:shadow-[0_25px_50px_rgba(0,0,0,0.15)] hover:border-indigo-300/50">
+                      {item.imageUrl && (
+                        <div className="relative h-48 overflow-hidden">
+                          <img 
+                            src={item.imageUrl} 
+                            alt={`Carousel ${index + 1}`} 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            onError={(e) => {
+                              e.target.src = `https://via.placeholder.com/256x192/f8fafc/64748b?text=Card+${index + 1}`
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
                         </div>
                       )}
-                      {previewData?.actions?.length > 0 && (
-                        <div className="space-y-1">
-                          {previewData.actions.map((action, index) => (
-                            <button key={index} className="w-full py-2 border border-blue-500 text-blue-500 rounded text-sm font-medium">
-                              {action.type === 'call' ? '📞' : action.type === 'url' ? '🔗' : '💬'} {action.title}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Image Message */}
-                  {previewData?.messageType === 'image' && (
-                    <div className="bg-gray-100 p-2 rounded-lg max-w-xs">
-                      {previewData?.mediaUrl && (
-                        <img 
-                          src={previewData.mediaUrl} 
-                          alt="Preview" 
-                          className="w-full rounded-md mb-2"
-                          onError={(e) => {
-                            e.target.src = 'https://via.placeholder.com/200x150/f5f5f5/666666?text=Image'
-                          }}
-                        />
-                      )}
-                      {previewData?.caption && (
-                        <p className="text-sm text-gray-800">{previewData.caption}</p>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* RCS Rich Card */}
-                  {previewData?.messageType === 'rcs' && (
-                    <div className="border border-gray-200 rounded-lg max-w-sm overflow-hidden">
-                      {(previewData?.imageUrl || previewData?.richCard?.imageUrl) && (
-                        <img 
-                          src={previewData?.imageUrl || previewData?.richCard?.imageUrl} 
-                          alt="RCS Card" 
-                          className="w-full h-32 object-cover"
-                          onError={(e) => {
-                            e.target.src = 'https://via.placeholder.com/300x128/f5f5f5/666666?text=RCS+Card'
-                          }}
-                        />
-                      )}
-                      <div className="p-3">
-                        {(previewData?.richCard?.title || previewData?.text) && (
-                          <h4 className="font-semibold text-gray-900 mb-1">{previewData?.richCard?.title || previewData?.text}</h4>
+                      <div className="p-6">
+                        {item.title && (
+                          <h5 className="font-black text-lg text-gray-900 mb-2 line-clamp-2">{item.title}</h5>
                         )}
-                        {previewData?.richCard?.subtitle && (
-                          <p className="text-xs text-gray-600 mb-2">{previewData.richCard.subtitle}</p>
+                        {item.subtitle && (
+                          <p className="text-sm text-gray-600 mb-4 font-medium line-clamp-2">{item.subtitle}</p>
                         )}
-                        {(previewData?.richCard?.actions || previewData?.actions)?.length > 0 && (
+                        {item.actions?.length > 0 && (
                           <div className="space-y-2">
-                            {(previewData?.richCard?.actions || previewData?.actions).map((action, index) => (
-                              <button key={index} className="w-full py-2 bg-blue-500 text-white rounded text-sm font-medium">
-                                {action.type === 'call' ? '📞' : action.type === 'url' ? '🔗' : '💬'} {action.title}
+                            {item.actions.map((action, actionIndex) => (
+                              <button 
+                                key={actionIndex} 
+                                className="group w-full py-2.5 px-4 bg-gradient-to-r from-purple-500/90 to-pink-600/90 backdrop-blur-sm text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-purple-600 hover:to-pink-700 hover:-translate-y-1 transition-all duration-300 border border-purple-400/50 text-sm"
+                              >
+                                <div className="flex items-center justify-center gap-2">
+                                  {action.type === 'call' && <span>📞</span>}
+                                  {action.type === 'url' && <span>🔗</span>}
+                                  {action.type === 'reply' && <span>💬</span>}
+                                  <span>{action.title}</span>
+                                </div>
                               </button>
                             ))}
                           </div>
                         )}
                       </div>
                     </div>
-                  )}
-                  
-                  {/* Carousel */}
-                  {previewData?.messageType === 'carousel' && previewData?.carouselItems?.length > 0 && (
-                    <div className="max-w-sm">
-                      <div className="flex gap-2 overflow-x-auto pb-2">
-                        {previewData.carouselItems.map((item, index) => (
-                          <div key={index} className="border border-gray-200 rounded-lg min-w-[200px] overflow-hidden">
-                            {item.imageUrl && (
-                              <img 
-                                src={item.imageUrl} 
-                                alt={`Carousel ${index + 1}`} 
-                                className="w-full h-24 object-cover"
-                                onError={(e) => {
-                                  e.target.src = 'https://via.placeholder.com/200x96/f5f5f5/666666?text=Item+' + (index + 1)
-                                }}
-                              />
-                            )}
-                            <div className="p-2">
-                              <h5 className="font-medium text-xs text-gray-900">{item.title}</h5>
-                              {item.subtitle && (
-                                <p className="text-xs text-gray-600 mt-1">{item.subtitle}</p>
-                              )}
-                              {item.actions?.length > 0 && (
-                                <div className="space-y-1 mt-2">
-                                  {item.actions.map((action, actionIndex) => (
-                                    <button key={actionIndex} className="w-full py-1 bg-blue-500 text-white rounded text-xs font-medium">
-                                      {action.type === 'call' ? '📞' : action.type === 'url' ? '🔗' : '💬'} {action.title}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="text-xs text-gray-500 text-center mt-1">
-                        Swipe to see more items →
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Button Message */}
-                  {previewData?.messageType === 'button' && (
-                    <div className="max-w-xs">
-                      {previewData?.text && (
-                        <div className="bg-gray-100 p-3 rounded-lg mb-2">
-                          <p className="text-sm text-gray-800">{previewData.text}</p>
-                        </div>
-                      )}
-                      {previewData?.buttons?.length > 0 && (
-                        <div className="space-y-1">
-                          {previewData.buttons.map((button, index) => (
-                            <button key={index} className="w-full py-2 border border-blue-500 text-blue-500 rounded text-sm font-medium">
-                              {button.type === 'call' ? '📞' : button.type === 'url' ? '🔗' : '💬'} {button.title}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Location Message */}
-                  {previewData?.messageType === 'location' && (
-                    <div className="bg-gray-100 p-3 rounded-lg max-w-xs">
-                      <div className="text-center mb-2">
-                        <span className="text-2xl">📍</span>
-                      </div>
-                      <p className="text-sm font-medium text-gray-800">Location Shared</p>
-                      {previewData?.address && (
-                        <p className="text-xs text-gray-600 mt-1">{previewData.address}</p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1">
-                        {previewData?.latitude}, {previewData?.longitude}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {/* Contact Message */}
-                  {previewData?.messageType === 'contact' && (
-                    <div className="bg-gray-100 p-3 rounded-lg max-w-xs">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                          <span className="text-gray-600">👤</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">{previewData?.contactName}</p>
-                          <p className="text-xs text-gray-600">{previewData?.contactPhone}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Default fallback */}
-                  {!['text', 'text-with-action', 'text', 'image', 'rcs', 'button', 'location', 'contact', 'carousel'].includes(previewData?.messageType) && (
-                    <div className="bg-gray-100 p-3 rounded-lg max-w-xs">
-                      <p className="text-sm text-gray-600">Preview not available for {getMessageTypeLabel(previewData?.messageType)}</p>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-center mt-4">
+                <span className="px-4 py-2 bg-gradient-to-r from-blue-100/50 to-purple-100/50 backdrop-blur-sm text-blue-700 rounded-2xl text-sm font-semibold border border-blue-200/50">
+                  👆 Swipe to see more cards →
+                </span>
               </div>
             </div>
+          )}
+
+          {/* Other message types with same 3D styling */}
+          {previewData?.messageType === 'image' && (
+            <div className="max-w-xs mx-auto transform hover:scale-105 transition-all duration-500">
+              <div className="bg-gradient-to-br from-gray-100/80 to-gray-200/60 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-gray-200/50 text-center hover:shadow-3xl hover:-translate-y-2">
+                {previewData?.mediaUrl && (
+                  <img 
+                    src={previewData.mediaUrl} 
+                    alt="Preview" 
+                    className="w-full max-h-64 object-contain rounded-2xl shadow-2xl mx-auto mb-4 hover:scale-105 transition-transform duration-300"
+                    onError={(e) => e.target.src = 'https://via.placeholder.com/300x200/f8fafc/64748b?text=Image'}
+                  />
+                )}
+                {previewData?.caption && (
+                  <p className="text-lg text-gray-800 font-semibold">{previewData.caption}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Default fallback */}
+          {!['text', 'text-with-action', 'image', 'rcs', 'carousel'].includes(previewData?.messageType) && (
+            <div className="bg-gradient-to-br from-gray-100/80 to-gray-200/60 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-gray-200/50 text-center hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+              <div className="w-20 h-20 bg-gradient-to-br from-slate-200 to-slate-300 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+                <FaFileAlt className="text-2xl text-slate-500" />
+              </div>
+              <h3 className="text-xl font-black text-slate-700 mb-2">
+                Preview Not Available
+              </h3>
+              <p className="text-slate-600 font-medium">
+                {getMessageTypeLabel(previewData?.messageType)} preview coming soon...
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 3D Footer */}
+      <div className="px-8 py-6 bg-gradient-to-r from-slate-50/80 to-blue-50/80 backdrop-blur-xl border-t border-white/50">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-slate-600 font-medium">Preview updated in real-time</span>
+          <div className="flex items-center gap-3">
+            <span className="px-4 py-2 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 rounded-xl font-semibold text-sm shadow-md border border-emerald-200/50">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full inline-block mr-2 animate-pulse"></div>
+              Live
+            </span>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* Import RCS Modal */}
      
@@ -748,7 +906,7 @@ export default function Tapletepate() {
                 </div>
 
                 {/* Message Editor - Only for text and text-with-action */}
-                {(messageType === 'text') && (
+                {(messageType === 'text' || messageType === 'text-with-action') && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <span className="text-red-500">*</span> Text
