@@ -151,11 +151,7 @@ export default function UserLayout() {
       label: 'Admin Panel',
       onClick: () => navigate('/admin'),
     }] : []),
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Account Settings',
-    },
+    
     { type: 'divider' },
     {
       key: 'logout',
