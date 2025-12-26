@@ -62,6 +62,7 @@ export default function CreateTemplatePage() {
   const screens = useBreakpoint();
   const [form] = Form.useForm();
   const previewRef = useRef(null);
+  const carouselContainerRef = useRef(null);
 
   // Templates list state
   const [templates, setTemplates] = useState([]);
@@ -189,6 +190,15 @@ export default function CreateTemplatePage() {
 
   const addCarouselItem = () => {
     setCarouselItems([...carouselItems, { title: '', subtitle: '', imageUrl: '', actions: [], mediaFile: null }]);
+    // Scroll to bottom after adding new card
+    setTimeout(() => {
+      if (carouselContainerRef.current) {
+        carouselContainerRef.current.scrollTo({
+          top: carouselContainerRef.current.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    }, 100);
   };
 
   const removeCarouselItem = (index) => {
@@ -465,705 +475,250 @@ export default function CreateTemplatePage() {
     </div>
   );
 
-  // RCS Message Preview Component
+  // RCS Message Preview Component with realistic mobile UI
   const RCSMessagePreview = ({ data }) => {
     if (!data) return null;
 
-    if (data === 'text') {
+    const phoneStyle = {
+      width: '300px',
+      height: '600px',
+      background: '#000',
+      borderRadius: '24px',
+      padding: '8px',
+      margin: '0 auto',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+    };
+
+    const screenStyle = {
+      width: '100%',
+      height: '100%',
+      background: '#ffffff',
+      borderRadius: '16px',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+    };
+
+    const headerStyle = {
+      background: '#ffffff',
+      padding: '12px 16px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      borderBottom: '1px solid #e0e0e0',
+    };
+
+    const chatAreaStyle = {
+      flex: 1,
+      padding: '5px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '12px',
+      overflowY: 'auto',
+      background: '#f5f5f5',
+    };
+
+    const messageBubbleStyle = {
+      minWidth: '240px',
+      maxWidth: '95%',
+      alignSelf: 'flex-end',
+      background: '#e3f2fd',
+      borderRadius: '18px 18px 4px 18px',
+      overflow: 'hidden',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+    };
+
+    const renderRcsMessage = () => {
+      if (!richCard.title && !richCard.imageUrl) return null;
+
       return (
-        <MobilePhoneFrame title="RCS Text Message">
-          <div style={{
-            padding: '0',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            background: '#ffffff',
-          }}>
-            {/* Messages app header */}
-            <div style={{
-              background: '#1976d2',
-              padding: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              borderRadius: '16px 16px 0 0',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-              }}>🏢</div>
-              <div>
-                <div style={{ color: 'white', fontSize: '16px', fontWeight: 600 }}>
-                  {user?.companyname || 'Business'}
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
-                  RCS • Business messaging
-                </div>
-              </div>
-            </div>
-
-            {/* Chat area */}
-            <div style={{
-              flex: 1,
-              background: '#ffffff',
-              padding: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-            }}>
-              {/* Business message */}
-              <div style={{
-                alignSelf: 'flex-start',
-                maxWidth: '85%',
-                background: '#e3f2fd',
-                color: '#1565c0',
-                padding: '12px 16px',
-                borderRadius: '18px 18px 18px 4px',
-                fontSize: '14px',
-                lineHeight: '1.4',
-                wordWrap: 'break-word',
-                whiteSpace: 'pre-wrap',
-                border: '1px solid #bbdefb',
-              }}>
-                {formData.text || 'Your RCS message text will appear here...'}
-                <div style={{
-                  fontSize: '11px',
-                  color: '#1976d2',
-                  textAlign: 'right',
-                  marginTop: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  gap: '4px',
-                }}>
-                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  <span style={{ fontSize: '10px' }}>✓</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Input area */}
-            <div style={{
-              background: '#f5f5f5',
-              padding: '12px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              borderRadius: '0 0 16px 16px',
-              borderTop: '1px solid #e0e0e0',
-            }}>
-              <div style={{
-                flex: 1,
-                background: 'white',
-                borderRadius: '24px',
-                padding: '12px 16px',
-                fontSize: '14px',
-                color: '#999',
-                border: '1px solid #e0e0e0',
-              }}>
-                Message
-              </div>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: '#1976d2',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '16px',
-              }}>→</div>
-            </div>
-          </div>
-        </MobilePhoneFrame>
-      );
-    }
-
-    if (data === 'text-with-action') {
-      return (
-        <MobilePhoneFrame title="RCS Interactive Message">
-          <div style={{
-            padding: '0',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            background: '#ffffff',
-          }}>
-            {/* Messages app header */}
-            <div style={{
-              background: '#1976d2',
-              padding: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              borderRadius: '16px 16px 0 0',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-              }}>🏢</div>
-              <div>
-                <div style={{ color: 'white', fontSize: '16px', fontWeight: 600 }}>
-                  {user?.companyname || 'Business'}
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
-                  RCS • Business messaging
-                </div>
-              </div>
-            </div>
-
-            {/* Chat area */}
-            <div style={{
-              flex: 1,
-              background: '#ffffff',
-              padding: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-            }}>
-              {/* Text Message */}
-              <div style={{
-                alignSelf: 'flex-start',
-                maxWidth: '85%',
-                background: '#e3f2fd',
-                color: '#1565c0',
-                padding: '12px 16px',
-                borderRadius: '18px 18px 18px 4px',
-                fontSize: '14px',
-                lineHeight: '1.4',
-                border: '1px solid #bbdefb',
-              }}>
-                {formData.text || 'Your interactive RCS message...'}
-                <div style={{
-                  fontSize: '11px',
-                  color: '#1976d2',
-                  textAlign: 'right',
-                  marginTop: '6px',
-                }}>
-                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
-
-              {/* Suggested Actions */}
-              {actions.some(a => a.title.trim()) && (
-                <div style={{
-                  alignSelf: 'flex-start',
-                  maxWidth: '85%',
-                  marginTop: '8px',
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '8px',
-                  }}>
-                    {actions.filter(a => a.title.trim()).map((action, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          background: 'transparent',
-                          border: '1px solid #5f6368',
-                          color: '#1a73e8',
-                          padding: '8px 16px',
-                          borderRadius: '20px',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          textAlign: 'center',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          minHeight: '36px',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {action.title}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Input area */}
-            <div style={{
-              background: '#f5f5f5',
-              padding: '12px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              borderRadius: '0 0 16px 16px',
-              borderTop: '1px solid #e0e0e0',
-            }}>
-              <div style={{
-                flex: 1,
-                background: 'white',
-                borderRadius: '24px',
-                padding: '12px 16px',
-                fontSize: '14px',
-                color: '#999',
-                border: '1px solid #e0e0e0',
-              }}>
-                Message
-              </div>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: '#1976d2',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '16px',
-              }}>→</div>
-            </div>
-          </div>
-        </MobilePhoneFrame>
-      );
-    }
-
-    if (data === 'rcs') {
-      return (
-        <MobilePhoneFrame title="RCS Rich Card">
-          <div style={{
-            padding: '0',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            background: '#ffffff',
-          }}>
-            {/* Messages app header */}
-            <div style={{
-              background: '#1976d2',
-              padding: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              borderRadius: '16px 16px 0 0',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-              }}>🏢</div>
-              <div>
-                <div style={{ color: 'white', fontSize: '16px', fontWeight: 600 }}>
-                  {user?.companyname || 'Business'}
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
-                  RCS • Rich messaging
-                </div>
-              </div>
-            </div>
-
-            {/* Chat area */}
-            <div style={{
-              flex: 1,
-              background: '#ffffff',
-              padding: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-            }}>
-              {/* Rich Card */}
-              <div style={{
-                alignSelf: 'flex-start',
-                width: '100%',
-                background: '#ffffff',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-                border: '1px solid #e0e0e0',
-              }}>
-                {/* Card Image */}
-                {richCard.imageUrl ? (
-                  <img
-                    src={richCard.imageUrl}
-                    alt="Card"
+        <div style={messageBubbleStyle}>
+          {richCard.imageUrl && (
+            <img
+              src={richCard.imageUrl}
+              alt="RCS Media"
+              style={{ width: '100%', height: '160px', objectFit: 'cover' }}
+            />
+          )}
+          <div style={{ padding: '12px' }}>
+            {richCard.title && (
+              <h4 style={{ color: '#000', fontSize: '14px', fontWeight: 600, margin: '0 0 4px 0' }}>
+                {richCard.title}
+              </h4>
+            )}
+            {richCard.subtitle && (
+              <p style={{ color: '#333', fontSize: '12px', margin: '0 0 12px 0', lineHeight: 1.4 }}>
+                {richCard.subtitle}
+              </p>
+            )}
+            {richCard.actions && richCard.actions.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {richCard.actions.filter(a => a.title.trim()).slice(0, 2).map((action, idx) => (
+                  <button
+                    key={idx}
                     style={{
-                      width: '100%',
-                      height: '180px',
-                      objectFit: 'cover',
-                      display: 'block',
+                      background: '#ffffff',
+                      border: '1px solid #dadce0',
+                      borderRadius: '20px',
+                      color: '#1a73e8',
+                      padding: '8px 16px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
                     }}
+                  >
+                    {action.title}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const renderTextMessage = () => {
+      if (!formData.text) return null;
+
+      return (
+        <div style={{
+          ...messageBubbleStyle,
+          background: '#1976d2',
+          padding: '12px 16px',
+        }}>
+          <p style={{ color: '#ffffff', fontSize: '14px', margin: 0, lineHeight: 1.4 }}>
+            {formData.text}
+          </p>
+        </div>
+      );
+    };
+
+    const renderCarouselMessage = () => {
+      const validItems = carouselItems.filter(item => item.title.trim());
+      if (validItems.length === 0) return null;
+
+      return (
+        <div style={{ ...messageBubbleStyle, background: 'transparent', boxShadow: 'none' }}>
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '0 4px' }}>
+            {validItems.slice(0, 3).map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  minWidth: '180px',
+                  background: '#e3f2fd',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                }}
+              >
+                {item.imageUrl && (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    style={{ width: '100%', height: '100px', objectFit: 'cover' }}
                   />
-                ) : (
-                  <div style={{
-                    width: '100%',
-                    height: '180px',
-                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontSize: '16px',
-                    fontWeight: 600,
-                  }}>
-                    🖼️ Rich Card Image
-                  </div>
                 )}
-
-                {/* Card Content */}
-                <div style={{ padding: '16px' }}>
-                  {richCard.title && (
-                    <div style={{
-                      fontSize: '18px',
-                      fontWeight: 700,
-                      color: '#212121',
-                      marginBottom: '8px',
-                      lineHeight: '1.3',
-                    }}>
-                      {richCard.title}
-                    </div>
+                <div style={{ padding: '10px' }}>
+                  <h5 style={{ color: '#000', fontSize: '12px', fontWeight: 600, margin: '0 0 4px 0' }}>
+                    {item.title}
+                  </h5>
+                  {item.subtitle && (
+                    <p style={{ color: '#333', fontSize: '10px', margin: '0 0 8px 0' }}>
+                      {item.subtitle}
+                    </p>
                   )}
-                  {richCard.subtitle && (
-                    <div style={{
-                      fontSize: '14px',
-                      color: '#666',
-                      marginBottom: '16px',
-                      lineHeight: '1.4',
-                    }}>
-                      {richCard.subtitle}
-                    </div>
-                  )}
-
-                  {/* Card Buttons */}
-                  {richCard.actions?.length > 0 && (
-                    <div style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '8px',
-                      marginTop: '12px',
-                    }}>
-                      {richCard.actions.map((action, idx) => (
-                        <div
-                          key={idx}
+                  {item.actions && item.actions.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {item.actions.filter(a => a.title.trim()).slice(0, 2).map((action, actionIdx) => (
+                        <button
+                          key={actionIdx}
                           style={{
-                            background: 'transparent',
-                            border: '1px solid #5f6368',
-                            color: '#1a73e8',
-                            padding: '8px 16px',
+                            background: '#ffffff',
+                            border: '1px solid #dadce0',
                             borderRadius: '20px',
-                            fontSize: '14px',
+                            color: '#1a73e8',
+                            padding: '6px 12px',
+                            fontSize: '10px',
+                            width: '100%',
                             fontWeight: 500,
-                            textAlign: 'center',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            minHeight: '36px',
-                            whiteSpace: 'nowrap',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
                           }}
                         >
                           {action.title}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )}
                 </div>
-
-                {/* Timestamp */}
-                <div style={{
-                  padding: '0 16px 12px',
-                  fontSize: '11px',
-                  color: '#999',
-                  textAlign: 'right',
-                }}>
-                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • RCS
-                </div>
               </div>
-            </div>
-
-            {/* Input area */}
-            <div style={{
-              background: '#f5f5f5',
-              padding: '12px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              borderRadius: '0 0 16px 16px',
-              borderTop: '1px solid #e0e0e0',
-            }}>
-              <div style={{
-                flex: 1,
-                background: 'white',
-                borderRadius: '24px',
-                padding: '12px 16px',
-                fontSize: '14px',
-                color: '#999',
-                border: '1px solid #e0e0e0',
-              }}>
-                Message
-              </div>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: '#1976d2',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '16px',
-              }}>→</div>
-            </div>
+            ))}
           </div>
-        </MobilePhoneFrame>
+        </div>
       );
-    }
+    };
 
-    if (data === 'carousel') {
-      return (
-        <MobilePhoneFrame title="RCS Carousel">
-          <div style={{
-            padding: '0',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            background: '#ffffff',
-          }}>
-            {/* Messages app header */}
-            <div style={{
-              background: '#1976d2',
-              padding: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              borderRadius: '16px 16px 0 0',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-              }}>🏢</div>
-              <div>
-                <div style={{ color: 'white', fontSize: '16px', fontWeight: 600 }}>
-                  {user?.companyname || 'Business'}
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
-                  RCS • Carousel experience
-                </div>
+    return (
+      <div style={{ padding: '20px', background: '#f5f7fa', borderRadius: '12px' }}>
+        <div style={phoneStyle}>
+          <div style={screenStyle}>
+            {/* Header */}
+            <div style={headerStyle}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#4caf50', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ color: 'white', fontSize: '12px', fontWeight: 600 }}>B</span>
               </div>
+              <div style={{ flex: 1 }}>
+                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Business</h4>
+                <p style={{ margin: 0, fontSize: '11px', color: '#666' }}>RCS • Online</p>
+              </div>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#e0e0e0' }} />
             </div>
 
-            {/* Chat area */}
-            <div style={{
-              flex: 1,
-              background: '#ffffff',
-              padding: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-              overflow: 'hidden',
-            }}>
-              {/* Carousel indicator */}
-              <div style={{
-                fontSize: '12px',
-                color: '#666',
-                textAlign: 'center',
-                marginBottom: '8px',
-                fontWeight: 500,
-              }}>
-                ← Swipe to browse → ({carouselItems.filter(item => item.title.trim()).length} items)
-              </div>
-
-              {/* Carousel Cards */}
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                overflowX: 'auto',
-                paddingBottom: '8px',
-                scrollBehavior: 'smooth',
-              }}>
-                {carouselItems.filter(item => item.title.trim()).map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      flex: '0 0 260px',
-                      background: '#ffffff',
-                      borderRadius: '16px',
-                      overflow: 'hidden',
-                      boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-                      border: '1px solid #e0e0e0',
-                      display: 'flex',
-                      flexDirection: 'column',
-                    }}
-                  >
-                    {/* Card Image */}
-                    {item.imageUrl ? (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        style={{
-                          width: '100%',
-                          height: '140px',
-                          objectFit: 'cover',
-                          display: 'block',
-                        }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: '100%',
-                        height: '140px',
-                        background: `linear-gradient(135deg, ${['#1976d2', '#4caf50', '#ff9800', '#e91e63'][idx % 4]} 0%, ${['#42a5f5', '#66bb6a', '#ffb74d', '#f06292'][idx % 4]} 100%)`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                      }}>
-                        🖼️ Card {idx + 1}
+            {/* Chat Area */}
+            <div style={chatAreaStyle}>
+              {data === 'rcs' && renderRcsMessage()}
+              {data === 'text' && renderTextMessage()}
+              {data === 'text-with-action' && (
+                <>
+                  {renderTextMessage()}
+                  {actions.some(a => a.title.trim()) && (
+                    <div style={{ alignSelf: 'flex-end', maxWidth: '95%', marginTop: '1px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {actions.filter(a => a.title.trim()).slice(0, 3).map((action, idx) => (
+                          <button
+                            key={idx}
+                            style={{
+                              background: '#ffffff',
+                              border: '1px solid #dadce0',
+                              color: '#1a73e8',
+                              padding: '8px 16px',
+                              borderRadius: '20px',
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              cursor: 'pointer',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                            }}
+                          >
+                            {action.title}
+                          </button>
+                        ))}
                       </div>
-                    )}
-
-                    {/* Card Content */}
-                    <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      {item.title && (
-                        <div style={{
-                          fontSize: '16px',
-                          fontWeight: 700,
-                          color: '#212121',
-                          marginBottom: '6px',
-                          lineHeight: '1.2',
-                        }}>
-                          {item.title}
-                        </div>
-                      )}
-                      {item.subtitle && (
-                        <div style={{
-                          fontSize: '12px',
-                          color: '#666',
-                          marginBottom: '12px',
-                          lineHeight: '1.3',
-                          flex: 1,
-                        }}>
-                          {item.subtitle}
-                        </div>
-                      )}
-
-                      {/* Card Buttons */}
-                      {item.actions?.length > 0 && (
-                        <div style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '6px',
-                          marginTop: 'auto',
-                        }}>
-                          {item.actions.filter(a => a.title.trim()).slice(0, 2).map((action, aIdx) => {
-                            const buttonStyles = {
-                              reply: { bg: '#1976d2', text: 'white' },
-                              url: { bg: '#4caf50', text: 'white' },
-                              call: { bg: '#ff5722', text: 'white' },
-                            };
-                            const style = buttonStyles[action.type] || buttonStyles.reply;
-                            
-                            return (
-                              <div
-                                key={aIdx}
-                                style={{
-                                  background: style.bg,
-                                  color: style.text,
-                                  padding: '10px 14px',
-                                  borderRadius: '8px',
-                                  fontSize: '12px',
-                                  fontWeight: 600,
-                                  textAlign: 'center',
-                                  cursor: 'pointer',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                                }}
-                              >
-                                {action.title}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  )}
+                </>
+              )}
+              {data === 'carousel' && renderCarouselMessage()}
+              
+              {/* Delivery Status */}
+              <div style={{ alignSelf: 'flex-end', marginTop: '4px' }}>
+                <span style={{ fontSize: '10px', color: '#666' }}>✓✓ Delivered</span>
               </div>
-
-              {/* Timestamp */}
-              <div style={{
-                fontSize: '11px',
-                color: '#999',
-                textAlign: 'right',
-                marginTop: '8px',
-              }}>
-                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • RCS
-              </div>
-            </div>
-
-            {/* Input area */}
-            <div style={{
-              background: '#f5f5f5',
-              padding: '12px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              borderRadius: '0 0 16px 16px',
-              borderTop: '1px solid #e0e0e0',
-            }}>
-              <div style={{
-                flex: 1,
-                background: 'white',
-                borderRadius: '24px',
-                padding: '12px 16px',
-                fontSize: '14px',
-                color: '#999',
-                border: '1px solid #e0e0e0',
-              }}>
-                Message
-              </div>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: '#1976d2',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '16px',
-              }}>→</div>
             </div>
           </div>
-        </MobilePhoneFrame>
-      );
-    }
-
-    return null;
+        </div>
+      </div>
+    );
   };
 
   // Table columns configuration
@@ -1538,7 +1093,7 @@ export default function CreateTemplatePage() {
             {/* Main Form & Preview Layout */}
             <Row gutter={[24, 24]} style={{ marginBottom: '32px' }}>
               {/* Left: Form Section */}
-              <Col xs={24} lg={14} xl={13}>
+              <Col xs={24} lg={15} xl={16}>
                 <Card
                   style={{
                     borderRadius: '12px',
@@ -1904,7 +1459,7 @@ export default function CreateTemplatePage() {
                           </Button>
                         </div>
 
-                        <div style={{ maxHeight: '800px', overflowY: 'auto' }}>
+                        <div ref={carouselContainerRef} style={{ maxHeight: '800px', overflowY: 'auto' }}>
                           {carouselItems.map((item, index) => renderCarouselItemEditor(item, index))}
                         </div>
                       </div>
@@ -1953,7 +1508,7 @@ export default function CreateTemplatePage() {
               </Col>
 
               {/* Right: Mobile Preview */}
-              <Col xs={24} lg={10} xl={11}>
+              <Col xs={24} lg={7} xl={8}>
                 <Card
                   title={
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
