@@ -2,15 +2,15 @@ import './App.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './layout/layout.jsx'
 import AdminLayout from './layout/AdminLayout.jsx'
-import Dashboard from './pages/Dashboard.jsx'
+import Dashboard from './pages/user/Dashboard.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
-import Tapletepate from './pages/TemplatePage.jsx'
-import Orders from './pages/Orders.jsx'
+import TemplatePage from './pages/user/TemplatePage.jsx'
+import Orders from './pages/user/Orders.jsx'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AuthChecker from './components/AuthChecker'
-import SendMessage from './pages/SendMessageClean.jsx'
+import SendMessage from './pages/user/SendMessage.jsx'
 import Profile from './pages/Profile.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import Users from './pages/admin/Users.jsx'
@@ -29,17 +29,17 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
+
         <Route path="/" element={
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={['user']}>
               <Layout />
             </RoleBasedRoute>
           </ProtectedRoute>
-        }> 
+        }>
           <Route index element={<Dashboard />} />
           <Route path="newCampaign" element={<SendMessage />} />
-          <Route path="templates" element={<Tapletepate />} />
+          <Route path="templates" element={<TemplatePage />} />
           <Route path="reports" element={<Orders />} />
           <Route path="profile" element={<Profile />} />
         </Route>

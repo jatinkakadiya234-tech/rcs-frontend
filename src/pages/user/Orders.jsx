@@ -1,0 +1,2143 @@
+// import { useState, useEffect } from "react";
+// import {
+//   FaEye,
+//   FaDownload,
+//   FaTrash,
+//   FaSearch,
+//   FaFilter,
+//   FaChartLine,
+// } from "react-icons/fa";
+// import { BiRefresh } from "react-icons/bi";
+// import * as XLSX from "xlsx";
+// import { useAuth } from "../context/AuthContext";
+// import toast from "react-hot-toast";
+// import { useOrders, useOrderDetails, useDeleteOrder } from "../hooks/useOrders";
+
+// export default function Orders() {
+//   const { user } = useAuth();
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [selectedOrder, setSelectedOrder] = useState(null);
+//   const [showModal, setShowModal] = useState(false);
+//   const [modalCurrentPage, setModalCurrentPage] = useState(1);
+
+//   // React Query hooks
+//   const {
+//     data: ordersData,
+//     isLoading,
+//     error,
+//     refetch,
+//   } = useOrders(user?._id, currentPage, 10);
+//   const deleteOrderMutation = useDeleteOrder();
+
+//   const orders = ordersData?.data || [];
+//   const pagination = ordersData?.pagination || {
+//     page: 1,
+//     limit: 10,
+//     total: 0,
+//     pages: 0,
+//   };
+//   const [searchTerm, setSearchTerm] = useState("");
+//   const [statusFilter, setStatusFilter] = useState("all");
+//   const [typeFilter, setTypeFilter] = useState("all");
+//   const [campaignFilter, setCampaignFilter] = useState("all");
+//   const [dateRange, setDateRange] = useState({ start: "", end: "" });
+//   const [sortOrder, setSortOrder] = useState("desc");
+//   const [filteredOrders, setFilteredOrders] = useState([]);
+
+//   useEffect(() => {
+//     if (orders.length > 0) {
+//       filterAndSortOrders();
+//     }
+//   }, [
+//     orders,
+//     searchTerm,
+//     statusFilter,
+//     typeFilter,
+//     campaignFilter,
+//     dateRange,
+//     sortOrder,
+//   ]);
+
+//   const filterAndSortOrders = () => {
+//     let filtered = [...orders];
+
+//     // Search filter
+//     if (searchTerm) {
+//       filtered = filtered?.filter(
+//         (order) =>
+//           order?.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//           order?.phoneNumbers?.some((phone) => phone.includes(searchTerm)) ||
+//           order?._id?.toLowerCase().includes(searchTerm.toLowerCase())
+//       );
+//     }
+
+//     // Status filter
+//     if (statusFilter !== "all") {
+//       filtered = filtered?.filter((order) => {
+//         if (statusFilter === "success") {
+//           return order.results?.some((r) => r.status === 201);
+//         } else if (statusFilter === "failed") {
+//           return order.results?.some((r) => r.error || r.status !== 201);
+//         } else if (statusFilter === "pending") {
+//           return !order.results || order.results.length === 0;
+//         }
+//         return true;
+//       });
+//     }
+
+//     // Type filter
+//     if (typeFilter !== "all") {
+//       filtered = filtered.filter((order) => order.type === typeFilter);
+//     }
+
+//     // Date range filter
+//     if (dateRange.start) {
+//       filtered = filtered?.filter(
+//         (order) => new Date(order.createdAt) >= new Date(dateRange.start)
+//       );
+//     }
+//     if (dateRange.end) {
+//       filtered = filtered?.filter(
+//         (order) =>
+//           new Date(order.createdAt) <= new Date(dateRange.end + "T23:59:59")
+//       );
+//     }
+
+//     // Campaign filter
+//     if (campaignFilter !== "all") {
+//       filtered = filtered?.filter(
+//         (order) => order?.CampaignName === campaignFilter
+//       );
+//     }
+
+//     // Sort by date
+//     filtered?.sort((a, b) => {
+//       const aValue = new Date(a.createdAt);
+//       const bValue = new Date(b.createdAt);
+
+//       if (sortOrder === "asc") {
+//         return aValue > bValue ? 1 : -1;
+//       } else {
+//         return aValue < bValue ? 1 : -1;
+//       }
+//     });
+
+//     setFilteredOrders(filtered);
+
+//     // Update stats for filtered data
+  
+   
+   
+//   };
+
+//   const getUniqueTypes = () => {
+//     return [...new Set(orders?.map((order) => order.type).filter(Boolean))];
+//   };
+
+//   const getUniqueCampaigns = () => {
+//     return [
+//       ...new Set(orders.map((order) => order.CampaignName).filter(Boolean)),
+//     ];
+//   };
+
+//   const getStatusBadge = (order) => {
+//     if (order.successCount > order.failedCount) {
+//       return (
+//         <span className="px-2 py-1 bg-green-600 text-white text-xs rounded-full font-medium">
+//           Success
+//         </span>
+//       );
+//     }
+//     if (order.failedCount > 0) {
+//       return (
+//         <span className="px-2 py-1 bg-red-600 text-white text-xs rounded-full font-medium">
+//           Failed
+//         </span>
+//       )
+//     }
+
+//     const successCount = order?.results?.filter(
+//       (r) =>
+//         r.messaestatus === "MESSAGE_DELIVERED" ||
+//         r.messaestatus === "SEND_MESSAGE_SUCCESS" ||
+//         r.messaestatus === "MESSAGE_READ"
+//     ).length;
+
+//     const failedCount = order?.results.filter(
+//       (r) =>
+//         r.error || r.messaestatus === "SEND_MESSAGE_FAILURE" || r.status === 500
+//     ).length;
+
+//     const totalResults = order.results.length;
+
+//     // All successful
+//     if (successCount === totalResults && failedCount === 0) {
+//       return (
+//         <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+//           Success
+//         </span>
+//       );
+//     }
+//     // All failed
+//     else if (failedCount === totalResults && successCount === 0) {
+//       return (
+//         <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full font-medium">
+//           Failed
+//         </span>
+//       );
+//     }
+//     // Mixed results
+//     else if (successCount > 0 || failedCount > 0) {
+//       return (
+//         <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+//           Success
+//         </span>
+//       );
+//     }
+
+//     return (
+//       <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium">
+//         Pending
+//       </span>
+//     );
+//   };
+
+//   // Get order details when modal opens
+//   const { data: orderDetailsData, isLoading: detailsLoading } = useOrderDetails(
+//     selectedOrder?._id,
+//     modalCurrentPage,
+//     50
+//   );
+
+//   // Use orderDetailsData for modal display, fallback to selectedOrder
+//   const modalOrder = orderDetailsData?.data || selectedOrder;
+
+//   const viewOrderDetails = (order) => {
+//     setSelectedOrder(order);
+//     setModalCurrentPage(1);
+//     setShowModal(true);
+//   };
+
+//   const loadModalPage = (page) => {
+//     setModalCurrentPage(page);
+//   };
+
+//   const computeSelectedOrderMetrics = (order) => {
+//     if (!order || !order.results) {
+//       return {
+//         clicked: 0,
+//         replied: 0,
+//         contentCounts: {},
+//         pendingcount: 0,
+//         failedcont: 0,
+//       };
+//     }
+
+//     let clicked = 0;
+//     let replied = 0;
+
+//     const contentCounts = {};
+//     const userClickMap = {}; // { userId: totalClicks }
+
+//     // STEP 1️⃣ : collect user clicks
+//     order.results.forEach((r) => {
+//       if (r.entityType !== "USER_MESSAGE") return;
+
+//       const userId = r.phone || r.from || r.msisdn;
+//       if (!userId) return;
+
+//       if (!userClickMap[userId]) {
+//         userClickMap[userId] = 0;
+//       }
+
+//       const suggestions = r.suggestionResponse || [];
+
+//       suggestions.forEach((s) => {
+//         const key = s.plainText || "unknown";
+//         contentCounts[key] = (contentCounts[key] || 0) + 1;
+
+//         userClickMap[userId] += 1;
+//       });
+//     });
+
+//     // STEP 2️⃣ : apply rules
+//     Object.values(userClickMap).forEach((clickCount) => {
+//       if (clickCount >= 1) {
+//         clicked += 1; // 👈 first click of each user
+//       }
+//       if (clickCount > 1) {
+//         replied += clickCount - 1; // 👈 repeat clicks
+//       }
+//     });
+
+//     // STEP 3️⃣ : delivery stats
+//     const successcont = order.results.filter(
+//       (r) =>
+//         r.messaestatus === "MESSAGE_DELIVERED" ||
+//         r.messaestatus === "SEND_MESSAGE_SUCCESS" ||
+//         r.messaestatus === "MESSAGE_READ" ||
+//         r.status === 201
+//     ).length;
+
+//     const failedcont = order.results.filter(
+//       (r) =>
+//         r.messaestatus === "SEND_MESSAGE_FAILURE" ||
+//         r.status === 500 ||
+//         r.error === true
+//     ).length;
+
+//     const totalcount = order.results.length;
+//     const pendingcount = totalcount - (successcont + failedcont);
+//     return {
+//       clicked,
+//       replied,
+//       contentCounts,
+//       pendingcount,
+//       failedcont,
+//     };
+//   };
+
+//   const {
+//     clicked: modalClickedCount,
+//     replied: modalRepliedCount,
+//     pendingcount: modalPanddingCount,
+//     failedcont: modelFildCount,
+//   } = computeSelectedOrderMetrics(modalOrder);
+
+//   const closeModal = () => {
+//     setShowModal(false);
+//     setSelectedOrder(null);
+//   };
+
+//   const deleteOrder = async (orderId) => {
+//     if (
+//       window.confirm("Are you sure you want to delete this message report?")
+//     ) {
+//       try {
+//         await deleteOrderMutation.mutateAsync(orderId);
+//         toast.success("Order deleted successfully");
+//       } catch (err) {
+//         console.error("Error deleting order:", err);
+//         toast.error("Failed to delete message report");
+//       }
+//     }
+//   };
+
+//   const exportToExcel = () => {
+//     try {
+//       if (!filteredOrders || filteredOrders?.length === 0) {
+//         toast.error("No data to export");
+//         return;
+//       }
+
+//       const exportData = filteredOrders?.map((order, idx) => {
+//         const results = order?.results || [];
+
+//         // ✅ Success count
+//         const successCount = results?.filter(
+//           (r) =>
+//             r?.messaestatus === "MESSAGE_DELIVERED" ||
+//             r?.messaestatus === "SEND_MESSAGE_SUCCESS" ||
+//             r?.messaestatus === "MESSAGE_READ"
+//         ).length;
+
+//         // ❌ Failed count
+//         const failedCount = results?.filter(
+//           (r) =>
+//             r?.messaestatus === "SEND_MESSAGE_FAILURE" ||
+//             r?.status === 500 ||
+//             r?.error === true
+//         ).length;
+
+//         // ⏳ Pending count
+//         const pendingCount =
+//           results?.length > 0
+//             ? results?.length - (successCount + failedCount)
+//             : 0;
+
+//         // 📌 Final Status
+//         let finalStatus = "Pending";
+//         if (successCount > 0 && failedCount === 0) finalStatus = "Success";
+//         else if (failedCount > 0) finalStatus = "Failed";
+
+//         return {
+//           ID: `#${idx + 1}`,
+//           CampaignName: order?.CampaignName || "N/A",
+//           MessageType: order?.type || "N/A",
+//           TotalRecipients: order?.phoneNumbers?.length || 0,
+//           Successful: successCount,
+//           Failed: failedCount,
+//           Pending: pendingCount,
+//           Status: finalStatus,
+//           CreatedDate: order?.createdAt
+//             ? new Date(order.createdAt).toLocaleDateString()
+//             : "N/A",
+//           CreatedTime: order?.createdAt
+//             ? new Date(order.createdAt).toLocaleTimeString()
+//             : "N/A",
+//         };
+//       });
+
+//       // 📄 Create Excel
+//       const worksheet = XLSX.utils.json_to_sheet(exportData);
+//       const workbook = XLSX.utils.book_new();
+//       XLSX.utils.book_append_sheet(workbook, worksheet, "Orders Report");
+
+//       // 💾 Save file
+//       XLSX.writeFile(
+//         workbook,
+//         `orders-report-${new Date().toISOString().split("T")[0]}.xlsx`
+//       );
+
+//       toast.success("Report exported successfully");
+//     } catch (error) {
+//       console.error("Excel export error:", error);
+//       toast.error("Failed to export report");
+//     }
+//   };
+
+//   return (
+   
+
+//     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4 sm:p-6 lg:p-0">
+//       <div className="max-w-7xl mx-auto">
+//         <div className="bg-white rounded-2xl shadow-xl border border-indigo-100 overflow-hidden">
+//           <div className="bg-gradient-to-r from-indigo-700 via-purple-600 to-indigo-300 p-6 sm:p-8">
+//             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+//               <div className="text-white">
+//                 <h1 className="text-3xl sm:text-4xl font-bold mb-2 tracking-tight">
+//                   Campaign Orders
+//                 </h1>
+//                 <p className="text-indigo-100 text-sm sm:text-base">
+//                   Manage and track all your message campaigns
+//                 </p>
+//               </div>
+//               <div className="flex flex-wrap gap-3">
+//                 <button
+//                   onClick={exportToExcel}
+//                   className="flex items-center gap-2 px-4 py-2.5 bg-white text-indigo-600 rounded-xl hover:bg-indigo-50 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+//                 >
+//                   <FaDownload className="text-sm" />
+//                   <span className="hidden sm:inline">Export</span>
+//                 </button>
+//                 <button
+//                   onClick={() => refetch()}
+//                   className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500 text-white rounded-xl hover:bg-indigo-400 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+//                 >
+//                   <BiRefresh
+//                     className={`text-lg ${isLoading ? "animate-spin" : ""}`}
+//                   />
+//                   <span className="hidden sm:inline">Refresh</span>
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="p-6 sm:p-8">
+//             {orders.length > 0 && (
+//               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+//                 <div className="bg-gradient-to-br from-indigo-700 to-indigo-400 p-6 rounded-xl text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1">
+//                   <div className="flex items-center justify-between">
+//                     <div>
+//                       <p className="text-indigo-100 text-sm font-medium mb-1">
+//                         Total Orders
+//                       </p>
+//                       <p className="text-3xl font-bold">{orders?.length}</p>
+//                     </div>
+//                     <div className="bg-white/20 p-3 rounded-lg">
+//                       <FaChartLine className="text-2xl" />
+//                     </div>
+//                   </div>
+//                 </div>
+
+//                 <div className="bg-gradient-to-br from-emerald-700 to-emerald-400 p-6 rounded-xl text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1">
+//                   <div className="flex items-center justify-between">
+//                     <div>
+//                       <p className="text-emerald-100 text-sm font-medium mb-1">
+//                         Successful
+//                       </p>
+//                       <p className="text-3xl font-bold">
+//                         {orders?.reduce((acc, order) => {
+//                           return acc + (order.successCount || 0);
+//                         }, 0)}
+//                       </p>
+//                     </div>
+//                     <div className="bg-white/20 p-3 rounded-lg">
+//                       <svg
+//                         className="w-8 h-8"
+//                         fill="currentColor"
+//                         viewBox="0 0 20 20"
+//                       >
+//                         <path
+//                           fillRule="evenodd"
+//                           d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+//                           clipRule="evenodd"
+//                         />
+//                       </svg>
+//                     </div>
+//                   </div>
+//                 </div>
+
+//                 <div className="bg-gradient-to-br from-rose-700 to-rose-400 p-6 rounded-xl text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1">
+//                   <div className="flex items-center justify-between">
+//                     <div>
+//                       <p className="text-rose-100 text-sm font-medium mb-1">
+//                         Failed
+//                       </p>
+//                       <p className="text-3xl font-bold">
+//                        {orders?.reduce((acc, order) => {
+//                           return acc + (order.failedCount || 0);
+//                         }, 0)}
+//                       </p>
+//                     </div>
+//                     <div className="bg-white/20 p-3 rounded-lg">
+//                       <svg
+//                         className="w-8 h-8"
+//                         fill="currentColor"
+//                         viewBox="0 0 20 20"
+//                       >
+//                         <path
+//                           fillRule="evenodd"
+//                           d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+//                           clipRule="evenodd"
+//                         />
+//                       </svg>
+//                     </div>
+//                   </div>
+//                 </div>
+
+//                 <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-xl text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1">
+//                   <div className="flex items-center justify-between">
+//                     <div>
+//                       <p className="text-purple-100 text-sm font-medium mb-1">
+//                         Success Rate
+//                       </p>
+//                       <p className="text-3xl font-bold">
+//                    100
+//                         %
+//                       </p>
+//                     </div>
+//                     <div className="bg-white/20 p-3 rounded-lg">
+//                       <svg
+//                         className="w-8 h-8"
+//                         fill="currentColor"
+//                         viewBox="0 0 20 20"
+//                       >
+//                         <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+//                       </svg>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//             )}
+
+//             <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl mb-8 border border-indigo-100">
+//               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+//                 {/* Search */}
+//                 <div className="relative lg:col-span-2">
+//                   <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-indigo-400" />
+//                   <input
+//                     type="text"
+//                     placeholder="Search campaigns..."
+//                     value={searchTerm}
+//                     onChange={(e) => setSearchTerm(e.target.value)}
+//                     className="w-full pl-11 pr-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white"
+//                   />
+//                 </div>
+
+//                 {/* Status Filter */}
+//                 <select
+//                   value={statusFilter}
+//                   onChange={(e) => setStatusFilter(e.target.value)}
+//                   className="px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white font-medium text-gray-700"
+//                 >
+//                   <option value="all">All Status</option>
+//                   <option value="success">Success</option>
+//                   <option value="failed">Failed</option>
+//                   <option value="pending">Pending</option>
+//                 </select>
+
+//                 {/* Type Filter */}
+//                 <select
+//                   value={typeFilter}
+//                   onChange={(e) => setTypeFilter(e.target.value)}
+//                   className="px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white font-medium text-gray-700"
+//                 >
+//                   <option value="all">All Types</option>
+//                   {getUniqueTypes().map((type) => (
+//                     <option key={type} value={type}>
+//                       {type}
+//                     </option>
+//                   ))}
+//                 </select>
+
+//                 {/* Campaign Filter */}
+//                 <select
+//                   value={campaignFilter}
+//                   onChange={(e) => {
+//                     setCampaignFilter(e.target.value);
+//                     if (e.target.value !== "all") {
+//                       const campaignData = orders.filter(
+//                         (order) => order.CampaignName === e.target.value
+//                       );
+//                       setCampaignData(campaignData);
+//                     }
+//                   }}
+//                   className="px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white font-medium text-gray-700"
+//                 >
+//                   <option value="all">All Campaigns</option>
+//                   {getUniqueCampaigns().map((campaign) => (
+//                     <option key={campaign} value={campaign}>
+//                       {campaign}
+//                     </option>
+//                   ))}
+//                 </select>
+
+//                 {/* Date Range */}
+//                 <input
+//                   type="date"
+//                   value={dateRange.start}
+//                   onChange={(e) =>
+//                     setDateRange((prev) => ({ ...prev, start: e.target.value }))
+//                   }
+//                   className="px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white"
+//                 />
+
+//                 <input
+//                   type="date"
+//                   value={dateRange.end}
+//                   onChange={(e) =>
+//                     setDateRange((prev) => ({ ...prev, end: e.target.value }))
+//                   }
+//                   className="px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white"
+//                 />
+//               </div>
+
+//               <div className="flex flex-wrap items-center gap-3 mt-4">
+//                 <button
+//                   onClick={() =>
+//                     setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+//                   }
+//                   className="flex items-center gap-2 px-4 py-2 text-sm border-2 border-indigo-200 rounded-xl hover:bg-white transition-all duration-200 font-medium text-indigo-700 bg-white/50"
+//                 >
+//                   <FaFilter />
+//                   {sortOrder === "asc" ? "Oldest First" : "Newest First"}
+//                 </button>
+
+//                 {campaignFilter !== "all" && (
+//                   <div className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-xl text-sm font-semibold">
+//                     Showing {filteredOrders.length} of {orders.length} orders
+//                   </div>
+//                 )}
+//               </div>
+//             </div>
+
+//             {isLoading ? (
+//               <div className="flex flex-col justify-center items-center py-20">
+//                 <div className="relative">
+//                   <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200"></div>
+//                   <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-indigo-600 absolute top-0 left-0"></div>
+//                 </div>
+//                 <p className="mt-4 text-indigo-600 font-medium">
+//                   Loading campaigns...
+//                 </p>
+//               </div>
+//             ) : error ? (
+//               <div className="text-center py-16 bg-rose-50 rounded-xl border border-rose-200">
+//                 <svg
+//                   className="w-20 h-20 mx-auto mb-4 text-rose-400"
+//                   fill="none"
+//                   stroke="currentColor"
+//                   viewBox="0 0 24 24"
+//                 >
+//                   <path
+//                     strokeLinecap="round"
+//                     strokeLinejoin="round"
+//                     strokeWidth={2}
+//                     d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+//                   />
+//                 </svg>
+//                 <p className="text-xl font-semibold text-rose-700 mb-4">
+//                   {error}
+//                 </p>
+//                 <button
+//                   onClick={() => refetch()}
+//                   className="px-6 py-3 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-all duration-200 font-medium shadow-lg"
+//                 >
+//                   Try Again
+//                 </button>
+//               </div>
+//             ) : (
+//               <div className="border-2 border-indigo-100 rounded-xl overflow-hidden shadow-lg">
+//                 <div className="overflow-x-auto">
+//                   <table className="w-full">
+//                     <thead className="bg-gradient-to-r from-indigo-50 to-purple-50">
+//                       <tr>
+//                         <th className="text-left py-4 px-6 text-sm font-bold text-indigo-900 uppercase tracking-wider">
+//                           ID
+//                         </th>
+//                         <th className="text-left py-4 px-6 text-sm font-bold text-indigo-900 uppercase tracking-wider">
+//                           Campaign
+//                         </th>
+//                         <th className="text-left py-4 px-6 text-sm font-bold text-indigo-900 uppercase tracking-wider">
+//                           Type
+//                         </th>
+//                         <th className="text-left py-4 px-6 text-sm font-bold text-indigo-900 uppercase tracking-wider">
+//                           Recipients
+//                         </th>
+//                         <th className="text-left py-4 px-6 text-sm font-bold text-indigo-900 uppercase tracking-wider">
+//                           Success/Failed
+//                         </th>
+//                         <th className="text-left py-4 px-6 text-sm font-bold text-indigo-900 uppercase tracking-wider">
+//                           Status
+//                         </th>
+//                         <th className="text-left py-4 px-6 text-sm font-bold text-indigo-900 uppercase tracking-wider">
+//                           Date
+//                         </th>
+//                         <th className="text-left py-4 px-6 text-sm font-bold text-indigo-900 uppercase tracking-wider">
+//                           Actions
+//                         </th>
+//                       </tr>
+//                     </thead>
+//                     <tbody className="bg-white divide-y divide-indigo-100">
+//                       {filteredOrders.length === 0 ? (
+//                         <tr>
+//                           <td colSpan="8" className="text-center py-16">
+//                             <svg
+//                               className="w-20 h-20 text-indigo-200 mx-auto mb-4"
+//                               fill="none"
+//                               stroke="currentColor"
+//                               viewBox="0 0 24 24"
+//                             >
+//                               <path
+//                                 strokeLinecap="round"
+//                                 strokeLinejoin="round"
+//                                 strokeWidth={2}
+//                                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+//                               />
+//                             </svg>
+//                             <p className="text-xl font-semibold text-gray-700 mb-2">
+//                               No campaigns found
+//                             </p>
+//                             <p className="text-sm text-gray-500">
+//                               Try adjusting your filters or create a new
+//                               campaign
+//                             </p>
+//                           </td>
+//                         </tr>
+//                       ) : (
+//                         filteredOrders.map((order, idx) => {
+//                           const successCount = order.successCount || 0;
+//                           const failedCount = order.failedCount || 0;
+
+//                           return (
+//                             <tr
+//                               key={order._id || idx}
+//                               className="hover:bg-indigo-50 transition-colors duration-150"
+//                             >
+//                               <td className="py-4 px-6 text-sm font-mono font-semibold text-indigo-600">
+//                                 #{(currentPage - 1) * 10 + idx + 1}
+//                               </td>
+//                               <td className="py-4 px-6 text-sm">
+//                                 <span className="px-3 py-1.5 bg-indigo-100 text-indigo-700 text-xs rounded-lg font-semibold">
+//                                   {order.CampaignName || "N/A"}
+//                                 </span>
+//                               </td>
+//                               <td className="py-4 px-6 text-sm">
+//                                 <span className="px-3 py-1.5 bg-purple-100 text-purple-700 text-xs rounded-lg font-semibold capitalize">
+//                                   {order.type || "N/A"}
+//                                 </span>
+//                               </td>
+//                               <td className="py-4 px-6 text-sm font-bold text-gray-700">
+//                                 {order?.cost || 0}
+//                               </td>
+//                               <td className="py-4 px-6 text-sm">
+//                                 <div className="flex items-center gap-2">
+//                                   <span className="text-emerald-600 font-bold text-base">
+//                                     {successCount}
+//                                   </span>
+//                                   <span className="text-gray-300 font-bold">
+//                                     /
+//                                   </span>
+//                                   <span className="text-rose-600 font-bold text-base">
+//                                     {failedCount}
+//                                   </span>
+//                                 </div>
+//                               </td>
+//                               <td className="py-4 px-6 text-sm">
+//                                 {getStatusBadge(order)}
+//                               </td>
+//                               <td className="py-4 px-6 text-sm">
+//                                 <div className="space-y-1">
+//                                   <div className="font-semibold text-gray-700">
+//                                     {new Date(
+//                                       order.createdAt
+//                                     ).toLocaleDateString()}
+//                                   </div>
+//                                   <div className="text-xs text-gray-500">
+//                                     {new Date(
+//                                       order.createdAt
+//                                     ).toLocaleTimeString()}
+//                                   </div>
+//                                 </div>
+//                               </td>
+//                               <td className="py-4 px-6 text-sm">
+//                                 <div className="flex gap-2">
+//                                   <button
+//                                     onClick={() => viewOrderDetails(order)}
+//                                     className="p-2 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 rounded-lg transition-all duration-200"
+//                                     title="View Details"
+//                                   >
+//                                     <FaEye className="text-lg" />
+//                                   </button>
+//                                   <button
+//                                     onClick={() => deleteOrder(order._id)}
+//                                     className="p-2 text-rose-600 hover:text-rose-800 hover:bg-rose-100 rounded-lg transition-all duration-200"
+//                                     title="Delete Order"
+//                                   >
+//                                     <FaTrash className="text-lg" />
+//                                   </button>
+//                                 </div>
+//                               </td>
+//                             </tr>
+//                           );
+//                         })
+//                       )}
+//                     </tbody>
+//                   </table>
+//                 </div>
+
+//                 {pagination.total > 0 && (
+//                   <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-t-2 border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+//                     <div className="text-sm font-medium text-indigo-700">
+//                       Showing{" "}
+//                       <span className="font-bold">
+//                         {(currentPage - 1) * pagination.limit + 1}
+//                       </span>{" "}
+//                       to{" "}
+//                       <span className="font-bold">
+//                         {Math.min(
+//                           currentPage * pagination.limit,
+//                           pagination.total
+//                         )}
+//                       </span>{" "}
+//                       of <span className="font-bold">{pagination.total}</span>{" "}
+//                       orders
+//                     </div>
+//                     <div className="flex gap-2">
+//                       <button
+//                         onClick={() => setCurrentPage(currentPage - 1)}
+//                         disabled={currentPage === 1}
+//                         className="px-4 py-2 border-2 border-indigo-200 rounded-xl text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white hover:border-indigo-300 transition-all duration-200 text-indigo-700 bg-white/70"
+//                       >
+//                         Previous
+//                       </button>
+//                       <span className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-xl font-bold shadow-md">
+//                         {currentPage} / {pagination.pages}
+//                       </span>
+//                       <button
+//                         onClick={() => setCurrentPage(currentPage + 1)}
+//                         disabled={currentPage === pagination.pages}
+//                         className="px-4 py-2 border-2 border-indigo-200 rounded-xl text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white hover:border-indigo-300 transition-all duration-200 text-indigo-700 bg-white/70"
+//                       >
+//                         Next
+//                       </button>
+//                     </div>
+//                   </div>
+//                 )}
+//               </div>
+//             )}
+//           </div>
+//         </div>
+//       </div>
+
+//       {showModal && selectedOrder && (
+//         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+//           <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden border-2 border-indigo-200">
+//             {/* Modal Header */}
+//             <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 p-6 flex items-center justify-between">
+//               <div>
+//                 <h2 className="text-2xl font-bold text-white mb-1">
+//                   Campaign Report
+//                 </h2>
+//                 <p className="text-indigo-100 text-sm">
+//                   {selectedOrder.type} • {selectedOrder.CampaignName}
+//                 </p>
+//               </div>
+//               <button
+//                 onClick={closeModal}
+//                 className="text-white hover:bg-white/20 p-2 rounded-xl transition-all duration-200"
+//               >
+//                 <svg
+//                   className="w-6 h-6"
+//                   fill="none"
+//                   stroke="currentColor"
+//                   viewBox="0 0 24 24"
+//                 >
+//                   <path
+//                     strokeLinecap="round"
+//                     strokeLinejoin="round"
+//                     strokeWidth={2}
+//                     d="M6 18L18 6M6 6l12 12"
+//                   />
+//                 </svg>
+//               </button>
+//             </div>
+
+//             {/* Stats Cards */}
+//             <div className="p-6 border-b-2 border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50">
+//               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 lg:gap-4 justify-center ms-2">
+//                 <div className="text-center p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+//                   <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-xl mx-auto mb-2">
+//                     <span className="text-2xl">💬</span>
+//                   </div>
+//                   <div className="text-2xl font-bold text-gray-900">
+//                     {modalOrder?.cost || 0}
+//                   </div>
+//                   <div className="text-xs text-gray-600 font-medium mt-1">
+//                     Total
+//                   </div>
+//                 </div>
+
+//                 <div className="text-center p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+//                   <div className="flex items-center justify-center w-12 h-12 bg-emerald-100 rounded-xl mx-auto mb-2">
+//                     <span className="text-2xl">✓</span>
+//                   </div>
+//                   <div className="text-2xl font-bold text-gray-900">
+//                     {modalOrder?.successCount || "N/A"}
+//                   </div>
+//                   <div className="text-xs text-gray-600 font-medium mt-1">
+//                     Sent
+//                   </div>
+//                 </div>
+
+//                 <div className="text-center p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+//                   <div className="flex items-center justify-center w-12 h-12 bg-amber-100 rounded-xl mx-auto mb-2">
+//                     <span className="text-2xl">📨</span>
+//                   </div>
+//                   <div className="text-2xl font-bold text-gray-900">
+//                     {modalOrder?.totalDelivered  || "N/A"}
+//                   </div>
+//                   <div className="text-xs text-gray-600 font-medium mt-1">
+//                     Delivered
+//                   </div>
+//                 </div>
+
+//                 {/* <div className="text-center p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+//                   <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mx-auto mb-2">
+//                     <span className="text-2xl">⏳</span>
+//                   </div>
+//                   <div className="text-2xl font-bold text-gray-900">
+//                     {modalPanddingCount}
+//                   </div>
+//                   <div className="text-xs text-gray-600 font-medium mt-1">
+//                     Pending
+//                   </div>
+//                 </div> */}
+
+//                 <div className="text-center p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+//                   <div className="flex items-center justify-center w-12 h-12 bg-cyan-100 rounded-xl mx-auto mb-2">
+//                     <span className="text-2xl">👁️</span>
+//                   </div>
+//                   <div className="text-2xl font-bold text-gray-900">
+//                     {modalOrder?.totalRead||"N/A"}
+//                   </div>
+//                   <div className="text-xs text-gray-600 font-medium mt-1">
+//                     Read
+//                   </div>
+//                 </div>
+
+//                 <div className="text-center p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+//                   <div className="flex items-center justify-center w-12 h-12 bg-rose-100 rounded-xl mx-auto mb-2">
+//                     <span className="text-2xl">⚠</span>
+//                   </div>
+//                   <div className="text-2xl font-bold text-gray-900">
+//                     {modalOrder?.failedCount || modelFildCount}
+//                   </div>
+//                   <div className="text-xs text-gray-600 font-medium mt-1">
+//                     Failed
+//                   </div>
+//                 </div>
+
+//                 <div className="text-center p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+//                   <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-xl mx-auto mb-2">
+//                     <span className="text-2xl">👆</span>
+//                   </div>
+//                   <div className="text-2xl font-bold text-gray-900">
+//                     {modalOrder?.userClickCount  || 0}
+//                   </div>
+//                   <div className="text-xs text-gray-600 font-medium mt-1">
+//                     Clicked
+//                   </div>
+//                 </div>
+
+//                 <div className="text-center p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+//                   <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-xl mx-auto mb-2">
+//                     <span className="text-2xl">💬</span>
+//                   </div>
+//                   <div className="text-2xl font-bold text-gray-900">
+//                     {modalOrder?.userReplyCount  || 0}
+//                   </div>
+//                   <div className="text-xs text-gray-600 font-medium mt-1">
+//                     Replied
+//                   </div>
+//                 </div>
+//               </div>
+//             </div>
+
+//             {/* Table */}
+//             <div className="overflow-auto max-h-96">
+//               {detailsLoading ? (
+//                 <div className="flex justify-center items-center py-16">
+//                   <div className="relative">
+//                     <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-200"></div>
+//                     <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-indigo-600 absolute top-0 left-0"></div>
+//                   </div>
+//                   <span className="ml-3 text-indigo-600 font-medium">
+//                     Loading details...
+//                   </span>
+//                 </div>
+//               ) : (
+//                 <table className="w-full">
+//                   <thead className="bg-gradient-to-r from-indigo-50 to-purple-50 sticky top-0">
+//                     <tr>
+//                       <th className="text-left py-3 px-4 text-xs font-bold text-indigo-900 uppercase tracking-wider">
+//                         SN
+//                       </th>
+//                       <th className="text-left py-3 px-4 text-xs font-bold text-indigo-900 uppercase tracking-wider">
+//                         Number
+//                       </th>
+//                       <th className="text-left py-3 px-4 text-xs font-bold text-indigo-900 uppercase tracking-wider">
+//                         Type
+//                       </th>
+//                       <th className="text-left py-3 px-4 text-xs font-bold text-indigo-900 uppercase tracking-wider">
+//                         Status
+//                       </th>
+//                       <th className="text-left py-3 px-4 text-xs font-bold text-indigo-900 uppercase tracking-wider">
+//                         Sent At
+//                       </th>
+//                       <th className="text-left py-3 px-4 text-xs font-bold text-indigo-900 uppercase tracking-wider">
+//                         Reason
+//                       </th>
+//                     </tr>
+//                   </thead>
+//                   <tbody className="divide-y divide-indigo-100">
+//                     {(() => {
+//                       const results = modalOrder?.results || [];
+
+//                       if (results.length === 0) {
+//                         return (
+//                           <tr>
+//                             <td
+//                               colSpan="6"
+//                               className="text-center py-12 text-gray-500"
+//                             >
+//                               No detailed results available
+//                             </td>
+//                           </tr>
+//                         );
+//                       }
+
+//                       const startIndex = 0;
+//                       const endIndex = Math.min(50, results.length);
+//                       const pageResults = results.slice(startIndex, endIndex);
+
+//                       return pageResults?.map((result, idx) => {
+//                         const phone =
+//                           modalOrder?.phoneNumbers?.find((p) => {
+//                             const cleanPhone = p?.replace(/[^0-9]/g, "") || "";
+//                             const cleanResultPhone =
+//                               result?.phone?.replace(/[^0-9]/g, "") || "";
+//                             return (
+//                               cleanResultPhone === cleanPhone ||
+//                               result?.phone === p ||
+//                               result?.phone === `+91${cleanPhone}` ||
+//                               cleanResultPhone === cleanPhone?.slice(-10)
+//                             );
+//                           }) || result?.phone;
+
+//                         return (
+//                           <tr
+//                             key={idx}
+//                             className="hover:bg-indigo-50 transition-colors"
+//                           >
+//                             <td className="py-3 px-4 text-sm font-semibold text-gray-700">
+//                               {((modalOrder?.resultsPagination?.page ||
+//                                 modalCurrentPage) -
+//                                 1) *
+//                                 50 +
+//                                 idx +
+//                                 1}
+//                             </td>
+//                             <td className="py-3 px-4 text-sm font-mono text-gray-700">
+//                               {phone || "-"}
+//                             </td>
+//                             <td className="py-3 px-4 text-sm">
+//                               <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-lg font-semibold">
+//                                 {modalOrder?.type || "N/A"}
+//                               </span>
+//                             </td>
+//                             <td className="py-3 px-4 text-sm">
+//                               <span
+//                                 className={`px-3 py-1 rounded-full text-xs font-bold ${
+//                                   result?.messaestatus ===
+//                                     "MESSAGE_DELIVERED" ||
+//                                   result?.messaestatus ===
+//                                     "SEND_MESSAGE_SUCCESS" ||
+//                                   result?.messaestatus === "MESSAGE_READ"
+//                                     ? "bg-emerald-100 text-emerald-700"
+//                                     : result?.messaestatus ===
+//                                         "SEND_MESSAGE_FAILURE" ||
+//                                       result?.status === 500
+//                                     ? "bg-rose-100 text-rose-700"
+//                                     : "bg-amber-100 text-amber-700"
+//                                 }`}
+//                               >
+//                                 {result?.messaestatus === "MESSAGE_DELIVERED"
+//                                   ? "Delivered"
+//                                   : result?.messaestatus ===
+//                                     "SEND_MESSAGE_SUCCESS"
+//                                   ? "Sent"
+//                                   : result?.messaestatus === "MESSAGE_READ"
+//                                   ? "Read"
+//                                   : result?.messaestatus ===
+//                                       "SEND_MESSAGE_FAILURE" ||
+//                                     result?.status === 500
+//                                   ? "Failed"
+//                                   : result?.messaestatus || "Pending"}
+//                               </span>
+//                             </td>
+//                             <td className="py-3 px-4 text-sm text-gray-600">
+//                               {result?.timestamp
+//                                 ? new Date(result.timestamp).toLocaleString()
+//                                 : "-"}
+//                             </td>
+//                             <td className="py-3 px-4 text-sm text-rose-600 font-medium">
+//                               {result?.errorMessage || "-"}
+//                             </td>
+//                           </tr>
+//                         );
+//                       });
+//                     })()}
+//                   </tbody>
+//                 </table>
+//               )}
+//             </div>
+
+//             {/* Modal Footer */}
+//             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6 border-t-2 border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50">
+//               <div className="flex items-center gap-2">
+//                 <button
+//                   onClick={() => loadModalPage(modalCurrentPage - 1)}
+//                   disabled={modalCurrentPage === 1 || detailsLoading}
+//                   className="px-4 py-2 border-2 border-indigo-200 rounded-xl text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white transition-all duration-200 text-indigo-700 bg-white/70"
+//                 >
+//                   Previous
+//                 </button>
+//                 <span className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-xl font-bold shadow-md">
+//                   {modalCurrentPage} /{" "}
+//                   {modalOrder?.resultsPagination?.pages || 1}
+//                 </span>
+//                 <button
+//                   onClick={() => loadModalPage(modalCurrentPage + 1)}
+//                   disabled={
+//                     modalCurrentPage >=
+//                       (modalOrder?.resultsPagination?.pages || 1) ||
+//                     detailsLoading
+//                   }
+//                   className="px-4 py-2 border-2 border-indigo-200 rounded-xl text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white transition-all duration-200 text-indigo-700 bg-white/70"
+//                 >
+//                   Next
+//                 </button>
+//                 <span className="text-xs text-indigo-600 ml-2 font-medium">
+//                   {modalOrder?.resultsPagination?.total || 0} total results
+//                 </span>
+//               </div>
+
+//               <div className="flex gap-3">
+//                 <button
+//                   onClick={closeModal}
+//                   className="px-5 py-2 border-2 border-indigo-200 text-indigo-700 rounded-xl hover:bg-white transition-all duration-200 font-medium"
+//                 >
+//                   Close
+//                 </button>
+//                 <button
+//                   onClick={() => {
+//                     const exportData =
+//                       modalOrder?.phoneNumbers?.map((phone, idx) => {
+//                         const result = modalOrder?.results?.find(
+//                           (r) => r?.phone === phone
+//                         );
+//                         return {
+//                           SN: idx + 1,
+//                           Number: phone || "N/A",
+//                           Instance: "-",
+//                           "Instance Number": phone || "N/A",
+//                           "Message Type": modalOrder?.type || "N/A",
+//                           Status:
+//                             result?.messaestatus === "MESSAGE_READ"
+//                               ? "Read"
+//                               : result?.messaestatus === "MESSAGE_DELIVERED"
+//                               ? "Delivered"
+//                               : result?.messaestatus === "SEND_MESSAGE_SUCCESS"
+//                               ? "Sent"
+//                               : result?.messaestatus ===
+//                                   "SEND_MESSAGE_FAILURE" ||
+//                                 result?.status === 500
+//                               ? "Failed"
+//                               : "Pending",
+//                           "Created At": modalOrder?.createdAt
+//                             ? new Date(modalOrder.createdAt).toLocaleString()
+//                             : "N/A",
+//                           "Sent At": result?.timestamp
+//                             ? new Date(result.timestamp).toLocaleString()
+//                             : "-",
+//                         };
+//                       }) || [];
+
+//                     const ws = XLSX.utils.json_to_sheet(exportData);
+//                     const wb = XLSX.utils.book_new();
+//                     XLSX.utils.book_append_sheet(wb, ws, "Campaign Details");
+//                     XLSX.writeFile(
+//                       wb,
+//                       `campaign-${modalOrder.type}-${
+//                         new Date().toISOString().split("T")[0]
+//                       }.xlsx`
+//                     );
+//                   }}
+//                   className="px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+//                 >
+//                   Export Data
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+
+
+
+
+import React, { useState, useEffect } from 'react';
+import {
+  Card,
+  Row,
+  Col,
+  Table,
+  Select,
+  Button,
+  Input,
+  Progress,
+  Tag,
+  Modal,
+  Divider,
+  Tooltip,
+  Breadcrumb,
+  Space,
+  Empty,
+  Grid,
+  Statistic,
+  DatePicker,
+} from 'antd';
+import {
+  DownloadOutlined,
+  FilterOutlined,
+  SearchOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  BarChartOutlined,
+  EyeOutlined,
+  HomeOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
+import { THEME_CONSTANTS } from '../../theme';
+import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
+import { useOrders, useOrderDetails, useDeleteOrder } from '../../hooks/useOrders';
+import * as XLSX from 'xlsx';
+import dayjs from 'dayjs';
+
+const { RangePicker } = DatePicker;
+const { useBreakpoint } = Grid;
+
+export default function Orders() {
+  const { user } = useAuth();
+  const screens = useBreakpoint();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalCurrentPage, setModalCurrentPage] = useState(1);
+
+  // React Query hooks
+  const { data: ordersData, isLoading, error, refetch } = useOrders(user?._id, currentPage, 10);
+  const deleteOrderMutation = useDeleteOrder();
+
+  const orders = ordersData?.data || [];
+  const pagination = ordersData?.pagination || {
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+  };
+
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [campaignFilter, setCampaignFilter] = useState('all');
+  const [dateRange, setDateRange] = useState([null, null]);
+  const [sortOrder, setSortOrder] = useState('newest');
+  const [filteredOrders, setFilteredOrders] = useState([]);
+
+  useEffect(() => {
+    if (orders.length > 0) {
+      filterAndSortOrders();
+    }
+  }, [orders, searchText, statusFilter, typeFilter, campaignFilter, dateRange, sortOrder]);
+
+  const filterAndSortOrders = () => {
+    let filtered = [...orders];
+
+    // Search filter
+    if (searchText) {
+      filtered = filtered?.filter(
+        (order) =>
+          order?.type?.toLowerCase().includes(searchText.toLowerCase()) ||
+          order?.CampaignName?.toLowerCase().includes(searchText.toLowerCase()) ||
+          order?._id?.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered?.filter((order) => {
+        const successCount = order?.successCount || 0;
+        const failedCount = order?.failedCount || 0;
+        
+        if (statusFilter === 'success') {
+          return successCount > failedCount;
+        } else if (statusFilter === 'failed') {
+          return failedCount > 0;
+        } else if (statusFilter === 'pending') {
+          return successCount === 0 && failedCount === 0;
+        }
+        return true;
+      });
+    }
+
+    // Type filter
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter((order) => order.type === typeFilter);
+    }
+
+    // Campaign filter
+    if (campaignFilter !== 'all') {
+      filtered = filtered?.filter((order) => order?.CampaignName === campaignFilter);
+    }
+
+    // Date range filter
+    if (dateRange[0] && dateRange[1]) {
+      filtered = filtered?.filter(
+        (order) =>
+          dayjs(order.createdAt).isAfter(dateRange[0]) &&
+          dayjs(order.createdAt).isBefore(dateRange[1])
+      );
+    }
+
+    // Sort by date
+    if (sortOrder === 'newest') {
+      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (sortOrder === 'oldest') {
+      filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    }
+
+    setFilteredOrders(filtered);
+  };
+
+  const getUniqueTypes = () => {
+    return [...new Set(orders?.map((order) => order.type).filter(Boolean))];
+  };
+
+  const getUniqueCampaigns = () => {
+    return [...new Set(orders.map((order) => order.CampaignName).filter(Boolean))];
+  };
+
+  const getStatusBadge = (order) => {
+    const successCount = order?.successCount || 0;
+    const failedCount = order?.failedCount || 0;
+
+    if (successCount > failedCount && failedCount === 0) {
+      return (
+        <Tag
+          icon={<CheckCircleOutlined />}
+          color="#f6ffed"
+          style={{
+            color: THEME_CONSTANTS.colors.success,
+            border: `1px solid ${THEME_CONSTANTS.colors.success}`,
+            fontWeight: 600,
+            padding: '4px 12px',
+            borderRadius: THEME_CONSTANTS.radius.sm,
+          }}
+        >
+          Success
+        </Tag>
+      );
+    }
+    if (failedCount > 0) {
+      return (
+        <Tag
+          icon={<CloseCircleOutlined />}
+          color="#fff1f0"
+          style={{
+            color: '#ff4d4f',
+            border: '1px solid #ff4d4f',
+            fontWeight: 600,
+            padding: '4px 12px',
+            borderRadius: THEME_CONSTANTS.radius.sm,
+          }}
+        >
+          Failed
+        </Tag>
+      );
+    }
+
+    return (
+      <Tag
+        color="#fffbe6"
+        style={{
+          color: '#faad14',
+          border: '1px solid #faad14',
+          fontWeight: 600,
+          padding: '4px 12px',
+          borderRadius: THEME_CONSTANTS.radius.sm,
+        }}
+      >
+        Pending
+      </Tag>
+    );
+  };
+
+  const { data: orderDetailsData, isLoading: detailsLoading } = useOrderDetails(
+    selectedOrder?._id,
+    modalCurrentPage,
+    50
+  );
+
+  const modalOrder = orderDetailsData?.data || selectedOrder;
+
+  const viewOrderDetails = (order) => {
+    setSelectedOrder(order);
+    setModalCurrentPage(1);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedOrder(null);
+  };
+
+  const deleteOrder = async (orderId) => {
+    Modal.confirm({
+      title: 'Delete Campaign Report',
+      content: 'Are you sure you want to delete this campaign report? This action cannot be undone.',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await deleteOrderMutation.mutateAsync(orderId);
+          toast.success('Campaign report deleted successfully');
+          refetch();
+        } catch (err) {
+          console.error('Error deleting order:', err);
+          toast.error('Failed to delete campaign report');
+        }
+      },
+    });
+  };
+
+  const exportToExcel = () => {
+    try {
+      if (!filteredOrders || filteredOrders?.length === 0) {
+        toast.error('No data to export');
+        return;
+      }
+
+      const exportData = filteredOrders?.map((order, idx) => {
+        const successCount = order?.successCount || 0;
+        const failedCount = order?.failedCount || 0;
+        const totalRecipients = order?.cost || 0;
+
+        return {
+          'ID': `#${(currentPage - 1) * 10 + idx + 1}`,
+          'Campaign Name': order?.CampaignName || 'N/A',
+          'Message Type': order?.type || 'N/A',
+          'Total Recipients': totalRecipients,
+          'Successful': successCount,
+          'Failed': failedCount,
+          'Date': new Date(order.createdAt).toLocaleDateString(),
+          'Time': new Date(order.createdAt).toLocaleTimeString(),
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Campaign Reports');
+
+      XLSX.writeFile(workbook, `campaign-reports-${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.success('Report exported successfully');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export report');
+    }
+  };
+
+  const columns = [
+    {
+      title: 'Campaign ID',
+      dataIndex: '_id',
+      key: 'id',
+      render: (text, record, index) => (
+        <span style={{ fontWeight: 600, color: THEME_CONSTANTS.colors.primary, fontSize: '13px' }}>
+          #{(currentPage - 1) * 10 + index + 1}
+        </span>
+      ),
+      width: '10%',
+    },
+    {
+      title: 'Campaign Name',
+      dataIndex: 'CampaignName',
+      key: 'name',
+      render: (text, record) => (
+        <div>
+          <div style={{ fontWeight: 600, color: THEME_CONSTANTS.colors.textPrimary, fontSize: '14px' }}>
+            {text || 'N/A'}
+          </div>
+          <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '4px' }}>
+            {record._id}
+          </div>
+        </div>
+      ),
+      width: '25%',
+    },
+    {
+      title: 'Message Type',
+      dataIndex: 'type',
+      key: 'type',
+      render: (type) => (
+        <Tag
+          style={{
+            background: type === 'SMS' ? '#e6f7ff' : '#f6f8fb',
+            color: type === 'SMS' ? THEME_CONSTANTS.colors.primary : '#667085',
+            border: 'none',
+            fontWeight: 600,
+            padding: '4px 12px',
+            borderRadius: THEME_CONSTANTS.radius.sm,
+            fontSize: '12px',
+          }}
+        >
+          {type}
+        </Tag>
+      ),
+      width: '12%',
+    },
+    {
+      title: 'Recipients',
+      dataIndex: 'cost',
+      key: 'recipients',
+      render: (cost) => (
+        <span style={{ fontWeight: 600, color: THEME_CONSTANTS.colors.textPrimary, fontSize: '13px' }}>
+          {cost || 0}
+        </span>
+      ),
+      width: '12%',
+    },
+    {
+      title: 'Success / Failed',
+      key: 'results',
+      render: (text, record) => {
+        const successCount = record?.successCount || 0;
+        const failedCount = record?.failedCount || 0;
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontWeight: 600, color: THEME_CONSTANTS.colors.success, fontSize: '13px' }}>
+              {successCount}
+            </span>
+            <span style={{ color: THEME_CONSTANTS.colors.textSecondary }}>|</span>
+            <span style={{ fontWeight: 600, color: '#ff4d4f', fontSize: '13px' }}>
+              {failedCount}
+            </span>
+          </div>
+        );
+      },
+      width: '15%',
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      render: (text, record) => getStatusBadge(record),
+      width: '12%',
+    },
+    {
+      title: 'Date Created',
+      dataIndex: 'createdAt',
+      key: 'date',
+      render: (date) => (
+        <Tooltip title={new Date(date).toLocaleString()}>
+          <span style={{ fontSize: '13px', color: THEME_CONSTANTS.colors.textSecondary }}>
+            {new Date(date).toLocaleDateString()}
+          </span>
+        </Tooltip>
+      ),
+      width: '14%',
+      responsive: ['md'],
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (text, record) => (
+        <Space size="small">
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={() => viewOrderDetails(record)}
+            style={{ color: THEME_CONSTANTS.colors.primary }}
+            title="View Details"
+          />
+          <Button
+            type="text"
+            icon={<DeleteOutlined />}
+            onClick={() => deleteOrder(record._id)}
+            style={{ color: '#ff4d4f' }}
+            title="Delete Campaign"
+          />
+        </Space>
+      ),
+      width: '10%',
+    },
+  ];
+
+  return (
+    <>
+      <div
+        style={{
+          padding: screens.md ? '24px' : '16px',
+          background: THEME_CONSTANTS.colors.background,
+          minHeight: '100vh',
+        }}
+      >
+        {/* Breadcrumb & Header */}
+        <div style={{ marginBottom: '32px' }}>
+          <Breadcrumb
+            style={{
+              marginBottom: '16px',
+              fontSize: '13px',
+            }}
+          >
+            <Breadcrumb.Item>
+              <HomeOutlined style={{ marginRight: '6px' }} />
+              <span style={{ color: THEME_CONSTANTS.colors.textSecondary }}>Home</span>
+            </Breadcrumb.Item>
+            <Breadcrumb.Item>
+              <span
+                style={{
+                  color: THEME_CONSTANTS.colors.primary,
+                  fontWeight: 600,
+                }}
+              >
+                Campaign Reports
+              </span>
+            </Breadcrumb.Item>
+          </Breadcrumb>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div
+                style={{
+                  fontSize: '28px',
+                  fontWeight: 700,
+                  color: THEME_CONSTANTS.colors.textPrimary,
+                  marginBottom: '8px',
+                }}
+              >
+                Campaign Reports
+              </div>
+              <div
+                style={{
+                  fontSize: '14px',
+                  color: THEME_CONSTANTS.colors.textSecondary,
+                }}
+              >
+                Manage and track all your message campaigns with detailed insights and performance metrics.
+              </div>
+            </div>
+            <Space>
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                onClick={exportToExcel}
+                style={{
+                  background: THEME_CONSTANTS.colors.primary,
+                  borderColor: THEME_CONSTANTS.colors.primary,
+                }}
+              >
+                Export Report
+              </Button>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => refetch()}
+                loading={isLoading}
+              >
+                Refresh
+              </Button>
+            </Space>
+          </div>
+        </div>
+
+        {/* Summary Stats */}
+        {orders.length > 0 && (
+          <Row gutter={[16, 16]} style={{ marginBottom: '32px' }}>
+            <Col xs={24} sm={12} md={6}>
+              <Card
+                style={{
+                  borderRadius: THEME_CONSTANTS.radius.lg,
+                  border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
+                  boxShadow: THEME_CONSTANTS.shadow.sm,
+                }}
+                bodyStyle={{ padding: '24px' }}
+              >
+                <Statistic
+                  title="Total Campaigns"
+                  value={orders?.length}
+                  prefix={<BarChartOutlined style={{ marginRight: '8px', color: THEME_CONSTANTS.colors.primary }} />}
+                  valueStyle={{ color: THEME_CONSTANTS.colors.primary, fontSize: '28px', fontWeight: 700 }}
+                  titleStyle={{ fontSize: '13px', fontWeight: 600, color: THEME_CONSTANTS.colors.textSecondary }}
+                />
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={12} md={6}>
+              <Card
+                style={{
+                  borderRadius: THEME_CONSTANTS.radius.lg,
+                  border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
+                  boxShadow: THEME_CONSTANTS.shadow.sm,
+                }}
+                bodyStyle={{ padding: '24px' }}
+              >
+                <Statistic
+                  title="Successful"
+                  value={orders?.reduce((acc, order) => acc + (order?.successCount || 0), 0)}
+                  prefix={<CheckCircleOutlined style={{ marginRight: '8px', color: THEME_CONSTANTS.colors.success }} />}
+                  valueStyle={{ color: THEME_CONSTANTS.colors.success, fontSize: '28px', fontWeight: 700 }}
+                  titleStyle={{ fontSize: '13px', fontWeight: 600, color: THEME_CONSTANTS.colors.textSecondary }}
+                />
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={12} md={6}>
+              <Card
+                style={{
+                  borderRadius: THEME_CONSTANTS.radius.lg,
+                  border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
+                  boxShadow: THEME_CONSTANTS.shadow.sm,
+                }}
+                bodyStyle={{ padding: '24px' }}
+              >
+                <Statistic
+                  title="Failed"
+                  value={orders?.reduce((acc, order) => acc + (order?.failedCount || 0), 0)}
+                  prefix={<CloseCircleOutlined style={{ marginRight: '8px', color: '#ff4d4f' }} />}
+                  valueStyle={{ color: '#ff4d4f', fontSize: '28px', fontWeight: 700 }}
+                  titleStyle={{ fontSize: '13px', fontWeight: 600, color: THEME_CONSTANTS.colors.textSecondary }}
+                />
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={12} md={6}>
+              <Card
+                style={{
+                  borderRadius: THEME_CONSTANTS.radius.lg,
+                  border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
+                  boxShadow: THEME_CONSTANTS.shadow.sm,
+                }}
+                bodyStyle={{ padding: '24px' }}
+              >
+                <Statistic
+                  title="Success Rate"
+                  value={
+                    orders?.length > 0
+                      ? (
+                          (orders?.reduce((acc, order) => acc + (order?.successCount || 0), 0) /
+                            (orders?.reduce((acc, order) => acc + (order?.cost || 0), 0) || 1)) *
+                          100
+                        ).toFixed(2)
+                      : 0
+                  }
+                  suffix="%"
+                  valueStyle={{ color: THEME_CONSTANTS.colors.primary, fontSize: '28px', fontWeight: 700 }}
+                  titleStyle={{ fontSize: '13px', fontWeight: 600, color: THEME_CONSTANTS.colors.textSecondary }}
+                />
+              </Card>
+            </Col>
+          </Row>
+        )}
+
+        {/* Filters */}
+        <Card
+          style={{
+            borderRadius: THEME_CONSTANTS.radius.lg,
+            border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
+            boxShadow: THEME_CONSTANTS.shadow.sm,
+            marginBottom: '24px',
+          }}
+          bodyStyle={{ padding: '24px' }}
+        >
+          <Row gutter={[12, 12]}>
+            <Col xs={24} sm={12} md={6}>
+              <Input
+                placeholder="Search campaigns..."
+                prefix={<SearchOutlined />}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{
+                  borderRadius: THEME_CONSTANTS.radius.sm,
+                  border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
+                }}
+              />
+            </Col>
+
+            <Col xs={24} sm={12} md={6}>
+              <Select
+                value={statusFilter}
+                onChange={setStatusFilter}
+                style={{ width: '100%' }}
+                options={[
+                  { label: 'All Status', value: 'all' },
+                  { label: 'Success', value: 'success' },
+                  { label: 'Failed', value: 'failed' },
+                  { label: 'Pending', value: 'pending' },
+                ]}
+              />
+            </Col>
+
+            <Col xs={24} sm={12} md={6}>
+              <Select
+                value={typeFilter}
+                onChange={setTypeFilter}
+                style={{ width: '100%' }}
+                options={[
+                  { label: 'All Types', value: 'all' },
+                  ...getUniqueTypes().map((type) => ({ label: type, value: type })),
+                ]}
+              />
+            </Col>
+
+            <Col xs={24} sm={12} md={6}>
+              <Select
+                value={campaignFilter}
+                onChange={setCampaignFilter}
+                style={{ width: '100%' }}
+                options={[
+                  { label: 'All Campaigns', value: 'all' },
+                  ...getUniqueCampaigns().map((campaign) => ({
+                    label: campaign,
+                    value: campaign,
+                  })),
+                ]}
+              />
+            </Col>
+
+            <Col xs={24} md={12}>
+              <RangePicker
+                value={dateRange}
+                onChange={setDateRange}
+                style={{ width: '100%' }}
+                format="DD/MM/YYYY"
+              />
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Button
+                icon={<FilterOutlined />}
+                onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+                style={{ width: '100%' }}
+              >
+                {sortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
+              </Button>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* Table */}
+        <Card
+          style={{
+            borderRadius: THEME_CONSTANTS.radius.lg,
+            border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
+            boxShadow: THEME_CONSTANTS.shadow.md,
+          }}
+          bodyStyle={{ padding: 0 }}
+        >
+          {isLoading ? (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '60px 20px',
+              }}
+            >
+              <div
+                style={{
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '50%',
+                  borderTop: `4px solid ${THEME_CONSTANTS.colors.primary}`,
+                  borderRight: `4px solid transparent`,
+                  animation: 'spin 1s linear infinite',
+                }}
+              />
+              <div
+                style={{
+                  marginTop: '16px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: THEME_CONSTANTS.colors.textSecondary,
+                }}
+              >
+                Loading campaigns...
+              </div>
+            </div>
+          ) : error ? (
+            <Empty
+              description={error}
+              style={{ padding: '60px 20px' }}
+            />
+          ) : filteredOrders.length === 0 ? (
+            <Empty
+              description="No campaigns found"
+              style={{ padding: '60px 20px' }}
+            />
+          ) : (
+            <>
+              <Table
+                columns={columns}
+                dataSource={filteredOrders}
+                rowKey="_id"
+                pagination={{
+                  current: currentPage,
+                  pageSize: 10,
+                  total: pagination.total,
+                  onChange: setCurrentPage,
+                  showSizeChanger: false,
+                }}
+                style={{ borderCollapse: 'collapse' }}
+                scroll={{ x: 800 }}
+              />
+            </>
+          )}
+        </Card>
+      </div>
+
+      {/* Modal for Campaign Details */}
+      <Modal
+        title={
+          <div>
+            <div style={{ fontSize: '18px', fontWeight: 700, color: THEME_CONSTANTS.colors.textPrimary }}>
+              Campaign Report
+            </div>
+            <div
+              style={{
+                fontSize: '13px',
+                color: THEME_CONSTANTS.colors.textSecondary,
+                marginTop: '4px',
+              }}
+            >
+              {selectedOrder?.type} • {selectedOrder?.CampaignName}
+            </div>
+          </div>
+        }
+        open={showModal}
+        onCancel={closeModal}
+        width={900}
+        footer={null}
+        bodyStyle={{ padding: '24px' }}
+      >
+        {modalOrder && (
+          <div>
+            {/* Stats Grid */}
+            <Row gutter={[12, 12]} style={{ marginBottom: '24px' }}>
+              <Col xs={12} sm={8} md={6}>
+                <Card bodyStyle={{ padding: '16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: THEME_CONSTANTS.colors.primary }}>
+                    {modalOrder?.cost || 0}
+                  </div>
+                  <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '8px' }}>
+                    Total Recipients
+                  </div>
+                </Card>
+              </Col>
+
+              <Col xs={12} sm={8} md={6}>
+                <Card bodyStyle={{ padding: '16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: THEME_CONSTANTS.colors.success }}>
+                    {modalOrder?.successCount || 0}
+                  </div>
+                  <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '8px' }}>
+                    Sent
+                  </div>
+                </Card>
+              </Col>
+
+              <Col xs={12} sm={8} md={6}>
+                <Card bodyStyle={{ padding: '16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#faad14' }}>
+                    {modalOrder?.totalDelivered || 0}
+                  </div>
+                  <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '8px' }}>
+                    Delivered
+                  </div>
+                </Card>
+              </Col>
+
+              <Col xs={12} sm={8} md={6}>
+                <Card bodyStyle={{ padding: '16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: THEME_CONSTANTS.colors.success }}>
+                    {modalOrder?.totalRead || 0}
+                  </div>
+                  <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '8px' }}>
+                    Read
+                  </div>
+                </Card>
+              </Col>
+
+              <Col xs={12} sm={8} md={6}>
+                <Card bodyStyle={{ padding: '16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#ff4d4f' }}>
+                    {modalOrder?.failedCount || 0}
+                  </div>
+                  <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '8px' }}>
+                    Failed
+                  </div>
+                </Card>
+              </Col>
+
+              <Col xs={12} sm={8} md={6}>
+                <Card bodyStyle={{ padding: '16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: THEME_CONSTANTS.colors.primary }}>
+                    {modalOrder?.userClickCount || 0}
+                  </div>
+                  <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '8px' }}>
+                    Clicked
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+
+            <Divider />
+
+            {/* Detailed Results Table */}
+            <div style={{ marginTop: '24px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: THEME_CONSTANTS.colors.textPrimary }}>
+                Message Details
+              </div>
+              <Table
+                columns={[
+                  {
+                    title: 'Phone Number',
+                    dataIndex: 'phone',
+                    key: 'phone',
+                    render: (text, record) => (
+                      <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                        {text || '-'}
+                      </span>
+                    ),
+                  },
+                  {
+                    title: 'Status',
+                    dataIndex: 'messaestatus',
+                    key: 'status',
+                    render: (status) => (
+                      <Tag
+                        color={
+                          status === 'MESSAGE_DELIVERED' || status === 'SEND_MESSAGE_SUCCESS' || status === 'MESSAGE_READ'
+                            ? 'green'
+                            : status === 'SEND_MESSAGE_FAILURE'
+                            ? 'red'
+                            : 'orange'
+                        }
+                      >
+                        {status === 'MESSAGE_DELIVERED'
+                          ? 'Delivered'
+                          : status === 'SEND_MESSAGE_SUCCESS'
+                          ? 'Sent'
+                          : status === 'MESSAGE_READ'
+                          ? 'Read'
+                          : 'Pending'}
+                      </Tag>
+                    ),
+                  },
+                  {
+                    title: 'Sent At',
+                    dataIndex: 'timestamp',
+                    key: 'timestamp',
+                    render: (text) => (
+                      <span style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
+                        {text ? new Date(text).toLocaleString() : '-'}
+                      </span>
+                    ),
+                  },
+                ]}
+                dataSource={modalOrder?.results?.slice(0, 50) || []}
+                rowKey={(record, index) => index}
+                pagination={{ pageSize: 10 }}
+                size="small"
+              />
+            </div>
+
+            <Divider />
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <Button onClick={closeModal}>Close</Button>
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                onClick={() => {
+                  const exportData = modalOrder?.phoneNumbers?.map((phone, idx) => ({
+                    'S.No': idx + 1,
+                    'Phone Number': phone || 'N/A',
+                    'Message Type': modalOrder?.type || 'N/A',
+                    'Status': 'Sent',
+                    'Date': new Date(modalOrder?.createdAt).toLocaleDateString(),
+                  })) || [];
+
+                  const ws = XLSX.utils.json_to_sheet(exportData);
+                  const wb = XLSX.utils.book_new();
+                  XLSX.utils.book_append_sheet(wb, ws, 'Campaign Details');
+                  XLSX.writeFile(wb, `campaign-${modalOrder?.CampaignName}-${new Date().toISOString().split('T')[0]}.xlsx`);
+                  toast.success('Report exported successfully');
+                }}
+              >
+                Export Details
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <style>{`
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
+    </>
+  );
+}

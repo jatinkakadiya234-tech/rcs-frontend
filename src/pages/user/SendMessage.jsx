@@ -9,9 +9,9 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 import * as XLSX from "xlsx";
-import ModernTemplatePreview from "../components/ModernTemplatePreview";
-import api from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import ModernTemplatePreview from "../../components/ModernTemplatePreview";
+import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
