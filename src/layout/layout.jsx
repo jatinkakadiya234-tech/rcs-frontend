@@ -1,232 +1,604 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { FaHome,FaPlus } from "react-icons/fa";
-import { BiSolidReport } from "react-icons/bi";
-import { BiLogOutCircle } from "react-icons/bi";
-import { IoClose } from "react-icons/io5";
-import { FiUser, FiSettings } from 'react-icons/fi';
-import { useState, useEffect, useRef } from 'react';
-import { Send } from '@mui/icons-material';
-import { GoGraph } from "react-icons/go";
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Layout,
+  Menu,
+  Button,
+  Dropdown,
+  Avatar,
+  Space,
+  Drawer,
+  Input,
+} from 'antd';
+import {
+  DashboardOutlined,
+  SendOutlined,
+  FileTextOutlined,
+  BarChartOutlined,
+  SettingOutlined,
+  LogoutOutlined,
+  UserOutlined,
+  SearchOutlined,
+  MenuOutlined,
+  CloseOutlined,
+  HomeOutlined,
+  MailOutlined,
+} from '@ant-design/icons';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { THEME_CONSTANTS } from '../theme';
 import AccountStatusChecker from '../components/AccountStatusChecker';
 
-export default function Layout() {
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const { logout, user } = useAuth();
+const { Sider, Header, Content, Footer } = Layout;
+
+export default function UserLayout() {
   const navigate = useNavigate();
-  const dropdownRef = useRef(null);
+  const location = useLocation();
+  const { logout, user } = useAuth();
 
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [selectedKey, setSelectedKey] = useState(
+    location.pathname.slice(1) || 'dashboard'
+  );
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : false
+  );
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+
+  // Sync selected menu with route
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const path = location.pathname.slice(1) || 'dashboard';
+    setSelectedKey(path);
+  }, [location.pathname]);
 
-    return () => clearInterval(timer);
-  }, []);
-
+  // Responsive breakpoint handling
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowProfileDropdown(false);
-      }
+    const handleResize = () => {
+      const desktop = window.innerWidth >= 1024;
+      const mobile = window.innerWidth < 768;
+      setIsDesktop(desktop);
+      setIsMobile(mobile);
+      if (desktop) setDrawerVisible(false);
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const formatTime = (date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
+  // Dynamic menu styles with theme constants
+  useEffect(() => {
+    const menuStyles = `
+      .custom-menu .ant-menu {
+        background: transparent !important;
+        border: none !important;
+      }
 
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+      .custom-menu .ant-menu-item {
+        height: 56px !important;
+        line-height: 56px !important;
+        margin: ${THEME_CONSTANTS.spacing.sm} 0 !important;
+        border-radius: ${THEME_CONSTANTS.radius.lg} !important;
+        font-weight: 600 !important;
+        font-size: ${isMobile ? '14px' : '16px'} !important;
+        padding: 0 ${THEME_CONSTANTS.spacing.xl} !important;
+        transition: all 0.2s ease !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+      }
 
-  return (
-    <>
-    <AccountStatusChecker />
-    <div className="h-screen w-screen bg-[#F7F7FB] text-palette-text flex overflow-hidden">
-      {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
+      .custom-menu .ant-menu-item:hover {
+        background-color: ${THEME_CONSTANTS.colors.primaryLight} !important;
+        color: ${THEME_CONSTANTS.colors.primary} !important;
+        box-shadow: ${THEME_CONSTANTS.shadow.md} !important;
+      }
+
+      .custom-menu .ant-menu-item-selected {
+        background-color: ${THEME_CONSTANTS.colors.primaryLight} !important;
+        color: ${THEME_CONSTANTS.colors.primary} !important;
+        font-weight: 700 !important;
+        box-shadow: ${THEME_CONSTANTS.shadow.lg} !important;
+      }
+
+      .custom-menu .ant-menu-item .anticon {
+        margin-right: ${THEME_CONSTANTS.spacing.lg} !important;
+        font-size: ${isMobile ? '18px' : '20px'} !important;
+      }
+    `;
+    const styleEl = document.createElement('style');
+    styleEl.textContent = menuStyles;
+    document.head.appendChild(styleEl);
+    return () => document.head.removeChild(styleEl);
+  }, [isMobile]);
+
+  const menuItems = [
+    {
+      key: '/',
+      icon: <HomeOutlined className="text-xl" />,
+      label: 'Dashboard',
+      onClick: () => navigate('/'),
+    },
+    {
+      key: '/newCampaign',
+      icon: <SendOutlined className="text-xl" />,
+      label: 'Send Message',
+      onClick: () => navigate('/newCampaign'),
+    },
+    {
+      key: '/templates',
+      icon: <FileTextOutlined className="text-xl" />,
+      label: 'Templates',
+      onClick: () => navigate('/templates'),
+    },
+    {
+      key: '/reports',
+      icon: <BarChartOutlined className="text-xl" />,
+      label: 'Reports',
+      onClick: () => navigate('/reports'),
+    },
+  ];
+
+  const userMenuItems = [
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: 'Profile Settings',
+      onClick: () => navigate('/profile'),
+    },
+    ...(user?.role === 'admin' ? [{
+      key: 'admin',
+      icon: <SettingOutlined />,
+      label: 'Admin Panel',
+      onClick: () => navigate('/admin'),
+    }] : []),
+    
+    { type: 'divider' },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Sign Out',
+      danger: true,
+      onClick: logout,
+    },
+  ];
+
+  // Sidebar Logo Component
+  const SidebarLogo = () => (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: THEME_CONSTANTS.spacing.lg,
+        padding: `${THEME_CONSTANTS.spacing.lg} ${THEME_CONSTANTS.spacing.xl}`,
+        height: '80px',
+        borderBottom: `1px solid ${THEME_CONSTANTS.colors.border}`,
+        background: THEME_CONSTANTS.colors.surface,
+      }}
+    >
+      <div
+        style={{
+          width: isMobile ? '40px' : '48px',
+          height: isMobile ? '40px' : '48px',
+          background: THEME_CONSTANTS.colors.primaryLight,
+          border: `1px solid ${THEME_CONSTANTS.colors.primary}20`,
+          borderRadius: THEME_CONSTANTS.radius.xl,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: THEME_CONSTANTS.shadow.sm,
+          flexShrink: 0,
+        }}
+      >
+        <MailOutlined
+          style={{
+            color: THEME_CONSTANTS.colors.primary,
+            fontSize: isMobile ? '20px' : '24px'
+          }}
         />
-      )}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <h1
+          style={{
+            color: THEME_CONSTANTS.colors.text,
+            fontWeight: 700,
+            fontSize: isMobile ? '18px' : '20px',
+            margin: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          RCS Dashboard
+        </h1>
+        <p
+          style={{
+            fontSize: '12px',
+            color: THEME_CONSTANTS.colors.textSecondary,
+            fontWeight: 500,
+            margin: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {user?.companyname}
+        </p>
+      </div>
+    </div>
+  );
 
-      <div className="flex w-full h-full min-w-0">
-        {/* Sidebar */}
-        <aside className={`fixed lg:relative inset-y-0 left-0 z-50 bg-[#6C3BFF] text-white w-64 sm:w-72 lg:w-72 transform transition-transform duration-300 ease-in-out flex flex-col h-full shadow-xl flex-shrink-0 ${
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}>
-          {/* Sidebar Header */}
-          <div className="p-3 sm:p-4 lg:p-6 border-b border-white/10 flex-shrink-0">
-            <div className="flex items-center justify-between gap-2 sm:gap-3 lg:gap-4">
-              <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
-                <div className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 rounded-2xl bg-white/10 flex items-center justify-center font-semibold text-lg sm:text-xl lg:text-2xl">
-                  RCS
-                </div>
-                <div className="hidden sm:block">
-                  <h2 className="font-bold text-base sm:text-lg lg:text-xl">RCS Dashboard</h2>
-                  <p className="text-white/70 text-xs lg:text-sm">{user.companyname}</p>
-                </div>
-              </div>
-              
-              {/* Close Button for Mobile */}
-              <button 
-                className="lg:hidden h-8 w-8 sm:h-10 sm:w-10 rounded-xl text-white/80 hover:bg-white/15 hover:text-white transition-all duration-200 flex items-center justify-center flex-shrink-0"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <IoClose className="text-lg sm:text-xl" />
-              </button>
-            </div>
-          </div>
-
-          {/* Navigation Menu */}
-          <nav className="flex-1 p-3 sm:p-4 lg:p-6 space-y-1 sm:space-y-2 lg:space-y-3 overflow-y-auto overflow-x-hidden">
-            <div className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-3 sm:mb-4 lg:mb-6 px-2 lg:px-3">
-              Main Menu
-            </div>
-            
-            {[
-              { to: '/', icon: <FaHome />, label: 'Dashboard' },
-              { to: '/newCampaign', icon: <Send />, label: 'Send Messsage' },
-              { to: '/templates', icon: <BiSolidReport />, label: 'Templates' },
-              { to: '/reports', icon: <GoGraph />, label: 'Reports' },
-             
-            ].map(({ to, icon, label }) => (
-              <NavLink 
-                key={to} 
-                to={to} 
-                className={({isActive}) => `flex items-center gap-2 sm:gap-3 lg:gap-4 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 rounded-xl transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-white/25 text-white shadow-lg' 
-                    : 'text-white/80 hover:bg-white/15 hover:text-white'
-                }`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <span className="text-lg sm:text-xl lg:text-2xl">{icon}</span>
-                <span className="font-semibold text-sm sm:text-base lg:text-lg">{label}</span>
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* Sidebar Footer */}
-          <div className="p-3 sm:p-4 lg:p-6 border-t border-white/10 flex-shrink-0">
-            <button 
-              onClick={logout}
-              className="flex items-center gap-2 sm:gap-3 lg:gap-4 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 rounded-xl text-white/80 hover:bg-white/15 hover:text-white transition-all duration-200 w-full"
+  const SidebarProfile = () => (
+    <div
+      style={{
+        padding: THEME_CONSTANTS.spacing.xl,
+        borderTop: `1px solid ${THEME_CONSTANTS.colors.border}`,
+        background: `linear-gradient(to bottom, ${THEME_CONSTANTS.colors.surface}, ${THEME_CONSTANTS.colors.background})`,
+      }}
+    >
+      <Dropdown menu={{ items: userMenuItems }} placement="topRight" trigger={['click']}>
+        <div
+          style={{
+            background: THEME_CONSTANTS.colors.surface,
+            border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+            borderRadius: THEME_CONSTANTS.radius.xl,
+            padding: isMobile ? THEME_CONSTANTS.spacing.md : THEME_CONSTANTS.spacing.lg,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: THEME_CONSTANTS.shadow.sm,
+          }}
+          className="hover:border-blue-200 hover:bg-blue-50 hover:shadow-md"
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: THEME_CONSTANTS.spacing.md,
+            }}
+          >
+            <Avatar
+              size={isMobile ? 36 : 44}
+              style={{
+                background: THEME_CONSTANTS.colors.primary,
+                color: THEME_CONSTANTS.colors.surface,
+                boxShadow: THEME_CONSTANTS.shadow.md,
+                flexShrink: 0,
+              }}
             >
-              <BiLogOutCircle className="text-lg sm:text-xl lg:text-2xl" />
-              <span className="font-semibold text-sm sm:text-base lg:text-lg">Logout</span>
-            </button>
-          </div>
-        </aside>
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </Avatar>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h4
+                style={{
+                  color: THEME_CONSTANTS.colors.text,
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  margin: 0,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {user?.name}
+              </h4>
+              <p
+                style={{
+                  color: THEME_CONSTANTS.colors.primary,
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  margin: 0,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {user?.email}
 
-        {/* Main Content Area */}
-        <div className="flex-1 lg:ml-0 flex flex-col h-full overflow-hidden bg-white lg:bg-transparent min-w-0">
-          {/* Header */}
-          <div className="p-2 sm:p-3 md:p-4 lg:p-6 border-b border-gray-200 bg-white flex-shrink-0 shadow-sm">
-            <div className="flex items-center justify-between w-full gap-2 sm:gap-3 md:gap-4 min-w-0">
-              {/* Left Side (Menu button and title) */}
-              <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0">
-                {!isMobileMenuOpen && (
-                  <button 
-                    className="lg:hidden h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 bg-[#6C3BFF] text-white rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 flex-shrink-0"
-                    onClick={() => setIsMobileMenuOpen(true)}
-                  >
-                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  </button>
-                )}
-                <div className="min-w-0">
-                  <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-gray-900 truncate">Dashboard - {user.companyname}</h2>
-                </div>
-              </div>
-
-              {/* Right Side (User Avatar) */}
-              <div className="flex-shrink-0 relative" ref={dropdownRef}>
-                <button 
-                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 rounded-full bg-[#6C3BFF] text-white flex items-center justify-center font-semibold text-xs sm:text-sm md:text-base lg:text-lg shadow-sm hover:shadow-md transition-all duration-200"
-                >
-                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                </button>
-                
-                {/* Profile Dropdown */}
-                {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                    <button 
-                      onClick={() => {
-                        navigate('/profile');
-                        setShowProfileDropdown(false);
-                      }}
-                      className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 w-full text-left"
-                    >
-                      <FiUser className="text-lg" />
-                      <span>View Profile</span>
-                    </button>
-                    {user?.role === 'admin' && (
-                      <button 
-                        onClick={() => {
-                          navigate('/admin');
-                          setShowProfileDropdown(false);
-                        }}
-                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 w-full text-left"
-                      >
-                        <FiSettings className="text-lg" />
-                        <span>Admin Panel</span>
-                      </button>
-                    )}
-                    <button 
-                      onClick={() => {
-                        setShowProfileDropdown(false);
-                      }}
-                      className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 w-full text-left"
-                    >
-                      <FiSettings className="text-lg" />
-                      <span>Settings</span>
-                    </button>
-                    <hr className="my-2" />
-                    <button 
-                      onClick={() => {
-                        logout();
-                        setShowProfileDropdown(false);
-                      }}
-                      className="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 w-full text-left"
-                    >
-                      <BiLogOutCircle className="text-lg" />
-                      <span>Logout</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Page Content */}
-          <div className="flex-1 p-2 sm:p-3 lg:p-6 overflow-y-auto overflow-x-hidden bg-[#F7F7FB]">
-            <div className="w-full max-w-7xl mx-auto">
-              <Outlet />
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      </Dropdown>
     </div>
-    </>
-  )
-}
+  );
 
+  return (
+    <>
+      <AccountStatusChecker />
+      <Layout className="min-h-screen bg-gray-50">
+        {/* Desktop sidebar */}
+        {isDesktop && (
+          <Sider
+            width={280}
+            style={{
+              position: 'fixed',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              zIndex: 1000,
+              background: THEME_CONSTANTS.colors.surface,
+              boxShadow: THEME_CONSTANTS.shadow.lg,
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100vh',
+            }}
+          >
+            <SidebarLogo />
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: `${THEME_CONSTANTS.spacing.xxl} 0`,
+              }}
+            >
+              <Menu
+                mode="inline"
+                selectedKeys={[location.pathname]}
+                items={menuItems}
+                className="border-0 bg-transparent custom-menu"
+                style={{
+                  background: 'transparent',
+                  padding: `0 ${THEME_CONSTANTS.spacing.lg}`,
+                }}
+              />
+            </div>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+              <SidebarProfile />
+            </div>
+          </Sider>
+        )}
+
+        {/* Mobile drawer */}
+        <Drawer
+          placement="left"
+          onClose={() => setDrawerVisible(false)}
+          open={drawerVisible}
+          closable={false}
+          bodyStyle={{ padding: 0 }}
+          width={isMobile ? '85vw' : 280}
+          style={{ display: isDesktop ? 'none' : 'block' }}
+          maskClosable
+          zIndex={1001}
+        >
+          <Layout
+            style={{
+              minHeight: '100vh',
+              background: THEME_CONSTANTS.colors.surface,
+              display: 'flex',
+              flexDirection: 'column',
+              position: 'relative',
+            }}
+          >
+            <SidebarLogo />
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: `${THEME_CONSTANTS.spacing.xxl} 0`,
+                paddingBottom: '120px',
+              }}
+            >
+              <Menu
+                mode="inline"
+                selectedKeys={[location.pathname]}
+                items={menuItems}
+                onClick={() => setDrawerVisible(false)}
+                className="border-0 bg-transparent custom-menu"
+                style={{
+                  background: 'transparent',
+                  padding: `0 ${THEME_CONSTANTS.spacing.lg}`,
+                }}
+              />
+            </div>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+              <SidebarProfile />
+            </div>
+          </Layout>
+        </Drawer>
+
+        {/* Main layout */}
+        <Layout
+          style={{
+            minHeight: '100vh',
+            background: THEME_CONSTANTS.colors.background,
+            marginLeft: isDesktop ? '280px' : 0,
+            transition: 'margin-left 0.2s ease',
+          }}
+        >
+          {/* Header */}
+          <Header
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 999,
+              background: THEME_CONSTANTS.colors.surface,
+              boxShadow: THEME_CONSTANTS.shadow.sm,
+              borderBottom: `1px solid ${THEME_CONSTANTS.colors.border}`,
+              padding: `0 ${isMobile ? THEME_CONSTANTS.spacing.lg : THEME_CONSTANTS.spacing.xxxl}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              height: '80px',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: THEME_CONSTANTS.spacing.lg,
+                flex: 1,
+              }}
+            >
+              {/* Mobile menu toggle */}
+              {!isDesktop && (
+                <Button
+                  type="text"
+                  size={isMobile ? 'middle' : 'large'}
+                  icon={
+                    drawerVisible ? (
+                      <CloseOutlined style={{ fontSize: isMobile ? '16px' : '18px' }} />
+                    ) : (
+                      <MenuOutlined style={{ fontSize: isMobile ? '16px' : '18px' }} />
+                    )
+                  }
+                  onClick={() => setDrawerVisible(!drawerVisible)}
+                  style={{
+                    color: THEME_CONSTANTS.colors.textSecondary,
+                    borderRadius: THEME_CONSTANTS.radius.md,
+                    transition: 'all 0.2s ease',
+                  }}
+                  className="hover:text-blue-600 hover:bg-blue-50"
+                />
+              )}
+
+              <div>
+                <h2 style={{
+                  fontSize: isMobile ? '16px' : '18px',
+                  fontWeight: 600,
+                  color: THEME_CONSTANTS.colors.text,
+                  margin: 0
+                }}>
+                  Dashboard - {user?.companyname}
+                </h2>
+              </div>
+
+              {/* Search */}
+              {!isMobile && (
+                <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto', marginRight: THEME_CONSTANTS.spacing.xl }}>
+                  <Input
+                    placeholder="Search campaigns, templates, contacts..."
+                    prefix={<SearchOutlined style={{ color: THEME_CONSTANTS.colors.textMuted }} />}
+                    style={{
+                      width: isDesktop ? '320px' : '240px',
+                      height: '40px',
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                      borderColor: THEME_CONSTANTS.colors.border,
+                      backgroundColor: THEME_CONSTANTS.colors.background,
+                      fontSize: '14px',
+                      transition: 'all 0.2s ease',
+                    }}
+                    className="hover:bg-white focus:bg-white"
+                  />
+                </div>
+              )}
+            </div>
+
+            <Space size={isMobile ? 'middle' : 'large'} style={{ display: 'flex', alignItems: 'center' }}>
+              <Dropdown
+                menu={{ items: userMenuItems }}
+                placement="bottomRight"
+                trigger={['click']}
+                arrow
+              >
+                <Button
+                  type="text"
+                  size={isMobile ? 'middle' : 'large'}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: THEME_CONSTANTS.spacing.md,
+                    borderRadius: THEME_CONSTANTS.radius.md,
+                    padding: `${THEME_CONSTANTS.spacing.sm} ${THEME_CONSTANTS.spacing.md}`,
+                    transition: 'all 0.2s ease',
+                  }}
+                  className="hover:bg-blue-50"
+                >
+                  <Avatar
+                    size={isMobile ? 32 : 40}
+                    style={{
+                      background: THEME_CONSTANTS.colors.primary,
+                      color: THEME_CONSTANTS.colors.surface,
+                    }}
+                  >
+                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </Avatar>
+                  {!isMobile && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        lineHeight: 1,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: THEME_CONSTANTS.colors.text,
+                          lineHeight: 1,
+                          marginBottom: '2px',
+                        }}
+                      >
+                        {user?.name}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '12px',
+                          color: THEME_CONSTANTS.colors.primary,
+                          fontWeight: 500,
+                          lineHeight: 1,
+                        }}
+                      >
+                        {user?.email}
+                      </span>
+                    </div>
+                  )}
+                </Button>
+              </Dropdown>
+            </Space>
+          </Header>
+
+          {/* Content */}
+          <Content
+            style={{
+              padding: isMobile
+                ? THEME_CONSTANTS.spacing.lg
+                : THEME_CONSTANTS.spacing.xl,
+              background: THEME_CONSTANTS.colors.background,
+              minHeight: 'calc(100vh - 160px)',
+            }}
+          >
+            <div
+              style={{
+                maxWidth: '1400px',
+                margin: '0 auto',
+                width: '100%',
+              }}
+            >
+              <Outlet />
+            </div>
+          </Content>
+
+          {/* Footer */}
+          <Footer
+            style={{
+              background: THEME_CONSTANTS.colors.surface,
+              borderTop: `1px solid ${THEME_CONSTANTS.colors.border}`,
+              textAlign: 'center',
+              padding: `${THEME_CONSTANTS.spacing.xl} ${isMobile ? THEME_CONSTANTS.spacing.lg : THEME_CONSTANTS.spacing.xxxl}`,
+              height: '80px',
+            }}
+          >
+            <div
+              style={{
+                maxWidth: '1400px',
+                margin: '0 auto',
+              }}
+            >
+              <p
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: THEME_CONSTANTS.colors.text,
+                  margin: 0,
+                }}
+              >
+                © 2025 RCS Messaging Hub. All rights reserved.
+              </p>
+            </div>
+          </Footer>
+        </Layout>
+      </Layout>
+    </>
+  );
+}
