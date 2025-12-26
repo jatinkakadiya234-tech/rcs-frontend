@@ -1,161 +1,270 @@
-import { useState, useEffect } from 'react';
-import { BiRefresh } from 'react-icons/bi';
-import { FaTimes, FaEye, FaEyeSlash, FaEdit, FaWallet, FaKey, FaToggleOn, FaToggleOff, FaHistory, FaTrash } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import {
+  Card,
+  Table,
+  Button,
+  Space,
+  Modal,
+  Form,
+  Input,
+  Select,
+  message,
+  Tag,
+  Row,
+  Col,
+  Avatar,
+  Tooltip,
+  Empty,
+  InputNumber,
+  Breadcrumb,
+  Spin,
+  Badge,
+} from 'antd';
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  UserOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  DollarOutlined,
+  KeyOutlined,
+  ReloadOutlined,
+  LockOutlined,
+  BuildOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  HistoryOutlined,
+} from '@ant-design/icons';
 import apiService from '../../services/api';
-import CustomModal from '../../components/CustomModal';
+import { THEME_CONSTANTS } from '../../theme';
 
-const Users = () => {
+
+function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [showTransactionModal, setShowTransactionModal] = useState(false);
-  const [transactionSummary, setTransactionSummary] = useState(null);
-  const [loadingTransactions, setLoadingTransactions] = useState(false);
-  const [orders, setOrders] = useState([]);
-  const [orderPage, setOrderPage] = useState(1);
-  const [orderPagination, setOrderPagination] = useState({});
-  const [loadingOrders, setLoadingOrders] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showWalletModal, setShowWalletModal] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  
+const APIURL = `https://rcssender.com`
+
+  // Create User Modal States
+  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
+  const [createFormData, setCreateFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    phone: '',
+    role: 'user',
+    jioId: '',
+    jioSecret: '',
+    companyname: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+
+  // Edit User States
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   const [editFormData, setEditFormData] = useState({});
+  const [editLoading, setEditLoading] = useState(false);
+
+  // Wallet Modal States
+  const [isWalletModalVisible, setIsWalletModalVisible] = useState(false);
+  const [selectedUserForWallet, setSelectedUserForWallet] = useState(null);
   const [walletAmount, setWalletAmount] = useState('');
+  const [walletLoading, setWalletLoading] = useState(false);
+
+  // Password Modal States
+  const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
+  const [selectedUserForPassword, setSelectedUserForPassword] = useState(null);
   const [newPassword, setNewPassword] = useState('');
-  const [showResetPassword, setShowResetPassword] = useState(false);
-  const [modal, setModal] = useState({ show: false, type: 'success', title: '', message: '' });
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // Transaction Modal States
+  const [isTransactionModalVisible, setIsTransactionModalVisible] = useState(false);
+  const [selectedUserForTransaction, setSelectedUserForTransaction] = useState(null);
+  const [transactionSummary, setTransactionSummary] = useState(null);
+  const [transactionLoading, setTransactionLoading] = useState(false);
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
-      const response = await fetch('/api/admin/users');
+      const response = await fetch(`${APIURL}/api/admin/users`);
       const data = await response.json();
       if (data.success) {
         setUsers(data.users);
       }
-    } catch (error) {
-      console.error('Error fetching users:', error);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      message.error('Failed to fetch users');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchUserOrders = async (userId, userName, page = 1) => {
-    setLoadingOrders(true);
-    setSelectedUser({ id: userId, name: userName });
-    setShowModal(true);
-    
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setCreateLoading(true);
     try {
-      const data = await apiService.getUserOrders(userId, page, 20);
+      const data = await apiService.createUser(createFormData);
       if (data.success) {
-        setOrders(data.orderHistory.orders);
-        setOrderPagination(data.orderHistory.pagination);
+        message.success('User created successfully!');
+        setCreateFormData({
+          name: '',
+          email: '',
+          password: '',
+          phone: '',
+          // role: 'user',
+          jioId: '',
+          jioSecret: '',
+          companyname: '',
+        });
+        setIsCreateModalVisible(false);
+        fetchUsers();
+      } else {
+        message.error(data.message || 'Failed to create user');
       }
-    } catch (error) {
-      console.error('Error fetching user orders:', error);
+    } catch (err) {
+      message.error('Error creating user');
     } finally {
-      setLoadingOrders(false);
+      setCreateLoading(false);
     }
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedUser(null);
-    setOrders([]);
-    setOrderPage(1);
-  };
-
-  const fetchUserTransactions = async (userId, userName) => {
-    setLoadingTransactions(true);
-    setSelectedUser({ id: userId, name: userName });
-    setShowTransactionModal(true);
-    
-    try {
-      const data = await apiService.getUserTransactionSummary(userId);
-      if (data.success) {
-        setTransactionSummary(data.summary);
-      }
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-    } finally {
-      setLoadingTransactions(false);
-    }
-  };
-
-  const closeTransactionModal = () => {
-    setShowTransactionModal(false);
-    setSelectedUser(null);
-    setTransactionSummary(null);
+  const handleCreateChange = (e) => {
+    const { name, value } = e.target;
+    setCreateFormData({ ...createFormData, [name]: value });
   };
 
   const openEditModal = (user) => {
-    setSelectedUser(user);
+    setEditingUser(user);
     setEditFormData({
       name: user.name,
       email: user.email,
       phone: user.phone,
-      role: user.role,
+      // role: user.role,
       jioId: user.jioId || '',
       jioSecret: user.jioSecret || '',
-      status: user.status || 'active'
+      status: user.status || 'active',
+      companyname: user.companyname || '',
     });
-    setShowEditModal(true);
+    setIsEditModalVisible(true);
   };
 
-  const handleEditUser = async (e) => {
-    e.preventDefault();
+  const handleEditUser = async () => {
+    setEditLoading(true);
     try {
-      const response = await apiService.editUser(selectedUser._id, editFormData);
+      const response = await apiService.editUser(editingUser._id, editFormData);
       if (response.success) {
-        setModal({ show: true, type: 'success', title: 'Success', message: 'User updated successfully!' });
+        message.success('User updated successfully!');
         fetchUsers();
-        setShowEditModal(false);
+        setIsEditModalVisible(false);
       }
-    } catch (error) {
-      setModal({ show: true, type: 'error', title: 'Error', message: 'Error updating user' });
+    } catch (err) {
+      message.error('Error updating user');
+    } finally {
+      setEditLoading(false);
     }
   };
 
   const openWalletModal = (user) => {
-    setSelectedUser(user);
+    setSelectedUserForWallet(user);
     setWalletAmount('');
-    setShowWalletModal(true);
+    setIsWalletModalVisible(true);
   };
 
-  const handleAddWallet = async (e) => {
-    e.preventDefault();
+  const handleAddWallet = async () => {
+    if (!walletAmount || walletAmount <= 0) {
+      message.error('Please enter a valid amount');
+      return;
+    }
+    setWalletLoading(true);
     try {
-      const response = await apiService.addWalletBalance(selectedUser._id, Number(walletAmount));
+      const response = await apiService.addWalletBalance(
+        selectedUserForWallet._id,
+        Number(walletAmount)
+      );
       if (response.success) {
-        setModal({ show: true, type: 'success', title: 'Success', message: 'Wallet balance added successfully!' });
+        message.success('Wallet balance added successfully!');
         fetchUsers();
-        setShowWalletModal(false);
+        setIsWalletModalVisible(false);
       }
-    } catch (error) {
-      setModal({ show: true, type: 'error', title: 'Error', message: 'Error adding wallet balance' });
+    } catch (err) {
+      message.error('Error adding wallet balance');
+    } finally {
+      setWalletLoading(false);
     }
   };
 
   const openPasswordModal = (user) => {
-    setSelectedUser(user);
+    setSelectedUserForPassword(user);
     setNewPassword('');
-    setShowPasswordModal(true);
+    setShowNewPassword(false);
+    setIsPasswordModalVisible(true);
   };
 
-  const handleResetPassword = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await apiService.resetPassword(selectedUser._id, newPassword);
-      if (response.success) {
-        setModal({ show: true, type: 'success', title: 'Success', message: 'Password reset successfully!' });
-        setShowPasswordModal(false);
-      }
-    } catch (error) {
-      setModal({ show: true, type: 'error', title: 'Error', message: 'Error resetting password' });
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      message.error('Password must be at least 6 characters');
+      return;
     }
+    setPasswordLoading(true);
+    try {
+      const response = await apiService.resetPassword(
+        selectedUserForPassword._id,
+        newPassword
+      );
+      if (response.success) {
+        message.success('Password reset successfully!');
+        setIsPasswordModalVisible(false);
+      }
+    } catch (err) {
+      message.error('Error resetting password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const openTransactionModal = async (user) => {
+    setSelectedUserForTransaction(user);
+    setIsTransactionModalVisible(true);
+    setTransactionLoading(true);
+    try {
+      const data = await apiService.getUserTransactionSummary(user._id);
+      if (data.success) {
+        setTransactionSummary(data.summary);
+      }
+    } catch (err) {
+      message.error('Error fetching transactions');
+    } finally {
+      setTransactionLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    Modal.confirm({
+      title: 'Delete User',
+      content: `Are you sure you want to delete ${userName}?`,
+      okText: 'Delete',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          const response = await apiService.deleteUser(userId);
+          if (response.success) {
+            message.success('User deleted successfully!');
+            fetchUsers();
+          }
+        } catch (err) {
+          message.error('Error deleting user');
+        }
+      },
+    });
   };
 
   const handleToggleStatus = async (userId, currentStatus) => {
@@ -163,436 +272,814 @@ const Users = () => {
     try {
       const response = await apiService.updateUserStatus(userId, newStatus);
       if (response.success) {
-        setModal({ show: true, type: 'success', title: 'Success', message: `User status updated to ${newStatus}` });
+        message.success(`User status updated to ${newStatus}`);
         fetchUsers();
       }
-    } catch (error) {
-      setModal({ show: true, type: 'error', title: 'Error', message: 'Error updating user status' });
+    } catch (err) {
+      message.error('Error updating user status');
     }
   };
 
-  const handleDeleteUser = async (userId, userName) => {
-    if (window.confirm(`Are you sure you want to delete ${userName}?`)) {
-      try {
-        const response = await apiService.deleteUser(userId);
-        if (response.success) {
-          setModal({ show: true, type: 'success', title: 'Success', message: 'User deleted successfully!' });
-          fetchUsers();
-        }
-      } catch (error) {
-        setModal({ show: true, type: 'error', title: 'Error', message: 'Error deleting user' });
-      }
-    }
+  const formatCurrency = (value) => `₹${Number(value || 0).toLocaleString('en-IN')}`;
+  const formatDate = (d) => {
+    if (!d) return '-';
+    const now = new Date();
+    const diffHours = Math.floor((now - new Date(d)) / (1000 * 60 * 60));
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return new Date(d).toLocaleDateString('en-IN');
   };
 
-  if (loading) return <div>Loading...</div>;
+  const StatCard = ({ icon: IconComponent, title, value, color, bgColor }) => (
+    <Card
+      style={{
+        borderRadius: THEME_CONSTANTS.radius.lg,
+        boxShadow: THEME_CONSTANTS.shadow.sm,
+        border: `1px solid ${bgColor}`,
+      }}
+      hoverable
+    >
+      <Row gutter={16} align="middle">
+        <Col>
+          <div
+            style={{
+              width: 50,
+              height: 50,
+              borderRadius: THEME_CONSTANTS.radius.md,
+              backgroundColor: bgColor,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <IconComponent style={{ fontSize: 24, color }} />
+          </div>
+        </Col>
+        <Col flex="auto">
+          <div style={{ marginBottom: 8 }}>
+            <span style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>
+              {title}
+            </span>
+          </div>
+          <span style={{ fontSize: 24, fontWeight: 600, color }}>
+            {typeof value === 'number' ? value.toLocaleString('en-IN') : value}
+          </span>
+        </Col>
+      </Row>
+    </Card>
+  );
+
+  const userColumns = [
+    {
+      title: 'User',
+      dataIndex: 'name',
+      key: 'user',
+      responsive: ['sm'],
+      width: '28%',
+      render: (text, record) => (
+        <Space>
+          <Avatar
+            size={40}
+            style={{ background: THEME_CONSTANTS.colors.primary }}
+          >
+            {record.name?.charAt(0)?.toUpperCase()}
+          </Avatar>
+          <div>
+            <div style={{ fontWeight: 600, color: THEME_CONSTANTS.colors.text }}>
+              {record.name}
+            </div>
+            <div style={{ fontSize: 12, color: '#888' }}>{record.email}</div>
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: 'Phone',
+      dataIndex: 'phone',
+      key: 'phone',
+      responsive: ['md'],
+      width: '15%',
+      render: (phone) => <span style={{ fontSize: 13, color: '#666' }}>{phone}</span>,
+    },
+    {
+      title: 'Wallet',
+      dataIndex: 'Wallet',
+      key: 'wallet',
+      responsive: ['sm'],
+      width: '15%',
+      render: (wallet) => (
+        <span style={{ fontWeight: 600, color: THEME_CONSTANTS.colors.success }}>
+          {formatCurrency(wallet)}
+        </span>
+      ),
+    },
+    // {
+    //   title: 'Role',
+    //   dataIndex: 'role',
+    //   key: 'role',
+    //   responsive: ['md'],
+    //   width: '12%',
+    //   render: (role) => (
+    //     <Tag
+    //       color={role === 'admin' ? 'purple' : 'blue'}
+    //       style={{ borderRadius: THEME_CONSTANTS.radius.sm }}
+    //     >
+    //       {role?.toUpperCase()}
+    //     </Tag>
+    //   ),
+    // },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      responsive: ['sm'],
+      width: '12%',
+      render: (status) => (
+        <Tag
+          icon={status === 'active' ? <CheckOutlined /> : <CloseOutlined />}
+          color={status === 'active' ? '#F6FFED' : '#FFF1F0'}
+          style={{
+            color: status === 'active' ? THEME_CONSTANTS.colors.success : '#FF4D4F',
+            border: `1px solid ${status === 'active' ? THEME_CONSTANTS.colors.success : '#FF4D4F'}`,
+            fontWeight: 500,
+            padding: '4px 12px',
+            borderRadius: THEME_CONSTANTS.radius.sm,
+          }}
+        >
+          {status?.charAt(0).toUpperCase() + status?.slice(1)}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      responsive: ['sm'],
+      width: '18%',
+      render: (_, record) => (
+        <Space size="small" wrap>
+          <Tooltip title="Edit">
+            <Button
+              type="primary"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => openEditModal(record)}
+              style={{ borderRadius: THEME_CONSTANTS.radius.sm }}
+            />
+          </Tooltip>
+          <Tooltip title="Wallet">
+            <Button
+              style={{
+                borderRadius: THEME_CONSTANTS.radius.sm,
+                color: THEME_CONSTANTS.colors.success,
+                borderColor: THEME_CONSTANTS.colors.success,
+              }}
+              size="small"
+              icon={<DollarOutlined />}
+              onClick={() => openWalletModal(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Password">
+            <Button
+              style={{
+                borderRadius: THEME_CONSTANTS.radius.sm,
+                color: THEME_CONSTANTS.colors.warning,
+                borderColor: THEME_CONSTANTS.colors.warning,
+              }}
+              size="small"
+              icon={<KeyOutlined />}
+              onClick={() => openPasswordModal(record)}
+            />
+          </Tooltip>
+          <Tooltip title="History">
+            <Button
+              style={{
+                borderRadius: THEME_CONSTANTS.radius.sm,
+                color: THEME_CONSTANTS.colors.primary,
+                borderColor: THEME_CONSTANTS.colors.primary,
+              }}
+              size="small"
+              icon={<HistoryOutlined />}
+              onClick={() => openTransactionModal(record)}
+            />
+          </Tooltip>
+          <Tooltip title={record.status === 'active' ? 'Deactivate' : 'Activate'}>
+            <Button
+              style={{
+                borderRadius: THEME_CONSTANTS.radius.sm,
+                color: record.status === 'active' ? '#ef4444' : '#10b981',
+                borderColor: record.status === 'active' ? '#ef4444' : '#10b981',
+              }}
+              size="small"
+              icon={
+                record.status === 'active' ? (
+                  <CloseOutlined />
+                ) : (
+                  <CheckOutlined />
+                )
+              }
+              onClick={() => handleToggleStatus(record._id, record.status)}
+            />
+          </Tooltip>
+          <Tooltip title="Delete">
+            <Button
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              onClick={() => handleDeleteUser(record._id, record.name)}
+              style={{ borderRadius: THEME_CONSTANTS.radius.sm }}
+            />
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
+
+  const stats = {
+    totalUsers: users.length,
+    activeUsers: users.filter((u) => u.status === 'active').length,
+    totalWallet: users.reduce((sum, u) => sum + (u.Wallet || 0), 0),
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">All Users</h1>
-        <button 
-          onClick={fetchUsers}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <BiRefresh className={loading ? 'animate-spin' : ''} />
-          Refresh
-        </button>
-      </div>
-      
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Wallet</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">              Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {users.map((user) => (
-              <tr key={user._id}>
-                <td className="px-6 py-4 font-medium">{user.name}</td>
-                <td className="px-6 py-4 text-gray-600">{user.email}</td>
-                <td className="px-6 py-4 text-gray-600">{user.phone}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {user.role}
+    <>
+      <div style={{ background: THEME_CONSTANTS.colors.background, minHeight: '100vh' }}>
+        <div style={{ 
+          maxWidth: THEME_CONSTANTS.layout.maxContentWidth, 
+          margin: '0 auto',
+          padding: THEME_CONSTANTS.spacing.xl
+        }}>
+          <Spin spinning={loading}>
+            {/* Enhanced Header Section */}
+            <div style={{
+              marginBottom: THEME_CONSTANTS.spacing.xxxl,
+              paddingBottom: THEME_CONSTANTS.spacing.xl,
+              borderBottom: `2px solid ${THEME_CONSTANTS.colors.primaryLight}`
+            }}>
+              <Breadcrumb style={{
+                marginBottom: THEME_CONSTANTS.spacing.md,
+                fontSize: THEME_CONSTANTS.typography.caption.size
+              }}>
+                <Breadcrumb.Item>
+                  <span style={{ color: THEME_CONSTANTS.colors.textMuted }}>Admin</span>
+                </Breadcrumb.Item>
+                <Breadcrumb.Item>
+                  <span style={{ 
+                    color: THEME_CONSTANTS.colors.primary,
+                    fontWeight: THEME_CONSTANTS.typography.h6.weight
+                  }}>
+                    User Management
                   </span>
-                </td>
-                <td className="px-6 py-4 font-semibold">₹{user.Wallet || 0}</td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-2">
-                    <button onClick={() => fetchUserOrders(user._id, user.name, 1)} className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm font-medium">
-                      <FaEye /> 
-                    </button>
-                    <button onClick={() => openEditModal(user)} className="flex items-center gap-1 px-3 py-1 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 text-sm font-medium">
-                      <FaEdit /> 
-                    </button>
-                    <button onClick={() => openWalletModal(user)} className="flex items-center gap-1 px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm font-medium">
-                      <FaWallet /> 
-                    </button>
-                    <button onClick={() => openPasswordModal(user)} className="flex items-center gap-1 px-3 py-1 bg-amber-500 text-white rounded-lg hover:bg-amber-600 text-sm font-medium">
-                      <FaKey /> 
-                    </button>
-                    <button onClick={() => handleToggleStatus(user._id, user.status)} className="flex items-center gap-1 px-3 py-1 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm font-medium">
-                      {user.status === 'active' ? <><FaToggleOn /> </> : <><FaToggleOff /> </>}
-                    </button>
-                    <button onClick={() => fetchUserTransactions(user._id, user.name)} className="flex items-center gap-1 px-3 py-1 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 text-sm font-medium">
-                      <FaHistory /> 
-                    </button>
-                    <button onClick={() => handleDeleteUser(user._id, user.name)} className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm font-medium">
-                      <FaTrash /> 
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </Breadcrumb.Item>
+              </Breadcrumb>
+
+            <Row gutter={[16, 16]} align="middle" justify="space-between">
+              <Col xs={24} lg={18}>
+                <Row gutter={[16, 16]} align="middle">
+                  <Col xs={24} sm={4} md={3} lg={3}>
+                    <div style={{
+                      width: '64px',
+                      height: '64px',
+                      background: THEME_CONSTANTS.colors.primaryLight,
+                      borderRadius: THEME_CONSTANTS.radius.xl,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: THEME_CONSTANTS.shadow.md,
+                      margin: '0 auto'
+                    }}>
+                      <UserOutlined style={{
+                        color: THEME_CONSTANTS.colors.primary,
+                        fontSize: '32px'
+                      }} />
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={20} md={21} lg={21}>
+                    <div style={{ textAlign: { xs: 'center', sm: 'left' } }}>
+                      <h1 style={{
+                        fontSize: THEME_CONSTANTS.typography.h1.size,
+                        fontWeight: THEME_CONSTANTS.typography.h1.weight,
+                        color: THEME_CONSTANTS.colors.text,
+                        marginBottom: THEME_CONSTANTS.spacing.sm,
+                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight,
+                        '@media (max-width: 768px)': {
+                          fontSize: THEME_CONSTANTS.typography.h2.size,
+                        }
+                      }}>
+                        User Management
+                      </h1>
+                      <p style={{
+                        color: THEME_CONSTANTS.colors.textSecondary,
+                        fontSize: THEME_CONSTANTS.typography.body.size,
+                        fontWeight: 500,
+                        lineHeight: THEME_CONSTANTS.typography.body.lineHeight,
+                        margin: 0
+                      }}>
+                        Manage and monitor all platform users, their accounts, and wallet balances.
+                      </p>
+                    </div>
+                  </Col>
+                </Row>
+              </Col>
+              <Col xs={24} lg={6} style={{placeItems:"end"}}>
+                <div style={{ textAlign: { xs: 'center', lg: 'right' } }}>
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<PlusOutlined />}
+                    onClick={() => setIsCreateModalVisible(true)}
+                    style={{
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                      fontWeight: 600,
+                      height: 44,
+                    }}
+                  >
+                    Create User
+                  </Button>
+                </div>
+              </Col>
+            </Row>
+            </div>
+
+        <Row gutter={[THEME_CONSTANTS.spacing.lg, THEME_CONSTANTS.spacing.lg]} style={{ marginBottom: THEME_CONSTANTS.spacing.xxl }}>
+          <Col xs={24} sm={12} md={8}>
+            <StatCard
+              icon={UserOutlined}
+              title="Total Users"
+              value={stats.totalUsers}
+              color={THEME_CONSTANTS.colors.primary}
+              bgColor={`${THEME_CONSTANTS.colors.primary}15`}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <StatCard
+              icon={CheckOutlined}
+              title="Active Users"
+              value={stats.activeUsers}
+              color={THEME_CONSTANTS.colors.success}
+              bgColor={`${THEME_CONSTANTS.colors.success}15`}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <StatCard
+              icon={DollarOutlined}
+              title="Total Wallet"
+              value={formatCurrency(stats.totalWallet)}
+              color={THEME_CONSTANTS.colors.warning}
+              bgColor={`${THEME_CONSTANTS.colors.warning}15`}
+            />
+          </Col>
+        </Row>
+
+        <Card
+          title={
+            <div style={{ fontSize: 16, fontWeight: 600 }}>
+              <UserOutlined
+                style={{
+                  marginRight: 8,
+                  color: THEME_CONSTANTS.colors.primary,
+                }}
+              />
+              All Users
+            </div>
+          }
+          style={{
+            borderRadius: THEME_CONSTANTS.radius.lg,
+            boxShadow: THEME_CONSTANTS.shadow.sm,
+          }}
+          extra={
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={fetchUsers}
+              loading={loading}
+            >
+              Refresh
+            </Button>
+          }
+        >
+          <Table
+            dataSource={users}
+            columns={userColumns}
+            rowKey="_id"
+            pagination={{ pageSize: 10 }}
+            locale={{ emptyText: <Empty /> }}
+            style={{ fontSize: 14 }}
+          />
+        </Card>
+          </Spin>
+        </div>
       </div>
 
-      {/* Edit User Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Edit User</h2>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-500 hover:text-gray-700">
-                <FaTimes size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleEditUser} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
-                <input
-                  type="text"
-                  value={editFormData.name}
-                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  required
+      <Modal
+        title="Create New User"
+        open={isCreateModalVisible}
+        onCancel={() => {
+          setIsCreateModalVisible(false);
+          setCreateFormData({
+            name: '',
+            email: '',
+            password: '',
+            phone: '',
+            role: 'user',
+            jioId: '',
+            jioSecret: '',
+            companyname: '',
+          });
+        }}
+        onOk={handleCreateUser}
+        confirmLoading={createLoading}
+        width={800}
+        okText="Create User"
+      >
+        <Form layout="vertical" style={{ marginTop: 24 }}>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Full Name *">
+                <Input
+                  prefix={<UserOutlined />}
+                  placeholder="e.g., John Doe"
+                  name="name"
+                  value={createFormData.name}
+                  onChange={handleCreateChange}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <input
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Email Address *">
+                <Input
+                  prefix={<MailOutlined />}
+                  placeholder="e.g., john@example.com"
                   type="email"
-                  value={editFormData.email}
-                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  required
+                  name="email"
+                  value={createFormData.email}
+                  onChange={handleCreateChange}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Phone</label>
-                <input
-                  type="number"
-                  value={editFormData.phone}
-                  onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  required
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Phone Number *">
+                <Input
+                  prefix={<PhoneOutlined />}
+                  placeholder="e.g., 9876543210"
+                  name="phone"
+                  value={createFormData.phone}
+                  onChange={handleCreateChange}
+                  maxLength={10}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Role</label>
-                <select
-                  value={editFormData.role}
-                  onChange={(e) => setEditFormData({...editFormData, role: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Jio ID</label>
-                <input
-                  type="text"
-                  value={editFormData.jioId}
-                  onChange={(e) => setEditFormData({...editFormData, jioId: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Company Name">
+                <Input
+                  prefix={<BuildOutlined />}
+                  placeholder="e.g., Tech Solutions Inc."
+                  name="companyname"
+                  value={createFormData.companyname}
+                  onChange={handleCreateChange}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Jio Secret</label>
-                <input
-                  type="text"
-                  value={editFormData.jioSecret}
-                  onChange={(e) => setEditFormData({...editFormData, jioSecret: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
-                <select
-                  value={editFormData.status}
-                  onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-              >
-                Update User
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Reset Password Modal */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Reset Password</h2>
-              <button onClick={() => setShowPasswordModal(false)} className="text-gray-500 hover:text-gray-700">
-                <FaTimes size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">User</label>
-                <input type="text" value={selectedUser?.name} disabled className="w-full px-3 py-2 border rounded-lg bg-gray-100" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">New Password</label>
-                <div className="relative">
-                  <input type={showResetPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-3 py-2 pr-10 border rounded-lg" placeholder="Enter new password" minLength="6" required />
-                  <button type="button" onClick={() => setShowResetPassword(!showResetPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-yellow-600">
-                    {showResetPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-                  </button>
-                </div>
-              </div>
-              <button type="submit" className="w-full bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700">Reset Password</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Add Wallet Modal */}
-      {showWalletModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Add Wallet Balance</h2>
-              <button onClick={() => setShowWalletModal(false)} className="text-gray-500 hover:text-gray-700">
-                <FaTimes size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleAddWallet} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">User</label>
-                <input
-                  type="text"
-                  value={selectedUser?.name}
-                  disabled
-                  className="w-full px-3 py-2 border rounded-lg bg-gray-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Current Balance</label>
-                <input
-                  type="text"
-                  value={`₹${selectedUser?.Wallet || 0}`}
-                  disabled
-                  className="w-full px-3 py-2 border rounded-lg bg-gray-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Amount to Add</label>
-                <input
-                  type="number"
-                  value={walletAmount}
-                  onChange={(e) => setWalletAmount(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="Enter amount"
-                  min="1"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700"
-              >
-                Add Balance
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Transaction Modal */}
-      {showTransactionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Transaction History - {selectedUser?.name}</h2>
-              <button onClick={closeTransactionModal} className="text-gray-500 hover:text-gray-700">
-                <FaTimes size={20} />
-              </button>
-            </div>
-            
-            {loadingTransactions ? (
-              <div className="text-center py-8">Loading transactions...</div>
-            ) : transactionSummary ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h3 className="text-sm font-semibold text-blue-800">Current Balance</h3>
-                    <p className="text-2xl font-bold text-blue-600">₹{transactionSummary.currentBalance}</p>
-                  </div>
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h3 className="text-sm font-semibold text-green-800">Total Credit</h3>
-                    <p className="text-2xl font-bold text-green-600">₹{transactionSummary.totalCredit}</p>
-                  </div>
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <h3 className="text-sm font-semibold text-red-800">Total Debit</h3>
-                    <p className="text-2xl font-bold text-red-600">₹{transactionSummary.totalDebit}</p>
-                  </div>
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <h3 className="text-sm font-semibold text-purple-800">Net Amount</h3>
-                    <p className="text-2xl font-bold text-purple-600">₹{transactionSummary.netAmount}</p>
-                  </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg border">
-                  <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="text-left p-3 font-medium text-gray-700">Type</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Amount</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Description</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {transactionSummary.recentTransactions?.map((txn, index) => (
-                          <tr key={index} className="border-t hover:bg-gray-50">
-                            <td className="p-3">
-                              <span className={`px-2 py-1 rounded text-xs ${txn.type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                {txn.type}
-                              </span>
-                            </td>
-                            <td className="p-3 font-semibold">
-                              <span className={txn.type === 'credit' ? 'text-green-600' : 'text-red-600'}>
-                                {txn.type === 'credit' ? '+' : '-'}₹{txn.amount}
-                              </span>
-                            </td>
-                            <td className="p-3">{txn.description}</td>
-                            <td className="p-3">{new Date(txn.createdAt).toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">No transactions found</div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Reports Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Order History - {selectedUser?.name}</h2>
-              <button onClick={closeModal} className="text-gray-500 hover:text-gray-700">
-                <FaTimes size={20} />
-              </button>
-            </div>
-
-            {loadingOrders ? (
-                <div className="text-center py-8">Loading orders...</div>
-              ) : orders.length > 0 ? (
-                <div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="text-left p-3 font-medium text-gray-700">Campaign</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Type</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Numbers</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Success</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Failed</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Cost</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {orders.map((order) => (
-                          <tr key={order._id} className="border-t hover:bg-gray-50">
-                            <td className="p-3">{order.CampaignName}</td>
-                            <td className="p-3 capitalize">{order.type}</td>
-                            <td className="p-3">{order.totalNumbers}</td>
-                            <td className="p-3 text-green-600">{order.successCount}</td>
-                            <td className="p-3 text-red-600">{order.failedCount}</td>
-                            <td className="p-3 font-semibold">₹{order.cost}</td>
-                            <td className="p-3">{new Date(order.createdAt).toLocaleDateString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  <div className="flex justify-center gap-2 mt-4">
-                    <button
-                      onClick={() => {
-                        const newPage = orderPage - 1;
-                        setOrderPage(newPage);
-                        fetchUserOrders(selectedUser.id, newPage);
-                      }}
-                      disabled={orderPage === 1}
-                      className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Password *">
+                <Input
+                  prefix={<LockOutlined />}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter secure password"
+                  name="password"
+                  value={createFormData.password}
+                  onChange={handleCreateChange}
+                  suffix={
+                    <Button
+                      type="text"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{ fontSize: 12 }}
                     >
-                      Previous
-                    </button>
-                    <span className="px-4 py-2">Page {orderPagination.page} of {orderPagination.pages}</span>
-                    <button
-                      onClick={() => {
-                        const newPage = orderPage + 1;
-                        setOrderPage(newPage);
-                        fetchUserOrders(selectedUser.id, newPage);
-                      }}
-                      disabled={orderPage === orderPagination.pages}
-                      className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">No orders found</div>
-              )
-            }
-          </div>
-        </div>
-      )}
+                      {showPassword ? 'Hide' : 'Show'}
+                    </Button>
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="User Role *">
+                <Select
+                  value={createFormData.role}
+                  onChange={(value) =>
+                    setCreateFormData({ ...createFormData, role: value })
+                  }
+                  options={[
+                    { label: 'Regular User', value: 'user' },
+                    { label: 'Admin', value: 'admin' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Jio Client ID">
+                <Input
+                  prefix={<KeyOutlined />}
+                  placeholder="e.g., jio_client_xxxxx"
+                  name="jioId"
+                  value={createFormData.jioId}
+                  onChange={handleCreateChange}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Jio Client Secret">
+                <Input
+                  prefix={<LockOutlined />}
+                  type="password"
+                  placeholder="Enter API secret key"
+                  name="jioSecret"
+                  value={createFormData.jioSecret}
+                  onChange={handleCreateChange}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
 
-      <CustomModal 
-        show={modal.show} 
-        onClose={() => setModal({ ...modal, show: false })} 
-        type={modal.type}
-        title={modal.title}
-        message={modal.message}
-      />
-    </div>
+      <Modal
+        title="Edit User"
+        open={isEditModalVisible}
+        onCancel={() => setIsEditModalVisible(false)}
+        onOk={handleEditUser}
+        confirmLoading={editLoading}
+        width={600}
+      >
+        <Form layout="vertical" style={{ marginTop: 24 }}>
+          <Form.Item label="Name">
+            <Input
+              value={editFormData.name}
+              onChange={(e) =>
+                setEditFormData({ ...editFormData, name: e.target.value })
+              }
+              prefix={<UserOutlined />}
+            />
+          </Form.Item>
+          <Form.Item label="Email">
+            <Input
+              value={editFormData.email}
+              onChange={(e) =>
+                setEditFormData({ ...editFormData, email: e.target.value })
+              }
+              prefix={<MailOutlined />}
+            />
+          </Form.Item>
+          <Form.Item label="Phone">
+            <Input
+              value={editFormData.phone}
+              onChange={(e) =>
+                setEditFormData({ ...editFormData, phone: e.target.value })
+              }
+              prefix={<PhoneOutlined />}
+            />
+          </Form.Item>
+          <Form.Item label="Company">
+            <Input
+              value={editFormData.companyname}
+              onChange={(e) =>
+                setEditFormData({ ...editFormData, companyname: e.target.value })
+              }
+              prefix={<BuildOutlined />}
+            />
+          </Form.Item>
+          <Form.Item label="Role">
+            <Select
+              value={editFormData.role}
+              onChange={(value) =>
+                setEditFormData({ ...editFormData, role: value })
+              }
+              options={[
+                { label: 'User', value: 'user' },
+                { label: 'Admin', value: 'admin' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item label="Status">
+            <Select
+              value={editFormData.status}
+              onChange={(value) =>
+                setEditFormData({ ...editFormData, status: value })
+              }
+              options={[
+                { label: 'Active', value: 'active' },
+                { label: 'Inactive', value: 'inactive' },
+              ]}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Add Wallet Balance"
+        open={isWalletModalVisible}
+        onCancel={() => setIsWalletModalVisible(false)}
+        onOk={handleAddWallet}
+        confirmLoading={walletLoading}
+        width={500}
+      >
+        <Form layout="vertical" style={{ marginTop: 24 }}>
+          <Form.Item label="User">
+            <Input
+              value={selectedUserForWallet?.name}
+              disabled
+              prefix={<UserOutlined />}
+            />
+          </Form.Item>
+          <Form.Item label="Current Balance">
+            <Input
+              value={formatCurrency(selectedUserForWallet?.Wallet)}
+              disabled
+              prefix={<DollarOutlined />}
+            />
+          </Form.Item>
+          <Form.Item label="Amount to Add *">
+            <InputNumber
+              min={1}
+              value={walletAmount}
+              onChange={setWalletAmount}
+              placeholder="Enter amount"
+              style={{ width: '100%' }}
+              formatter={(value) => `₹ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={(value) => value.replace(/₹\s?|(,*)/g, '')}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Reset Password"
+        open={isPasswordModalVisible}
+        onCancel={() => setIsPasswordModalVisible(false)}
+        onOk={handleResetPassword}
+        confirmLoading={passwordLoading}
+        width={500}
+      >
+        <Form layout="vertical" style={{ marginTop: 24 }}>
+          <Form.Item label="User">
+            <Input
+              value={selectedUserForPassword?.name}
+              disabled
+              prefix={<UserOutlined />}
+            />
+          </Form.Item>
+          <Form.Item label="New Password *">
+            <Input
+              type={showNewPassword ? 'text' : 'password'}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Enter new password (min 6 chars)"
+              prefix={<LockOutlined />}
+              suffix={
+                <Button
+                  type="text"
+                  size="small"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? 'Hide' : 'Show'}
+                </Button>
+              }
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={`Transaction History - ${selectedUserForTransaction?.name}`}
+        open={isTransactionModalVisible}
+        onCancel={() => setIsTransactionModalVisible(false)}
+        width={800}
+        footer={null}
+      >
+        <Spin spinning={transactionLoading}>
+          {transactionSummary && (
+            <div style={{ marginTop: 24 }}>
+              <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                <Col xs={24} sm={12}>
+                  <Card style={{ backgroundColor: `${THEME_CONSTANTS.colors.primary}05` }}>
+                    <div style={{ fontSize: 12, color: '#666' }}>Current Balance</div>
+                    <div
+                      style={{
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: THEME_CONSTANTS.colors.primary,
+                        marginTop: 8,
+                      }}
+                    >
+                      {formatCurrency(transactionSummary.currentBalance)}
+                    </div>
+                  </Card>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Card style={{ backgroundColor: `${THEME_CONSTANTS.colors.success}05` }}>
+                    <div style={{ fontSize: 12, color: '#666' }}>Total Credit</div>
+                    <div
+                      style={{
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: THEME_CONSTANTS.colors.success,
+                        marginTop: 8,
+                      }}
+                    >
+                      {formatCurrency(transactionSummary.totalCredit)}
+                    </div>
+                  </Card>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Card style={{ backgroundColor: `${THEME_CONSTANTS.colors.danger}05` }}>
+                    <div style={{ fontSize: 12, color: '#666' }}>Total Debit</div>
+                    <div
+                      style={{
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: THEME_CONSTANTS.colors.danger,
+                        marginTop: 8,
+                      }}
+                    >
+                      {formatCurrency(transactionSummary.totalDebit)}
+                    </div>
+                  </Card>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Card style={{ backgroundColor: `${THEME_CONSTANTS.colors.warning}05` }}>
+                    <div style={{ fontSize: 12, color: '#666' }}>Net Amount</div>
+                    <div
+                      style={{
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: THEME_CONSTANTS.colors.warning,
+                        marginTop: 8,
+                      }}
+                    >
+                      {formatCurrency(transactionSummary.netAmount)}
+                    </div>
+                  </Card>
+                </Col>
+              </Row>
+
+              <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>
+                Recent Transactions
+              </h4>
+              <Table
+                dataSource={transactionSummary.recentTransactions || []}
+                rowKey={(_, index) => index}
+                pagination={false}
+                columns={[
+                  {
+                    title: 'Type',
+                    dataIndex: 'type',
+                    render: (type) => (
+                      <Tag
+                        color={type === 'credit' ? 'green' : 'red'}
+                        icon={
+                          type === 'credit' ? (
+                            <ArrowDownOutlined />
+                          ) : (
+                            <ArrowUpOutlined />
+                          )
+                        }
+                      >
+                        {type?.toUpperCase()}
+                      </Tag>
+                    ),
+                  },
+                  {
+                    title: 'Amount',
+                    dataIndex: 'amount',
+                    render: (amount, record) => (
+                      <span
+                        style={{
+                          color: record.type === 'credit' ? '#10b981' : '#ef4444',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {record.type === 'credit' ? '+' : '-'}
+                        {formatCurrency(amount)}
+                      </span>
+                    ),
+                  },
+                  {
+                    title: 'Description',
+                    dataIndex: 'description',
+                  },
+                  {
+                    title: 'Date',
+                    dataIndex: 'createdAt',
+                    render: (date) => formatDate(date),
+                  },
+                ]}
+              />
+            </div>
+          )}
+        </Spin>
+      </Modal>
+    </>
   );
-};
+}
 
-export default Users;
+export default UserManagement;

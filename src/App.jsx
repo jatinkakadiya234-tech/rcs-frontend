@@ -4,8 +4,8 @@ import Layout from './layout/layout.jsx'
 import AdminLayout from './layout/AdminLayout.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Login from './pages/Login.jsx'
-import Ragister from './pages/Ragister.jsx'
-import Tapletepate from './pages/Tapletepate.jsx'
+import Register from './pages/Register.jsx'
+import Tapletepate from './pages/TemplatePage.jsx'
 import Orders from './pages/Orders.jsx'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -19,6 +19,7 @@ import CreateUser from './pages/admin/CreateUser.jsx'
 import AdminProfile from './pages/admin/AdminProfile.jsx'
 import RoleBasedRoute from './components/RoleBasedRoute.jsx'
 import { Toaster } from 'react-hot-toast'
+import AdminReports from './pages/admin/AdminReports.jsx'
 
 function App() {
   return (
@@ -27,7 +28,7 @@ function App() {
       <AuthChecker />
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/ragister" element={<Ragister />} />
+        <Route path="/register" element={<Register />} />
         
         <Route path="/" element={
           <ProtectedRoute>
@@ -53,8 +54,10 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<Users />} />
           <Route path="wallet-requests" element={<WalletRequests />} />
-          <Route path="create-user" element={<CreateUser />} />
+          {/* <Route path="create-user" element={<CreateUser />} />x */}
           <Route path="profile" element={<AdminProfile />} />
+          <Route path="reports" element={<AdminReports />} />
+
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

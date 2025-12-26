@@ -1,224 +1,759 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { FiX } from 'react-icons/fi';
-import { FaTrash } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import {
+  Card,
+  Row,
+  Col,
+  Table,
+  Tag,
+  Space,
+  Button,
+  Avatar,
+  Modal,
+  Form,
+  Input,
+  Empty,
+  Tooltip,
+  Grid,
+  Statistic,
+  Popconfirm,
+  message,
+  Breadcrumb,
+} from 'antd';
+import {
+  WalletOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CloseOutlined,
+  DeleteOutlined,
+  CheckOutlined,
+  DollarOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+import { THEME_CONSTANTS } from '../../theme';
 import apiService from '../../services/api';
-import CustomModal from '../../components/CustomModal';
+import { useAuth } from '../../context/AuthContext';
 
-const WalletRequests = () => {
+const { useBreakpoint } = Grid;
+
+function WalletRequests() {
+  const screens = useBreakpoint();
+  const { user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [selectedRequestId, setSelectedRequestId] = useState(null);
-  const { user } = useAuth();
-  const [modal, setModal] = useState({ show: false, type: 'success', title: '', message: '' });
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [form] = Form.useForm();
+  const [stats, setStats] = useState({
+    totalRequests: 0,
+    pendingRequests: 0,
+    approvedRequests: 0,
+    totalAmount: 0,
+  });
+
+  // ==================== FETCH DATA ====================
 
   useEffect(() => {
     fetchRequests();
   }, []);
 
   const fetchRequests = async () => {
+    setLoading(true);
     try {
       const data = await apiService.getWalletRequests();
       if (data.success) {
         setRequests(data.requests);
+        calculateStats(data.requests);
       }
     } catch (error) {
       console.error('Error fetching requests:', error);
+      message.error('Failed to fetch wallet requests');
     } finally {
       setLoading(false);
     }
   };
 
+  const calculateStats = (requestsList) => {
+    const pending = requestsList.filter((r) => r.status === 'pending').length;
+    const approved = requestsList.filter((r) => r.status === 'approved').length;
+    const totalAmount = requestsList.reduce((sum, r) => sum + (r.amount || 0), 0);
+
+    setStats({
+      totalRequests: requestsList.length,
+      pendingRequests: pending,
+      approvedRequests: approved,
+      totalAmount: totalAmount,
+    });
+  };
+
+  // ==================== HANDLERS ====================
+
   const handleApprove = async (requestId) => {
     try {
-      const data = await apiService.approveWalletRequest(requestId, user._id, 'Approved by admin');
+      const data = await apiService.approveWalletRequest(
+        requestId,
+        user._id,
+        'Approved by admin'
+      );
       if (data.success) {
+        message.success('Request approved successfully!');
         fetchRequests();
-        setModal({ show: true, type: 'success', title: 'Success', message: 'Request approved successfully!' });
       }
     } catch (error) {
-      setModal({ show: true, type: 'error', title: 'Error', message: 'Error approving request' });
+      console.error('Error approving request:', error);
+      message.error('Error approving request');
     }
   };
-
 
   const handleReject = async () => {
-    if (!rejectReason.trim()) {
-      setModal({ show: true, type: 'warning', title: 'Warning', message: 'Please enter rejection reason' });
-      return;
-    }
-
     try {
-      const data = await apiService.rejectWalletRequest(selectedRequestId, user._id, rejectReason);
+      const reason = form.getFieldValue('reason');
+      if (!reason || reason.trim() === '') {
+        message.warning('Please enter rejection reason');
+        return;
+      }
+
+      const data = await apiService.rejectWalletRequest(
+        selectedRequest._id,
+        user._id,
+        reason
+      );
+
       if (data.success) {
+        message.success('Request rejected successfully!');
+        setRejectModalVisible(false);
+        form.resetFields();
+        setSelectedRequest(null);
         fetchRequests();
-        setModal({ show: true, type: 'success', title: 'Success', message: 'Request rejected successfully!' });
-        setShowRejectModal(false);
-        setRejectReason('');
-        setSelectedRequestId(null);
       }
     } catch (error) {
-      setModal({ show: true, type: 'error', title: 'Error', message: 'Error rejecting request' });
+      console.error('Error rejecting request:', error);
+      message.error('Error rejecting request');
     }
-  };
-
-  const openRejectModal = (requestId) => {
-    setSelectedRequestId(requestId);
-    setShowRejectModal(true);
   };
 
   const handleDelete = async (requestId) => {
-    if (window.confirm('Are you sure you want to delete this wallet request?')) {
-      try {
-        const data = await apiService.deleteWalletRequest(requestId);
-        if (data.success) {
-          fetchRequests();
-          setModal({ show: true, type: 'success', title: 'Success', message: 'Request deleted successfully!' });
-        }
-      } catch (error) {
-        setModal({ show: true, type: 'error', title: 'Error', message: 'Error deleting request' });
+    try {
+      const data = await apiService.deleteWalletRequest(requestId);
+      if (data.success) {
+        message.success('Request deleted successfully!');
+        fetchRequests();
       }
+    } catch (error) {
+      console.error('Error deleting request:', error);
+      message.error('Error deleting request');
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  const showRejectModal = (record) => {
+    setSelectedRequest(record);
+    setRejectModalVisible(true);
+    form.resetFields();
+  };
+
+  // ==================== FORMATTERS ====================
+
+  const formatCurrency = (value) => `₹${value?.toLocaleString('en-IN') || 0}`;
+  const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const formatRelativeDate = (date) => {
+    if (!date) return '-';
+    const now = new Date();
+    const diffMs = now - new Date(date);
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return formatDate(date);
+  };
+
+  // ==================== STAT CARD COMPONENT ====================
+
+  const StatCard = ({ icon: Icon, title, value, unit, color, bgColor }) => (
+    <Card
+      style={{
+        background: bgColor,
+        border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
+        borderRadius: THEME_CONSTANTS.radius.md,
+      }}
+      bodyStyle={{ padding: '20px' }}
+    >
+      <Space direction="vertical" style={{ width: '100%' }} size={8}>
+        <Space>
+          <Icon style={{ fontSize: '20px', color: color }} />
+          <span
+            style={{
+              fontSize: '12px',
+              fontWeight: 500,
+              color: THEME_CONSTANTS.colors.textSecondary,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+            }}
+          >
+            {title}
+          </span>
+        </Space>
+        <div
+          style={{
+            fontSize: '28px',
+            fontWeight: 700,
+            color: THEME_CONSTANTS.colors.textPrimary,
+            lineHeight: 1,
+          }}
+        >
+          {value}
+          <span
+            style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: THEME_CONSTANTS.colors.textSecondary,
+              marginLeft: '4px',
+            }}
+          >
+            {unit}
+          </span>
+        </div>
+      </Space>
+    </Card>
+  );
+
+  // ==================== TABLE COLUMNS ====================
+
+  const columns = [
+    {
+      title: 'User',
+      dataIndex: ['userId', 'name'],
+      key: 'user',
+      render: (text, record) => (
+        <Space size={8}>
+          <Avatar
+            size={32}
+            icon={<UserOutlined />}
+            style={{
+              backgroundColor: THEME_CONSTANTS.colors.primary,
+            }}
+          >
+            {record.userId?.name?.charAt(0).toUpperCase()}
+          </Avatar>
+          <div>
+            <div
+              style={{
+                fontWeight: 500,
+                color: THEME_CONSTANTS.colors.textPrimary,
+              }}
+            >
+              {record.userId?.name || 'N/A'}
+            </div>
+            <div
+              style={{
+                fontSize: '12px',
+                color: THEME_CONSTANTS.colors.textSecondary,
+              }}
+            >
+              {record.userId?.email || 'N/A'}
+            </div>
+          </div>
+        </Space>
+      ),
+      width: screens.md ? '25%' : '40%',
+    },
+    {
+      title: 'Amount',
+      dataIndex: 'amount',
+      key: 'amount',
+      render: (amount) => (
+        <div style={{ fontWeight: 600, color: THEME_CONSTANTS.colors.primary }}>
+          {formatCurrency(amount)}
+        </div>
+      ),
+      width: screens.md ? '15%' : '0%',
+      responsive: ['md'],
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => {
+        let color, icon, bgColor;
+        switch (status) {
+          case 'pending':
+            color = '#FAAD14';
+            bgColor = '#FFF7E6';
+            icon = <ClockCircleOutlined />;
+            break;
+          case 'approved':
+            color = '#52C41A';
+            bgColor = '#F6FFED';
+            icon = <CheckCircleOutlined />;
+            break;
+          case 'rejected':
+            color = '#FF4D4F';
+            bgColor = '#FFF1F0';
+            icon = <CloseOutlined />;
+            break;
+          default:
+            color = '#1890FF';
+            bgColor = '#E6F7FF';
+            icon = null;
+        }
+        return (
+          <Tag
+            icon={icon}
+            color={bgColor}
+            style={{
+              color: color,
+              border: `1px solid ${color}`,
+              fontWeight: 500,
+              padding: '4px 12px',
+            }}
+          >
+            {status?.charAt(0).toUpperCase() + status?.slice(1)}
+          </Tag>
+        );
+      },
+      width: screens.md ? '12%' : '0%',
+      responsive: ['md'],
+    },
+    {
+      title: 'Requested',
+      dataIndex: 'requestedAt',
+      key: 'requestedAt',
+      render: (date) => (
+        <Tooltip title={formatDate(date)}>
+          <span style={{ color: THEME_CONSTANTS.colors.textSecondary }}>
+            {formatRelativeDate(date)}
+          </span>
+        </Tooltip>
+      ),
+      width: screens.md ? '16%' : '0%',
+      responsive: ['md'],
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space size={8}>
+          {record.status === 'pending' && (
+            <>
+              <Tooltip title="Approve">
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<CheckOutlined />}
+                  onClick={() => handleApprove(record._id)}
+                  style={{
+                    backgroundColor: THEME_CONSTANTS.colors.success,
+                    borderColor: THEME_CONSTANTS.colors.success,
+                    display: screens.md ? 'inline-flex' : 'none',
+                  }}
+                />
+              </Tooltip>
+              <Tooltip title="Reject">
+                <Button
+                  danger
+                  size="small"
+                  icon={<CloseOutlined />}
+                  onClick={() => showRejectModal(record)}
+                  style={{
+                    display: screens.md ? 'inline-flex' : 'none',
+                  }}
+                />
+              </Tooltip>
+            </>
+          )}
+          <Popconfirm
+            title="Delete Request"
+            description="Are you sure you want to delete this wallet request?"
+            onConfirm={() => handleDelete(record._id)}
+            okText="Yes"
+            cancelText="No"
+            okButtonProps={{
+              danger: true,
+            }}
+          >
+            <Tooltip title="Delete">
+              <Button
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                type={screens.md ? 'text' : 'primary'}
+              />
+            </Tooltip>
+          </Popconfirm>
+        </Space>
+      ),
+      width: screens.md ? '20%' : '20%',
+      align: 'center',
+    },
+  ];
+
+  // Mobile expanded render
+  const expandedRowRender = (record) => (
+    <div style={{ padding: '0 16px' }}>
+      <Row gutter={[16, 16]}>
+        <Col span={12}>
+          <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
+            Amount
+          </div>
+          <div
+            style={{
+              fontSize: '16px',
+              fontWeight: 600,
+              color: THEME_CONSTANTS.colors.primary,
+            }}
+          >
+            {formatCurrency(record.amount)}
+          </div>
+        </Col>
+        <Col span={12}>
+          <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
+            Status
+          </div>
+          <div style={{ marginTop: '4px' }}>
+            <Tag
+              color={
+                record.status === 'pending'
+                  ? 'warning'
+                  : record.status === 'approved'
+                    ? 'success'
+                    : 'error'
+              }
+            >
+              {record.status?.toUpperCase()}
+            </Tag>
+          </div>
+        </Col>
+        <Col span={12}>
+          <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
+            Requested
+          </div>
+          <div style={{ fontSize: '13px', marginTop: '4px' }}>
+            {formatDate(record.requestedAt)}
+          </div>
+        </Col>
+        <Col span={12}>
+          <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
+            Time Ago
+          </div>
+          <div style={{ fontSize: '13px', marginTop: '4px' }}>
+            {formatRelativeDate(record.requestedAt)}
+          </div>
+        </Col>
+        <Col span={24}>
+          <Space wrap style={{ marginTop: '8px' }}>
+            {record.status === 'pending' && (
+              <>
+                <Button
+                  type="primary"
+                  size="small"
+                  onClick={() => handleApprove(record._id)}
+                  style={{
+                    backgroundColor: THEME_CONSTANTS.colors.success,
+                    borderColor: THEME_CONSTANTS.colors.success,
+                  }}
+                >
+                  Approve
+                </Button>
+                <Button
+                  danger
+                  size="small"
+                  onClick={() => showRejectModal(record)}
+                >
+                  Reject
+                </Button>
+              </>
+            )}
+            <Popconfirm
+              title="Delete Request"
+              description="Are you sure you want to delete this wallet request?"
+              onConfirm={() => handleDelete(record._id)}
+              okText="Yes"
+              cancelText="No"
+              okButtonProps={{
+                danger: true,
+              }}
+            >
+              <Button danger size="small" icon={<DeleteOutlined />}>
+                Delete
+              </Button>
+            </Popconfirm>
+          </Space>
+        </Col>
+      </Row>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Wallet Requests</h1>
-      
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {requests.map((request) => (
-              <tr key={request._id}>
-                <td className="px-6 py-4">
-                  <div>
-                    <div className="font-medium">{request.userId?.name}</div>
-                    <div className="text-sm text-gray-500">{request.userId?.email}</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 font-semibold">₹{request.amount}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    request.status === 'approved' ? 'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {request.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {new Date(request.requestedAt).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex gap-2">
-                    {request.status === 'pending' && (
-                      <>
-                        <button
-                          onClick={() => handleApprove(request._id)}
-                          className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => openRejectModal(request._id)}
-                          className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                    <button
-                      onClick={() => handleDelete(request._id)}
-                      className="p-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
-                      title="Delete Request"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <>
+      <div style={{ background: THEME_CONSTANTS.colors.background, minHeight: '100vh' }}>
+        <div style={{ 
+          maxWidth: THEME_CONSTANTS.layout.maxContentWidth, 
+          margin: '0 auto',
+          padding: THEME_CONSTANTS.spacing.xl
+        }}>
+          {/* Enhanced Header Section */}
+          <div style={{
+            marginBottom: THEME_CONSTANTS.spacing.xxxl,
+            paddingBottom: THEME_CONSTANTS.spacing.xl,
+            borderBottom: `2px solid ${THEME_CONSTANTS.colors.primaryLight}`
+          }}>
+            <Breadcrumb style={{
+              marginBottom: THEME_CONSTANTS.spacing.md,
+              fontSize: THEME_CONSTANTS.typography.caption.size
+            }}>
+              <Breadcrumb.Item>
+                <span style={{ color: THEME_CONSTANTS.colors.textMuted }}>Admin</span>
+              </Breadcrumb.Item>
+              <Breadcrumb.Item>
+                <span style={{ 
+                  color: THEME_CONSTANTS.colors.primary,
+                  fontWeight: THEME_CONSTANTS.typography.h6.weight
+                }}>
+                  Wallet Requests
+                </span>
+              </Breadcrumb.Item>
+            </Breadcrumb>
+
+            <Row gutter={[16, 16]} align="middle" justify="space-between">
+              <Col xs={24} lg={18}>
+                <Row gutter={[16, 16]} align="middle">
+                  <Col xs={24} sm={4} md={3} lg={3}>
+                    <div style={{
+                      width: '64px',
+                      height: '64px',
+                      background: THEME_CONSTANTS.colors.primaryLight,
+                      borderRadius: THEME_CONSTANTS.radius.xl,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: THEME_CONSTANTS.shadow.md,
+                      margin: '0 auto'
+                    }}>
+                      <WalletOutlined style={{
+                        color: THEME_CONSTANTS.colors.primary,
+                        fontSize: '32px'
+                      }} />
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={20} md={21} lg={21}>
+                    <div style={{ textAlign: { xs: 'center', sm: 'left' } }}>
+                      <h1 style={{
+                        fontSize: THEME_CONSTANTS.typography.h1.size,
+                        fontWeight: THEME_CONSTANTS.typography.h1.weight,
+                        color: THEME_CONSTANTS.colors.text,
+                        marginBottom: THEME_CONSTANTS.spacing.sm,
+                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight,
+                        '@media (max-width: 768px)': {
+                          fontSize: THEME_CONSTANTS.typography.h2.size,
+                        }
+                      }}>
+                        Wallet Requests 💳
+                      </h1>
+                      <p style={{
+                        color: THEME_CONSTANTS.colors.textSecondary,
+                        fontSize: THEME_CONSTANTS.typography.body.size,
+                        fontWeight: 500,
+                        lineHeight: THEME_CONSTANTS.typography.body.lineHeight,
+                        margin: 0
+                      }}>
+                        Manage and process wallet recharge requests from users
+                      </p>
+                    </div>
+                  </Col>
+                </Row>
+              </Col>
+              <Col xs={24} lg={6}>
+                <div style={{ textAlign: { xs: 'center', lg: 'right' } }}>
+                  {/* Wallet actions can go here if needed */}
+                </div>
+              </Col>
+            </Row>
+          </div>
+
+        {/* Stats Cards */}
+        <Row gutter={[THEME_CONSTANTS.spacing.lg, THEME_CONSTANTS.spacing.lg]} style={{ marginBottom: THEME_CONSTANTS.spacing.xxl }}>
+          <Col xs={24} sm={12} md={6}>
+            <StatCard
+              icon={WalletOutlined}
+              title="Total Requests"
+              value={stats.totalRequests}
+              color={THEME_CONSTANTS.colors.primary}
+              bgColor={THEME_CONSTANTS.colors.bgLight}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <StatCard
+              icon={ClockCircleOutlined}
+              title="Pending"
+              value={stats.pendingRequests}
+              color="#FAAD14"
+              bgColor="#FFFBE6"
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <StatCard
+              icon={CheckCircleOutlined}
+              title="Approved"
+              value={stats.approvedRequests}
+              color={THEME_CONSTANTS.colors.success}
+              bgColor="#F6FFED"
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <StatCard
+              icon={DollarOutlined}
+              title="Total Amount"
+              value={stats.totalAmount > 999999 ? (stats.totalAmount / 100000).toFixed(1) : stats.totalAmount}
+              unit={stats.totalAmount > 999999 ? 'L' : ''}
+              color="#EB2F96"
+              bgColor="#FFF0F6"
+            />
+          </Col>
+        </Row>
+
+        {/* Table Card */}
+        <Card
+          style={{
+            borderRadius: THEME_CONSTANTS.radius.md,
+            border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
+            boxShadow: THEME_CONSTANTS.shadow.sm,
+          }}
+          bodyStyle={{ padding: 0 }}
+        >
+          {requests.length === 0 ? (
+            <Empty
+              description="No wallet requests"
+              style={{ padding: '40px 0' }}
+            />
+          ) : (
+            <Table
+              columns={columns}
+              dataSource={requests}
+              rowKey="_id"
+              loading={loading}
+              pagination={{
+                pageSize: 10,
+                total: requests.length,
+                showSizeChanger: true,
+                pageSizeOptions: ['5', '10', '20', '50'],
+                style: { padding: '16px' },
+              }}
+              expandable={
+                !screens.md
+                  ? {
+                      expandedRowRender,
+                      expandRowByClick: true,
+                    }
+                  : undefined
+              }
+              scroll={{ x: screens.md ? 0 : 500 }}
+              style={{
+                borderCollapse: 'collapse',
+              }}
+            />
+          )}
+        </Card>
+        </div>
       </div>
 
       {/* Reject Modal */}
-      {showRejectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-96 max-w-md mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Reject Request</h3>
-              <button
-                onClick={() => {
-                  setShowRejectModal(false);
-                  setRejectReason('');
-                  setSelectedRequestId(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <FiX className="text-xl" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rejection Reason *
-                </label>
-                <textarea
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Enter reason for rejection..."
-                  rows="4"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowRejectModal(false);
-                    setRejectReason('');
-                    setSelectedRequestId(null);
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleReject}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                >
-                  Reject Request
-                </button>
-              </div>
-            </div>
+      <Modal
+        title={
+          <div
+            style={{
+              fontSize: '16px',
+              fontWeight: 600,
+              color: THEME_CONSTANTS.colors.textPrimary,
+            }}
+          >
+            Reject Wallet Request
+          </div>
+        }
+        open={rejectModalVisible}
+        onOk={handleReject}
+        onCancel={() => {
+          setRejectModalVisible(false);
+          form.resetFields();
+          setSelectedRequest(null);
+        }}
+        width={500}
+        okText="Reject Request"
+        cancelText="Cancel"
+        okButtonProps={{
+          danger: true,
+        }}
+        style={{
+          borderRadius: THEME_CONSTANTS.radius.md,
+        }}
+      >
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
+            User
+          </div>
+          <div
+            style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: THEME_CONSTANTS.colors.textPrimary,
+              marginTop: '4px',
+            }}
+          >
+            {selectedRequest?.userId?.name}
           </div>
         </div>
-      )}
 
-      <CustomModal 
-        show={modal.show} 
-        onClose={() => setModal({ ...modal, show: false })} 
-        type={modal.type}
-        title={modal.title}
-        message={modal.message}
-      />
-    </div>
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
+            Amount
+          </div>
+          <div
+            style={{
+              fontSize: '16px',
+              fontWeight: 600,
+              color: THEME_CONSTANTS.colors.primary,
+              marginTop: '4px',
+            }}
+          >
+            {formatCurrency(selectedRequest?.amount)}
+          </div>
+        </div>
+
+        <Form form={form} layout="vertical">
+          <Form.Item
+            label={
+              <span style={{ color: THEME_CONSTANTS.colors.textPrimary }}>
+                Rejection Reason <span style={{ color: '#FF4D4F' }}>*</span>
+              </span>
+            }
+            name="reason"
+            rules={[
+              {
+                required: true,
+                message: 'Please enter rejection reason',
+              },
+            ]}
+          >
+            <Input.TextArea
+              placeholder="Enter reason for rejection..."
+              rows={4}
+              style={{
+                borderRadius: THEME_CONSTANTS.radius.sm,
+                borderColor: THEME_CONSTANTS.colors.borderLight,
+              }}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </>
   );
-};
+}
 
 export default WalletRequests;
