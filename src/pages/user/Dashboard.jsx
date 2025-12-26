@@ -17,6 +17,8 @@ import {
   InputNumber,
   Grid,
   Statistic,
+  Empty,
+  Spin,
 } from 'antd';
 import {
   SendOutlined,
@@ -38,8 +40,8 @@ import {
   CreditCardOutlined,
   CloseCircleOutlined,
   ClockCircleOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
-
 import { THEME_CONSTANTS } from '../../theme';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -52,12 +54,10 @@ export default function Dashboard() {
   const screens = useBreakpoint();
   const [messageReports, setMessageReports] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
-  const [walletBalance, setWalletBalance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const [addAmount, setAddAmount] = useState('');
   const [showAddMoney, setShowAddMoney] = useState(false);
+  const [addAmount, setAddAmount] = useState('');
+  
   const [stats, setStats] = useState({
     failedMessages: 0,
     pendingMessages: 0,
@@ -67,6 +67,14 @@ export default function Dashboard() {
     totalFailedCount: 0,
     totalMessages: 0,
     totalSuccessCount: 0,
+  });
+
+  const [userProfile] = useState({
+    name: user?.companyname || 'User',
+    phone: user?.phone || '+91-9876543210',
+    email: user?.email || 'user@example.com',
+    plan: user?.plan || 'Standard',
+    joinedDate: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
   });
 
   useEffect(() => {
@@ -82,7 +90,6 @@ export default function Dashboard() {
         api.getrecentorders(user._id),
         api.getMessageStats(user._id),
       ]);
-      toast.success('Dashboard data loaded successfully');
 
       const messages = reportsData.data || [];
       setMessageReports(messages);
@@ -144,11 +151,11 @@ export default function Dashboard() {
             {text || 'N/A'}
           </div>
           <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '4px' }}>
-            {record.type}
+            {record.type || 'SMS'}
           </div>
         </div>
       ),
-      width: '30%',
+      width: '25%',
     },
     {
       title: 'Recipients',
@@ -318,16 +325,13 @@ export default function Dashboard() {
                     </div>
                   </Col>
                   <Col xs={24} sm={20} md={21} lg={21}>
-                    <div style={{ textAlign: { xs: 'center', sm: 'left' } }}>
+                    <div>
                       <h1 style={{
                         fontSize: THEME_CONSTANTS.typography.h1.size,
                         fontWeight: THEME_CONSTANTS.typography.h1.weight,
                         color: THEME_CONSTANTS.colors.text,
                         marginBottom: THEME_CONSTANTS.spacing.sm,
                         lineHeight: THEME_CONSTANTS.typography.h1.lineHeight,
-                        '@media (max-width: 768px)': {
-                          fontSize: THEME_CONSTANTS.typography.h2.size,
-                        }
                       }}>
                         Welcome back, {user?.companyname || 'User'} 👋
                       </h1>
@@ -345,7 +349,7 @@ export default function Dashboard() {
                 </Row>
               </Col>
               <Col xs={24} lg={6}>
-                <div style={{ textAlign: { xs: 'center', lg: 'right' } }}>
+                <div style={{ textAlign: screens.lg ? 'right' : 'left' }}>
                   <Space>
                     <Button
                       icon={<ReloadOutlined />}
@@ -364,439 +368,904 @@ export default function Dashboard() {
             </Row>
           </div>
 
-          {/* Wallet Card */}
+          {/* WALLET CARD */}
           <Card
             style={{
+              marginBottom: THEME_CONSTANTS.spacing.xxxl,
               borderRadius: THEME_CONSTANTS.radius.lg,
-              border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
-              boxShadow: THEME_CONSTANTS.shadow.md,
-              background: `linear-gradient(135deg, ${THEME_CONSTANTS.colors.primary}, ${THEME_CONSTANTS.colors.primary}dd)`,
-              color: 'white',
-              marginBottom: '24px',
+              border: 'none',
+              boxShadow: THEME_CONSTANTS.shadow.base,
+              position: 'relative',
+              overflow: 'hidden',
+              background: `linear-gradient(135deg, ${THEME_CONSTANTS.colors.primaryLight} 0%, #f5f3ff 50%, #eef2ff 100%)`,
             }}
-            bodyStyle={{ padding: '24px' }}
           >
-            <Row align="middle" gutter={[24, 24]}>
-              <Col xs={24} sm={12}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div
+            <div
+              style={{
+                position: 'absolute',
+                top: -120,
+                right: -80,
+                width: 280,
+                height: 280,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, #bfdbfe 0%, transparent 70%)',
+                opacity: 0.6,
+              }}
+            />
+            <Row gutter={[32, 24]} align="middle">
+              <Col xs={24} sm={24} md={12}>
+                <div>
+                  <p
                     style={{
-                      width: '56px',
-                      height: '56px',
-                      background: 'rgba(255,255,255,0.2)',
-                      borderRadius: THEME_CONSTANTS.radius.md,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backdropFilter: 'blur(10px)',
+                      margin: 0,
+                      marginBottom: THEME_CONSTANTS.spacing.sm,
+                      color: THEME_CONSTANTS.colors.textMuted,
+                      fontSize: THEME_CONSTANTS.typography.caption.size,
+                      fontWeight: THEME_CONSTANTS.typography.label.weight,
+                      textTransform: 'uppercase',
                     }}
                   >
-                    <CreditCardOutlined style={{ fontSize: '28px', color: 'white' }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', marginBottom: '4px' }}>
-                      Available Balance
-                    </div>
-                    <div style={{ fontSize: '24px', fontWeight: 700 }}>
-                      {formatCurrency(user?.Wallet || 0)}
-                    </div>
-                  </div>
+                    Wallet Balance
+                  </p>
+                  <h2
+                    style={{
+                      margin: 0,
+                      marginBottom: THEME_CONSTANTS.spacing.sm,
+                      fontSize: '40px',
+                      fontWeight: THEME_CONSTANTS.typography.h1.weight,
+                      background: `linear-gradient(135deg, ${THEME_CONSTANTS.colors.primary} 0%, #4f46e5 50%, ${THEME_CONSTANTS.colors.primaryDark} 100%)`,
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                  >
+                    {formatCurrency(user?.Wallet || 0)}
+                  </h2>
+                  <p 
+                    style={{ 
+                      margin: 0, 
+                      color: THEME_CONSTANTS.colors.textSecondary, 
+                      fontSize: THEME_CONSTANTS.typography.body.size 
+                    }}
+                  >
+                    Ready to use for your campaigns. No hidden charges.
+                  </p>
                 </div>
               </Col>
-              <Col xs={24} sm={12} style={{ textAlign: screens.sm ? 'right' : 'left' }}>
-                <Space>
-                  <Button
-                    onClick={() => setShowAddMoney(true)}
+              <Col xs={24} sm={24} md={12}>
+                <Row gutter={[16, 16]} justify={{ xs: 'center', md: 'end' }}>
+                  <Col xs={24} sm={12} md={24} lg={12}>
+                    <Button
+                      type="primary"
+                      size="large"
+                      icon={<PlusOutlined />}
+                      onClick={() => setShowAddMoney(true)}
+                      block
+                      style={{
+                        height: '48px',
+                        fontWeight: THEME_CONSTANTS.typography.label.weight,
+                        background: THEME_CONSTANTS.colors.primary,
+                        border: 'none',
+                        borderRadius: THEME_CONSTANTS.radius.md,
+                      }}
+                    >
+                      Add Money
+                    </Button>
+                  </Col>
+                  
+                </Row>
+              </Col>
+            </Row>
+            <Row gutter={[24, 16]} style={{ marginTop: THEME_CONSTANTS.spacing.xl }}>
+              <Col xs={24} sm={12}>
+                <div>
+                  <p
                     style={{
-                      background: 'white',
-                      color: THEME_CONSTANTS.colors.primary,
-                      borderColor: 'white',
-                      fontWeight: 600,
+                      margin: 0,
+                      marginBottom: THEME_CONSTANTS.spacing.sm,
+                      fontSize: THEME_CONSTANTS.typography.caption.size,
+                      textTransform: 'uppercase',
+                      fontWeight: THEME_CONSTANTS.typography.label.weight,
+                      color: THEME_CONSTANTS.colors.textMuted,
                     }}
-                    icon={<PlusOutlined />}
                   >
-                    Add Money
-                  </Button>
-                </Space>
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)', marginTop: '12px' }}>
-                  Ready to use for your campaigns. No hidden charges.
+                    Credits Used This Month
+                  </p>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      gap: THEME_CONSTANTS.spacing.sm,
+                      marginBottom: THEME_CONSTANTS.spacing.sm,
+                      flexWrap: 'wrap'
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: THEME_CONSTANTS.typography.h4.size,
+                        fontWeight: THEME_CONSTANTS.typography.h4.weight,
+                        color: THEME_CONSTANTS.colors.text,
+                      }}
+                    >
+                      ₹{user?.creditUsed || 0}
+                    </span>
+                    <span 
+                      style={{ 
+                        fontSize: THEME_CONSTANTS.typography.bodySmall.size, 
+                        color: THEME_CONSTANTS.colors.textMuted 
+                      }}
+                    >
+                      of {formatCurrency(user?.Wallet || 0)}
+                    </span>
+                  </div>
+                  <Progress
+                    percent={user?.Wallet ? Math.round(((user?.creditUsed || 0) / user.Wallet) * 100) : 0}
+                    strokeColor={{ '0%': THEME_CONSTANTS.colors.primary, '100%': THEME_CONSTANTS.colors.primaryDark }}
+                  />
+                </div>
+              </Col>
+              <Col xs={24} sm={12}>
+                <div>
+                  <p
+                    style={{
+                      margin: 0,
+                      marginBottom: THEME_CONSTANTS.spacing.sm,
+                      fontSize: THEME_CONSTANTS.typography.caption.size,
+                      textTransform: 'uppercase',
+                      fontWeight: THEME_CONSTANTS.typography.label.weight,
+                      color: THEME_CONSTANTS.colors.textMuted,
+                    }}
+                  >
+                    Remaining Balance
+                  </p>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      gap: THEME_CONSTANTS.spacing.sm,
+                      marginBottom: THEME_CONSTANTS.spacing.sm,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: THEME_CONSTANTS.typography.h4.size,
+                        fontWeight: THEME_CONSTANTS.typography.h4.weight,
+                        color: THEME_CONSTANTS.colors.success,
+                      }}
+                    >
+                      {formatCurrency((user?.Wallet || 0) - (user?.creditUsed || 0))}
+                    </span>
+                  </div>
+                  <p 
+                    style={{ 
+                      margin: 0, 
+                      fontSize: THEME_CONSTANTS.typography.bodySmall.size, 
+                      color: THEME_CONSTANTS.colors.textMuted 
+                    }}
+                  >
+                    Available for campaigns.
+                  </p>
                 </div>
               </Col>
             </Row>
           </Card>
-        </div>
 
-        {/* Stats Grid - First Row */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              style={{
-                borderRadius: THEME_CONSTANTS.radius.lg,
-                border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
-                boxShadow: THEME_CONSTANTS.shadow.sm,
-                height: '100%',
-              }}
-              bodyStyle={{ padding: '20px' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontSize: '13px', color: THEME_CONSTANTS.colors.textSecondary, fontWeight: 600, marginBottom: '8px' }}>
-                    Total Messages
-                  </div>
-                  <div style={{ fontSize: '28px', fontWeight: 700, color: THEME_CONSTANTS.colors.textPrimary }}>
-                    {loading ? '-' : stats.totalMessages}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    background: `${THEME_CONSTANTS.colors.primary}15`,
-                    borderRadius: THEME_CONSTANTS.radius.md,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <MessageOutlined style={{ fontSize: '24px', color: THEME_CONSTANTS.colors.primary }} />
-                </div>
-              </div>
-              <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '12px' }}>
-                Sent successfully.
-              </div>
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              style={{
-                borderRadius: THEME_CONSTANTS.radius.lg,
-                border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
-                boxShadow: THEME_CONSTANTS.shadow.sm,
-                height: '100%',
-              }}
-              bodyStyle={{ padding: '20px' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontSize: '13px', color: THEME_CONSTANTS.colors.textSecondary, fontWeight: 600, marginBottom: '8px' }}>
-                    Messages Sent
-                  </div>
-                  <div style={{ fontSize: '28px', fontWeight: 700, color: THEME_CONSTANTS.colors.success }}>
-                    {loading ? '-' : stats.totalSuccessCount}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    background: `${THEME_CONSTANTS.colors.success}15`,
-                    borderRadius: THEME_CONSTANTS.radius.md,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <CheckCircleOutlined style={{ fontSize: '24px', color: THEME_CONSTANTS.colors.success }} />
-                </div>
-              </div>
-              <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '12px' }}>
-                Successfully delivered.
-              </div>
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              style={{
-                borderRadius: THEME_CONSTANTS.radius.lg,
-                border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
-                boxShadow: THEME_CONSTANTS.shadow.sm,
-                height: '100%',
-              }}
-              bodyStyle={{ padding: '20px' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontSize: '13px', color: THEME_CONSTANTS.colors.textSecondary, fontWeight: 600, marginBottom: '8px' }}>
-                    Pending Messages
-                  </div>
-                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#faad14' }}>
-                    {loading ? '-' : stats.pendingMessages}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    background: '#faad1415',
-                    borderRadius: THEME_CONSTANTS.radius.md,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <ClockCircleOutlined style={{ fontSize: '24px', color: '#faad14' }} />
-                </div>
-              </div>
-              <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '12px' }}>
-                In queue.
-              </div>
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              style={{
-                borderRadius: THEME_CONSTANTS.radius.lg,
-                border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
-                boxShadow: THEME_CONSTANTS.shadow.sm,
-                height: '100%',
-              }}
-              bodyStyle={{ padding: '20px' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontSize: '13px', color: THEME_CONSTANTS.colors.textSecondary, fontWeight: 600, marginBottom: '8px' }}>
-                    Failed Messages
-                  </div>
-                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#ff4d4f' }}>
-                    {loading ? '-' : stats.totalFailedCount}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    background: '#ff4d4f15',
-                    borderRadius: THEME_CONSTANTS.radius.md,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <CloseCircleOutlined style={{ fontSize: '24px', color: '#ff4d4f' }} />
-                </div>
-              </div>
-              <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '12px' }}>
-                Needs attention.
-              </div>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Stats Grid - Second Row */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              style={{
-                borderRadius: THEME_CONSTANTS.radius.lg,
-                border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
-                boxShadow: THEME_CONSTANTS.shadow.sm,
-                height: '100%',
-              }}
-              bodyStyle={{ padding: '20px' }}
-            >
-              <Statistic
-                title="Active Campaigns"
-                value={loading ? '-' : stats.totalCampaigns}
-                titleStyle={{
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: THEME_CONSTANTS.colors.textSecondary,
+          {/* METRIC CARDS */}
+          <Row gutter={[16, 16]} style={{ marginBottom: THEME_CONSTANTS.spacing.xxxl }}>
+            <Col xs={24} sm={12} lg={6}>
+              <Card
+                style={{
+                  borderRadius: THEME_CONSTANTS.radius.lg,
+                  border: 'none',
+                  boxShadow: THEME_CONSTANTS.shadow.base,
+                  height: '100%'
                 }}
-                valueStyle={{
-                  fontSize: '28px',
-                  fontWeight: 700,
-                  color: THEME_CONSTANTS.colors.textPrimary,
-                }}
-              />
-              <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '12px' }}>
-                Running campaigns
-              </div>
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              style={{
-                borderRadius: THEME_CONSTANTS.radius.lg,
-                border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
-                boxShadow: THEME_CONSTANTS.shadow.sm,
-                height: '100%',
-              }}
-              bodyStyle={{ padding: '20px' }}
-            >
-              <Statistic
-                title="Active Templates"
-                value={loading ? '-' : stats.sendtoteltemplet}
-                titleStyle={{
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: THEME_CONSTANTS.colors.textSecondary,
-                }}
-                valueStyle={{
-                  fontSize: '28px',
-                  fontWeight: 700,
-                  color: THEME_CONSTANTS.colors.textPrimary,
-                }}
-              />
-              <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '12px' }}>
-                Ready to use
-              </div>
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              style={{
-                borderRadius: THEME_CONSTANTS.radius.lg,
-                border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
-                boxShadow: THEME_CONSTANTS.shadow.sm,
-                height: '100%',
-              }}
-              bodyStyle={{ padding: '20px' }}
-            >
-              <Statistic
-                title="Success Rate"
-                value={
-                  loading
-                    ? '-'
-                    : stats.totalMessages > 0
-                    ? ((stats.totalSuccessCount / stats.totalMessages) * 100).toFixed(2)
-                    : 0
-                }
-                suffix="%"
-                titleStyle={{
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: THEME_CONSTANTS.colors.textSecondary,
-                }}
-                valueStyle={{
-                  fontSize: '28px',
-                  fontWeight: 700,
-                  color: THEME_CONSTANTS.colors.primary,
-                }}
-              />
-              <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '12px' }}>
-                Excellent performance
-              </div>
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              style={{
-                borderRadius: THEME_CONSTANTS.radius.lg,
-                border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
-                boxShadow: THEME_CONSTANTS.shadow.sm,
-                height: '100%',
-              }}
-              bodyStyle={{ padding: '20px' }}
-            >
-              <Statistic
-                title="Balance Remaining"
-                value={formatCurrency(user?.Wallet || 0)}
-                titleStyle={{
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: THEME_CONSTANTS.colors.textSecondary,
-                }}
-                valueStyle={{
-                  fontSize: '20px',
-                  fontWeight: 700,
-                  color: THEME_CONSTANTS.colors.primary,
-                }}
-              />
-              <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '12px' }}>
-                Available for campaigns
-              </div>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Recent Messages Table */}
-        <Card
-          style={{
-            borderRadius: THEME_CONSTANTS.radius.lg,
-            border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
-            boxShadow: THEME_CONSTANTS.shadow.md,
-          }}
-          bodyStyle={{ padding: 0 }}
-        >
-          <div
-            style={{
-              padding: '24px',
-              borderBottom: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
-              background: `linear-gradient(135deg, ${THEME_CONSTANTS.colors.background}, ${THEME_CONSTANTS.colors.background}dd)`,
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h2 style={{ fontSize: '20px', fontWeight: 700, color: THEME_CONSTANTS.colors.textPrimary, margin: '0 0 4px 0' }}>
-                  Recent Campaigns
-                </h2>
-                <p style={{ fontSize: '13px', color: THEME_CONSTANTS.colors.textSecondary, margin: 0 }}>
-                  Recent messaging campaigns and their delivery status
-                </p>
-              </div>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={fetchMessageReports}
-                loading={loading}
+                bodyStyle={{ padding: '20px' }}
               >
-                Refresh
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: THEME_CONSTANTS.spacing.md,
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <p
+                      style={{
+                        fontSize: THEME_CONSTANTS.typography.caption.size,
+                        textTransform: 'uppercase',
+                        color: THEME_CONSTANTS.colors.textMuted,
+                        fontWeight: THEME_CONSTANTS.typography.label.weight,
+                        margin: 0,
+                        marginBottom: THEME_CONSTANTS.spacing.sm,
+                      }}
+                    >
+                      Active Campaigns
+                    </p>
+                    <h3
+                      style={{
+                        margin: 0,
+                        fontSize: '30px',
+                        fontWeight: THEME_CONSTANTS.typography.h1.weight,
+                        color: THEME_CONSTANTS.colors.text,
+                      }}
+                    >
+                      {loading ? '-' : stats.totalCampaigns}
+                    </h3>
+                  </div>
+                  <div
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                      background: THEME_CONSTANTS.colors.primaryLight,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: THEME_CONSTANTS.colors.primary,
+                      fontSize: '20px',
+                      flexShrink: 0
+                    }}
+                  >
+                    <MessageOutlined />
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: THEME_CONSTANTS.spacing.xs,
+                    fontSize: THEME_CONSTANTS.typography.bodySmall.size,
+                    color: THEME_CONSTANTS.colors.success,
+                    fontWeight: THEME_CONSTANTS.typography.label.weight,
+                  }}
+                >
+                  <ArrowUpOutlined /> 2 new this month
+                </div>
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={12} lg={6}>
+              <Card
+                style={{
+                  borderRadius: THEME_CONSTANTS.radius.lg,
+                  border: 'none',
+                  boxShadow: THEME_CONSTANTS.shadow.base,
+                  height: '100%'
+                }}
+                bodyStyle={{ padding: '20px' }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: THEME_CONSTANTS.spacing.md,
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <p
+                      style={{
+                        fontSize: THEME_CONSTANTS.typography.caption.size,
+                        textTransform: 'uppercase',
+                        color: THEME_CONSTANTS.colors.textMuted,
+                        fontWeight: THEME_CONSTANTS.typography.label.weight,
+                        margin: 0,
+                        marginBottom: THEME_CONSTANTS.spacing.sm,
+                      }}
+                    >
+                      Active Templates
+                    </p>
+                    <h3
+                      style={{
+                        margin: 0,
+                        fontSize: '30px',
+                        fontWeight: THEME_CONSTANTS.typography.h1.weight,
+                        color: THEME_CONSTANTS.colors.text,
+                      }}
+                    >
+                      {loading ? '-' : stats.sendtoteltemplet}
+                    </h3>
+                  </div>
+                  <div
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                      background: '#e0e7ff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#4f46e5',
+                      fontSize: '20px',
+                      flexShrink: 0
+                    }}
+                  >
+                    <FileTextOutlined />
+                  </div>
+                </div>
+                <p 
+                  style={{ 
+                    margin: 0, 
+                    fontSize: THEME_CONSTANTS.typography.bodySmall.size, 
+                    color: THEME_CONSTANTS.colors.textMuted 
+                  }}
+                >
+                  Ready to use.
+                </p>
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={12} lg={6}>
+              <Card
+                style={{
+                  borderRadius: THEME_CONSTANTS.radius.lg,
+                  border: 'none',
+                  boxShadow: THEME_CONSTANTS.shadow.base,
+                  height: '100%'
+                }}
+                bodyStyle={{ padding: '20px' }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: THEME_CONSTANTS.spacing.md,
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <p
+                      style={{
+                        fontSize: THEME_CONSTANTS.typography.caption.size,
+                        textTransform: 'uppercase',
+                        color: THEME_CONSTANTS.colors.textMuted,
+                        fontWeight: THEME_CONSTANTS.typography.label.weight,
+                        margin: 0,
+                        marginBottom: THEME_CONSTANTS.spacing.sm,
+                      }}
+                    >
+                      Total Messages
+                    </p>
+                    <h3
+                      style={{
+                        margin: 0,
+                        fontSize: '30px',
+                        fontWeight: THEME_CONSTANTS.typography.h1.weight,
+                        color: THEME_CONSTANTS.colors.text,
+                      }}
+                    >
+                      {loading ? '-' : (stats.totalMessages / 1000).toFixed(1)}K
+                    </h3>
+                  </div>
+                  <div
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                      background: THEME_CONSTANTS.colors.successLight,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: THEME_CONSTANTS.colors.success,
+                      fontSize: '20px',
+                      flexShrink: 0
+                    }}
+                  >
+                    <SendOutlined />
+                  </div>
+                </div>
+                <p 
+                  style={{ 
+                    margin: 0, 
+                    fontSize: THEME_CONSTANTS.typography.bodySmall.size, 
+                    color: THEME_CONSTANTS.colors.textMuted 
+                  }}
+                >
+                  Sent successfully.
+                </p>
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={12} lg={6}>
+              <Card
+                style={{
+                  borderRadius: THEME_CONSTANTS.radius.lg,
+                  border: 'none',
+                  boxShadow: THEME_CONSTANTS.shadow.base,
+                  height: '100%'
+                }}
+                bodyStyle={{ padding: '20px' }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: THEME_CONSTANTS.spacing.md,
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <p
+                      style={{
+                        fontSize: THEME_CONSTANTS.typography.caption.size,
+                        textTransform: 'uppercase',
+                        color: THEME_CONSTANTS.colors.textMuted,
+                        fontWeight: THEME_CONSTANTS.typography.label.weight,
+                        margin: 0,
+                        marginBottom: THEME_CONSTANTS.spacing.sm,
+                      }}
+                    >
+                      Success Rate
+                    </p>
+                    <h3
+                      style={{
+                        margin: 0,
+                        fontSize: '30px',
+                        fontWeight: THEME_CONSTANTS.typography.h1.weight,
+                        color: THEME_CONSTANTS.colors.text,
+                      }}
+                    >
+                      {loading ? '-' : stats.totalMessages > 0 ? ((stats.totalSuccessCount / stats.totalMessages) * 100).toFixed(1) : 0}%
+                    </h3>
+                  </div>
+                  <div
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                      background: THEME_CONSTANTS.colors.warningLight,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: THEME_CONSTANTS.colors.warning,
+                      fontSize: '20px',
+                      flexShrink: 0
+                    }}
+                  >
+                    <ThunderboltOutlined />
+                  </div>
+                </div>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: THEME_CONSTANTS.typography.bodySmall.size,
+                    color: THEME_CONSTANTS.colors.success,
+                    fontWeight: THEME_CONSTANTS.typography.label.weight,
+                  }}
+                >
+                  Excellent performance.
+                </p>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* DELIVERY & QUICK STATS */}
+          <Row gutter={[16, 16]} style={{ marginBottom: THEME_CONSTANTS.spacing.xxxl }}>
+            <Col xs={24} lg={12}>
+              <Card
+                style={{
+                  borderRadius: THEME_CONSTANTS.radius.lg,
+                  border: 'none',
+                  boxShadow: THEME_CONSTANTS.shadow.base,
+                  height: '100%',
+                }}
+                bodyStyle={{ padding: '24px' }}
+              >
+                <h3
+                  style={{
+                    margin: `0 0 ${THEME_CONSTANTS.spacing.lg}`,
+                    fontSize: THEME_CONSTANTS.typography.h5.size,
+                    fontWeight: THEME_CONSTANTS.typography.h5.weight,
+                    color: THEME_CONSTANTS.colors.text,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: THEME_CONSTANTS.spacing.sm,
+                  }}
+                >
+                  <CheckCircleOutlined style={{ color: THEME_CONSTANTS.colors.success }} />
+                  Delivery Summary
+                </h3>
+                <Space
+                  direction="vertical"
+                  style={{ width: '100%' }}
+                  size="large"
+                >
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginBottom: THEME_CONSTANTS.spacing.sm,
+                        flexWrap: 'wrap',
+                        gap: THEME_CONSTANTS.spacing.xs
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: THEME_CONSTANTS.colors.textMuted,
+                          fontWeight: THEME_CONSTANTS.typography.label.weight,
+                          fontSize: THEME_CONSTANTS.typography.body.size,
+                        }}
+                      >
+                        Messages Delivered
+                      </span>
+                      <span
+                        style={{
+                          color: THEME_CONSTANTS.colors.success,
+                          fontWeight: THEME_CONSTANTS.typography.h6.weight,
+                          fontSize: THEME_CONSTANTS.typography.body.size,
+                        }}
+                      >
+                        {loading ? '-' : stats.totalSuccessCount}
+                      </span>
+                    </div>
+                    <Progress
+                      percent={loading ? 0 : stats.totalMessages > 0 ? Math.round((stats.totalSuccessCount / stats.totalMessages) * 100) : 0}
+                      strokeColor={THEME_CONSTANTS.colors.success}
+                    />
+                  </div>
+
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginBottom: THEME_CONSTANTS.spacing.sm,
+                        flexWrap: 'wrap',
+                        gap: THEME_CONSTANTS.spacing.xs
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: THEME_CONSTANTS.colors.textMuted,
+                          fontWeight: THEME_CONSTANTS.typography.label.weight,
+                          fontSize: THEME_CONSTANTS.typography.body.size,
+                        }}
+                      >
+                        Messages Failed
+                      </span>
+                      <span
+                        style={{
+                          color: THEME_CONSTANTS.colors.danger,
+                          fontWeight: THEME_CONSTANTS.typography.h6.weight,
+                          fontSize: THEME_CONSTANTS.typography.body.size,
+                        }}
+                      >
+                        {loading ? '-' : stats.totalFailedCount}
+                      </span>
+                    </div>
+                    <Progress
+                      percent={loading ? 0 : stats.totalMessages > 0 ? Math.round((stats.totalFailedCount / stats.totalMessages) * 100) : 0}
+                      strokeColor={THEME_CONSTANTS.colors.danger}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      padding: THEME_CONSTANTS.spacing.lg,
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                      border: `1px solid ${THEME_CONSTANTS.colors.primaryLight}`,
+                      background: THEME_CONSTANTS.colors.primaryLight,
+                    }}
+                  >
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: THEME_CONSTANTS.typography.body.size,
+                        color: THEME_CONSTANTS.colors.textSecondary,
+                      }}
+                    >
+                      <CheckCircleOutlined
+                        style={{ color: THEME_CONSTANTS.colors.success, marginRight: THEME_CONSTANTS.spacing.sm }}
+                      />
+                      Overall Success Rate:{' '}
+                      <span
+                        style={{
+                          fontWeight: THEME_CONSTANTS.typography.h6.weight,
+                          color: THEME_CONSTANTS.colors.success,
+                        }}
+                      >
+                        {loading ? '-' : stats.totalMessages > 0 ? ((stats.totalSuccessCount / stats.totalMessages) * 100).toFixed(1) : 0}%
+                      </span>
+                    </p>
+                  </div>
+                </Space>
+              </Card>
+            </Col>
+
+            <Col xs={24} lg={12}>
+              <Card
+                style={{
+                  borderRadius: THEME_CONSTANTS.radius.lg,
+                  border: 'none',
+                  boxShadow: THEME_CONSTANTS.shadow.base,
+                  height: '100%',
+                }}
+                bodyStyle={{ padding: '24px' }}
+              >
+                <h3
+                  style={{
+                    margin: `0 0 ${THEME_CONSTANTS.spacing.lg}`,
+                    fontSize: THEME_CONSTANTS.typography.h5.size,
+                    fontWeight: THEME_CONSTANTS.typography.h5.weight,
+                    color: THEME_CONSTANTS.colors.text,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: THEME_CONSTANTS.spacing.sm,
+                  }}
+                >
+                  <BarChartOutlined style={{ color: THEME_CONSTANTS.colors.primary }} />
+                  Quick Stats
+                </h3>
+                <Space
+                  direction="vertical"
+                  style={{ width: '100%' }}
+                  size="middle"
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: THEME_CONSTANTS.spacing.md,
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                      background: THEME_CONSTANTS.colors.background,
+                      flexWrap: 'wrap',
+                      gap: THEME_CONSTANTS.spacing.sm
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: THEME_CONSTANTS.colors.textMuted,
+                        fontWeight: THEME_CONSTANTS.typography.label.weight,
+                      }}
+                    >
+                      Total Sent
+                    </span>
+                    <span
+                      style={{
+                        fontSize: THEME_CONSTANTS.typography.h4.size,
+                        fontWeight: THEME_CONSTANTS.typography.h4.weight,
+                        color: THEME_CONSTANTS.colors.text,
+                      }}
+                    >
+                      {loading ? '-' : stats.totalMessages}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: THEME_CONSTANTS.spacing.md,
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                      background: THEME_CONSTANTS.colors.successLight,
+                      border: `1px solid ${THEME_CONSTANTS.colors.success}`,
+                      flexWrap: 'wrap',
+                      gap: THEME_CONSTANTS.spacing.sm
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: THEME_CONSTANTS.colors.success,
+                        fontWeight: THEME_CONSTANTS.typography.label.weight,
+                      }}
+                    >
+                      Successfully Delivered
+                    </span>
+                    <span
+                      style={{
+                        fontSize: THEME_CONSTANTS.typography.h4.size,
+                        fontWeight: THEME_CONSTANTS.typography.h4.weight,
+                        color: THEME_CONSTANTS.colors.success,
+                      }}
+                    >
+                      {loading ? '-' : stats.totalSuccessCount}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: THEME_CONSTANTS.spacing.md,
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                      background: THEME_CONSTANTS.colors.dangerLight,
+                      border: `1px solid ${THEME_CONSTANTS.colors.danger}`,
+                      flexWrap: 'wrap',
+                      gap: THEME_CONSTANTS.spacing.sm
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: THEME_CONSTANTS.colors.danger,
+                        fontWeight: THEME_CONSTANTS.typography.label.weight,
+                      }}
+                    >
+                      Failed
+                    </span>
+                    <span
+                      style={{
+                        fontSize: THEME_CONSTANTS.typography.h4.size,
+                        fontWeight: THEME_CONSTANTS.typography.h4.weight,
+                        color: THEME_CONSTANTS.colors.danger,
+                      }}
+                    >
+                      {loading ? '-' : stats.totalFailedCount}
+                    </span>
+                  </div>
+                </Space>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* RECENT CAMPAIGNS */}
+          <Card
+            style={{
+              marginBottom: THEME_CONSTANTS.spacing.xxxl,
+              borderRadius: THEME_CONSTANTS.radius.lg,
+              border: 'none',
+              boxShadow: THEME_CONSTANTS.shadow.base,
+            }}
+            bodyStyle={{ padding: '24px' }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: THEME_CONSTANTS.spacing.lg,
+                flexWrap: 'wrap',
+                gap: THEME_CONSTANTS.spacing.md
+              }}
+            >
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: THEME_CONSTANTS.typography.h5.size,
+                  fontWeight: THEME_CONSTANTS.typography.h5.weight,
+                  color: THEME_CONSTANTS.colors.text,
+                }}
+              >
+                Recent Campaigns
+              </h3>
+              <Button
+                type="primary"
+                style={{
+                  background: THEME_CONSTANTS.colors.primary,
+                  border: 'none',
+                  fontWeight: THEME_CONSTANTS.typography.label.weight,
+                  borderRadius: THEME_CONSTANTS.radius.md,
+                  height: '40px'
+                }}
+              >
+                View All Campaigns
               </Button>
             </div>
-          </div>
+            <div style={{ overflowX: 'auto' }}>
+              {loading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
+                  <div
+                    style={{
+                      width: '50px',
+                      height: '50px',
+                      borderRadius: '50%',
+                      borderTop: `4px solid ${THEME_CONSTANTS.colors.primary}`,
+                      borderRight: `4px solid transparent`,
+                      animation: 'spin 1s linear infinite',
+                    }}
+                  />
+                  <p style={{ marginTop: '16px', fontSize: '14px', fontWeight: 600, color: THEME_CONSTANTS.colors.textSecondary }}>
+                    Loading campaign data...
+                  </p>
+                </div>
+              ) : messageReports.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
+                  <MessageOutlined style={{ fontSize: '48px', color: `${THEME_CONSTANTS.colors.textSecondary}40`, marginBottom: '16px' }} />
+                  <p style={{ fontSize: '16px', fontWeight: 600, color: THEME_CONSTANTS.colors.textPrimary, margin: 0 }}>
+                    No recent campaigns found
+                  </p>
+                  <p style={{ fontSize: '13px', color: THEME_CONSTANTS.colors.textSecondary, margin: '8px 0 0 0' }}>
+                    Your campaigns will appear here
+                  </p>
+                </div>
+              ) : (
+                <Table
+                  columns={messageColumns}
+                  dataSource={messageReports.slice(0, 5)}
+                  rowKey="_id"
+                  pagination={{ pageSize: 5 }}
+                  style={{ borderCollapse: 'collapse' }}
+                  scroll={{ x: 800 }}
+                />
+              )}
+            </div>
+          </Card>
 
-          {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
-              <div
+          {/* PROFILE & QUICK ACTIONS */}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={12}>
+              <Card
                 style={{
-                  width: '50px',
-                  height: '50px',
-                  borderRadius: '50%',
-                  borderTop: `4px solid ${THEME_CONSTANTS.colors.primary}`,
-                  borderRight: `4px solid transparent`,
-                  animation: 'spin 1s linear infinite',
+                  borderRadius: THEME_CONSTANTS.radius.lg,
+                  border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
+                  boxShadow: THEME_CONSTANTS.shadow.md,
                 }}
-              />
-              <p style={{ marginTop: '16px', fontSize: '14px', fontWeight: 600, color: THEME_CONSTANTS.colors.textSecondary }}>
-                Loading campaign data...
-              </p>
-            </div>
-          ) : messageReports.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
-              <MessageOutlined style={{ fontSize: '48px', color: `${THEME_CONSTANTS.colors.textSecondary}40`, marginBottom: '16px' }} />
-              <p style={{ fontSize: '16px', fontWeight: 600, color: THEME_CONSTANTS.colors.textPrimary, margin: 0 }}>
-                No recent campaigns found
-              </p>
-              <p style={{ fontSize: '13px', color: THEME_CONSTANTS.colors.textSecondary, margin: '8px 0 0 0' }}>
-                Your campaigns will appear here
-              </p>
-            </div>
-          ) : (
-            <>
-              <Table
-                columns={messageColumns}
-                dataSource={messageReports.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
-                rowKey="_id"
-                pagination={{
-                  current: currentPage,
-                  pageSize: itemsPerPage,
-                  total: messageReports.length,
-                  onChange: setCurrentPage,
-                  showSizeChanger: false,
-                  style: { textAlign: 'center' },
-                }}
-                style={{ borderCollapse: 'collapse' }}
-                scroll={{ x: 800 }}
-              />
-            </>
-          )}
-        </Card>
+                bodyStyle={{ padding: '24px' }}
+              >
+                <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                  <Avatar
+                    size={64}
+                    icon={<UserOutlined />}
+                    style={{
+                      background: THEME_CONSTANTS.colors.primary,
+                      fontSize: '32px',
+                      margin: '0 auto 12px auto',
+                    }}
+                  />
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: THEME_CONSTANTS.colors.textPrimary, margin: 0 }}>
+                    {userProfile.name}
+                  </h3>
+                  <p style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, margin: '4px 0 0 0' }}>
+                    {userProfile.plan} Plan
+                  </p>
+                </div>
+
+                <Divider style={{ margin: '16px 0' }} />
+
+                <Space direction="vertical" style={{ width: '100%' }} size={0}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <p style={{ fontSize: '11px', color: THEME_CONSTANTS.colors.textSecondary, fontWeight: 600, margin: 0, marginBottom: '4px' }}>
+                      EMAIL
+                    </p>
+                    <p style={{ fontSize: '13px', color: THEME_CONSTANTS.colors.textPrimary, fontWeight: 600, margin: 0 }}>
+                      {userProfile.email}
+                    </p>
+                  </div>
+
+                  <div style={{ marginBottom: '16px' }}>
+                    <p style={{ fontSize: '11px', color: THEME_CONSTANTS.colors.textSecondary, fontWeight: 600, margin: 0, marginBottom: '4px' }}>
+                      PHONE
+                    </p>
+                    <p style={{ fontSize: '13px', color: THEME_CONSTANTS.colors.textPrimary, fontWeight: 600, margin: 0 }}>
+                      {userProfile.phone}
+                    </p>
+                  </div>
+
+                  <div style={{ marginBottom: '16px' }}>
+                    <p style={{ fontSize: '11px', color: THEME_CONSTANTS.colors.textSecondary, fontWeight: 600, margin: 0, marginBottom: '4px' }}>
+                      JOINED DATE
+                    </p>
+                    <p style={{ fontSize: '13px', color: THEME_CONSTANTS.colors.textPrimary, fontWeight: 600, margin: 0 }}>
+                      {userProfile.joinedDate}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p style={{ fontSize: '11px', color: THEME_CONSTANTS.colors.textSecondary, fontWeight: 600, margin: 0, marginBottom: '4px' }}>
+                      ACCOUNT STATUS
+                    </p>
+                    <Tag color="green" style={{ fontWeight: 600 }}>
+                      Active
+                    </Tag>
+                  </div>
+                </Space>
+              </Card>
+            </Col>
+          </Row>
+        </div>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
 
       {/* Add Money Modal */}
       <Modal

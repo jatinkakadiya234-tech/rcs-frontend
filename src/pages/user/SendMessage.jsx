@@ -67,6 +67,31 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { THEME_CONSTANTS } from '../../theme';
 
+// Add CSS for animations
+const styles = `
+  @keyframes progressFill {
+    0% { width: 0%; }
+    100% { width: 100%; }
+  }
+  
+  .custom-step-circle {
+    position: relative;
+  }
+  
+  .custom-step-number {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = styles;
+  document.head.appendChild(styleSheet);
+}
+
 const MESSAGE_TYPES = {
   text: 'Plain Text',
   'text-with-action': 'Text with Actions',
@@ -265,40 +290,27 @@ function SendMessage() {
   }, [templates, templateSearch, templateFilter]);
 
   // Handle Template Selection
-  const handleTemplateSelect = async (templateId) => {
-    if (templateId === 'new') {
-      setSelectedTemplate(null);
-      setMessage('');
-      setMessageType('text');
-      setButtons([]);
-      setCarouselCards([]);
-      setMediaUrl('');
-      setCardDescription('');
-      return;
-    }
-
+  const handleTemplateSelect = async (template) => {
     try {
-      const response = await api.getTemplateById(templateId);
-      const templateData = response.data;
-      setSelectedTemplate(templateData);
-      setMessageType(templateData.messageType);
+      setSelectedTemplate(template);
+      setMessageType(template.messageType);
 
       // Reset all fields
-      setMessage(templateData.text || templateData?.richCard?.title || '');
-      setCardDescription(templateData?.richCard?.description || templateData?.richCard?.subtitle || '');
-      setMediaUrl(templateData?.richCard?.imageUrl || templateData?.imageUrl || '');
+      setMessage(template.text || template?.richCard?.title || '');
+      setCardDescription(template?.richCard?.description || template?.richCard?.subtitle || '');
+      setMediaUrl(template?.richCard?.imageUrl || template?.imageUrl || '');
 
       // Set buttons
       const templateButtons = [];
-      if (templateData.richCard?.actions) {
-        templateButtons.push(...templateData.richCard.actions.map((action) => ({
+      if (template.richCard?.actions) {
+        templateButtons.push(...template.richCard.actions.map((action) => ({
           id: Date.now() + Math.random(),
           type: action.type === 'url' ? 'URL Button' : action.type === 'call' ? 'Call Button' : 'Quick Reply Button',
           title: action.title,
           value: action.payload || '',
         })));
-      } else if (templateData.actions) {
-        templateButtons.push(...templateData.actions.map((action) => ({
+      } else if (template.actions) {
+        templateButtons.push(...template.actions.map((action) => ({
           id: Date.now() + Math.random(),
           type: action.type === 'url' ? 'URL Button' : action.type === 'call' ? 'Call Button' : 'Quick Reply Button',
           title: action.title,
@@ -308,9 +320,9 @@ function SendMessage() {
       setButtons(templateButtons);
 
       // Set carousel cards
-      if (templateData.carouselItems?.length > 0) {
+      if (template.carouselItems?.length > 0) {
         setCarouselCards(
-          templateData.carouselItems.map((item) => ({
+          template.carouselItems.map((item) => ({
             id: Date.now() + Math.random(),
             title: item.title,
             description: item.subtitle || item.description || '',
@@ -325,9 +337,19 @@ function SendMessage() {
         );
       }
 
-      message.success(`Template "${templateData.name}" loaded successfully`);
+      message.success(`Template "${template.name}" selected successfully`);
+      
+      // Scroll to preview section on mobile
+      if (window.innerWidth <= 768) {
+        setTimeout(() => {
+          const previewElement = document.querySelector('.template-preview-section');
+          if (previewElement) {
+            previewElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      }
     } catch (error) {
-      message.error('Failed to load template: ' + error.message);
+      message.error('Failed to select template: ' + error.message);
     }
   };
 
@@ -495,65 +517,77 @@ function SendMessage() {
   const handleAddContact = async (values) => {
     try {
       setCheckingCapability(true);
-      let phone = values.phone.trim();
+      let phoneNumbers = values.phone.trim();
 
-      // Clean and format phone number
-      phone = phone.replace(/[\s\-()]/g, '');
-
-      if (!phone) {
-        message.error('Please enter a valid phone number');
+      if (!phoneNumbers) {
+        message.error('Please enter phone numbers');
         return;
       }
 
-      // Add +91 if not present
-      if (!phone.startsWith('+91')) {
-        if (phone.startsWith('91') && phone.length === 12) {
-          phone = '+' + phone;
-        } else if (phone.length === 10) {
-          phone = '+91' + phone;
-        } else {
-          message.error('Please enter a valid 10-digit phone number');
-          return;
+      // Split by newlines and commas, clean each number
+      const numbers = phoneNumbers
+        .split(/[\n,]+/)
+        .map(num => num.trim().replace(/[\s\-()]/g, ''))
+        .filter(num => num.length > 0);
+
+      if (numbers.length === 0) {
+        message.error('Please enter valid phone numbers');
+        return;
+      }
+
+      const validNumbers = [];
+      const existingNumbers = new Set(recipients.map(r => r.number));
+
+      for (let phone of numbers) {
+        // Add +91 if not present
+        if (!phone.startsWith('+91')) {
+          if (phone.startsWith('91') && phone.length === 12) {
+            phone = '+' + phone;
+          } else if (phone.length === 10) {
+            phone = '+91' + phone;
+          } else {
+            continue; // Skip invalid numbers
+          }
+        }
+
+        // Validate phone number format
+        if (/^\+91\d{10}$/.test(phone) && !existingNumbers.has(phone)) {
+          validNumbers.push(phone);
         }
       }
 
-      // Validate phone number format
-      if (!/^\+91\d{10}$/.test(phone)) {
-        message.error('Please enter a valid phone number');
+      if (validNumbers.length === 0) {
+        message.warning('No new valid numbers found');
         return;
       }
 
-      // Check if already exists
-      if (recipients.find(r => r.number === phone)) {
-        message.warning('This contact is already added');
-        return;
-      }
-
-      // Check capability
-      const response = await checkRcsCapability([phone]);
-      console.log('Manual contact RCS check:', response);
+      // Check capability for all numbers
+      const response = await checkRcsCapability(validNumbers);
       const rcsMessaging = response?.data?.rcsMessaging || response?.rcsMessaging;
-      let isCapable = false;
+      
+      const newContacts = validNumbers.map(phone => {
+        let isCapable = false;
+        if (rcsMessaging && rcsMessaging.reachableUsers) {
+          isCapable = rcsMessaging.reachableUsers.includes(phone);
+        }
+        
+        return {
+          id: Date.now() + Math.random(),
+          number: phone,
+          capable: isCapable,
+          checking: false,
+        };
+      });
 
-      if (rcsMessaging && rcsMessaging.reachableUsers) {
-        isCapable = rcsMessaging.reachableUsers.includes(phone);
-        console.log(`Manual contact ${phone} capability:`, isCapable);
-      }
-
-      const newContact = {
-        id: Date.now().toString(),
-        number: phone,
-        capable: isCapable,
-        checking: false,
-      };
-
-      setRecipients([...recipients, newContact]);
+      setRecipients([...recipients, ...newContacts]);
       manualContactForm.resetFields();
       setManualContactModal(false);
-      message.success(`Contact added successfully ${isCapable ? '(RCS capable)' : '(Not RCS capable)'}`);
+      
+      const capableCount = newContacts.filter(c => c.capable).length;
+      message.success(`${newContacts.length} contacts added (${capableCount} RCS capable)`);
     } catch (error) {
-      console.error('Error adding contact:', error);
-      message.error('Error adding contact: ' + (error.response?.data?.message || error.message));
+      console.error('Error adding contacts:', error);
+      message.error('Error adding contacts: ' + (error.response?.data?.message || error.message));
     } finally {
       setCheckingCapability(false);
     }
@@ -567,16 +601,29 @@ function SendMessage() {
 
   // Handle Step Change
   const handleStepChange = (step) => {
+    // Prevent jumping to steps without validation
+    if (step > currentStep + 1) {
+      return; // Don't allow jumping ahead
+    }
+    
     if (step === 0) {
       setCurrentStep(0);
-    } else if (step === 1 && !selectedTemplate) {
-      message.error('Please select a template');
-    } else if (step === 2 && recipients.length === 0) {
-      message.error('Please add recipients');
-    } else if (step === 3 && !sendSchedule.dateTime && sendSchedule.type === 'scheduled') {
-      message.error('Please select date and time');
-    } else {
-      setCurrentStep(step);
+    } else if (step === 1) {
+      if (!selectedTemplate) {
+        message.error('Please select a template first');
+        return;
+      }
+      setCurrentStep(1);
+    } else if (step === 2) {
+      if (!selectedTemplate) {
+        message.error('Please select a template first');
+        return;
+      }
+      if (recipients.filter(r => r.capable === true).length === 0) {
+        message.error('Please add valid recipients first');
+        return;
+      }
+      setCurrentStep(2);
     }
   };
 
@@ -594,13 +641,16 @@ function SendMessage() {
         return;
       }
 
-      if (recipients.length === 0) {
-        message.error('Please add at least one contact');
+      // Filter only valid contacts
+      const validRecipients = recipients.filter(r => r.capable === true);
+      
+      if (validRecipients.length === 0) {
+        message.error('No valid RCS contacts found. Please add valid contacts.');
         return;
       }
 
       // Check wallet
-      const totalCost = recipients.length * 1; // ₹1 per contact
+      const totalCost = validRecipients.length * 1; // ₹1 per contact
       if (user.Wallet < totalCost) {
         message.error(`Insufficient credits! Required: ₹${totalCost}, Available: ₹${user.Wallet}`);
         setShowAddMoney(true);
@@ -611,7 +661,7 @@ function SendMessage() {
 
       // Build payload based on message type
       let payload = {
-        phoneNumbers: recipients.map((c) => c.number),
+        phoneNumbers: validRecipients.map((c) => c.number),
         templateId: selectedTemplate._id,
         type: messageType,
         userId: user._id,
@@ -791,27 +841,12 @@ function SendMessage() {
 
       // Send to backend
       const response = await api.sendMessage(payload);
+      console.log('Campaign response:', response);
 
       if (response.data.success) {
         message.success('Campaign sent successfully!');
-        const summary = {
-          id: response.data.campaignId || `CAMP-${Date.now()}`,
-          template: selectedTemplate.name,
-          totalRecipients: recipients.length,
-          successCount: Math.floor(recipients.length * 0.98),
-          failureCount: Math.ceil(recipients.length * 0.02),
-          sentAt: new Date(),
-          scheduledFor: sendSchedule.type === 'scheduled' ? sendSchedule.dateTime : null,
-          cost: totalCost,
-        };
-        setCampaignSummary(summary);
-        setCurrentStep(4);
         await refreshUser();
-
-        // Redirect to reports after 2 seconds
-        setTimeout(() => {
-          navigate('/reports');
-        }, 2000);
+        navigate('/reports');
       }
     } catch (error) {
       if (error.response?.data?.message === 'Insufficient balance') {
@@ -894,8 +929,8 @@ function SendMessage() {
     }
 
     const phoneStyle = {
-      width: '320px',
-      height: '600px',
+      width: window.innerWidth <= 768 ? '280px' : '320px',
+      height: window.innerWidth <= 768 ? '500px' : '600px',
       background: '#000',
       borderRadius: '24px',
       padding: '8px',
@@ -933,7 +968,7 @@ function SendMessage() {
     };
 
     const messageBubbleStyle = {
-      minWidth: '240px',
+      minWidth: window.innerWidth <= 768 ? '200px' : '240px',
       maxWidth: '95%',
       alignSelf: 'flex-end',
       background: '#e3f2fd',
@@ -1129,18 +1164,177 @@ function SendMessage() {
   const steps = [
     { title: 'Select Template', icon: <FormOutlined /> },
     { title: 'Add Recipients', icon: <TeamOutlined /> },
-    { title: 'Schedule Send', icon: <ClockCircleOutlined /> },
     { title: 'Review & Send', icon: <SendOutlined /> },
-    { title: 'Campaign Sent', icon: <CheckCircleOutlined /> },
   ];
+
+  // Custom Steps Component with Circular Design
+  const CustomSteps = ({ current, steps, onChange }) => {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '32px 0',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        borderRadius: '16px',
+        marginBottom: '32px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+      }}>
+        {steps.map((step, index) => {
+          const isActive = index === current;
+          const isCompleted = index < current;
+          const isClickable = index <= current;
+          
+          return (
+            <React.Fragment key={index}>
+              <div
+                onClick={() => isClickable && onChange && onChange(index)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  cursor: isClickable ? 'pointer' : 'default',
+                  transition: 'all 0.3s ease',
+                  transform: isActive && window.innerWidth > 768 ? 'scale(1.05)' : 'scale(1)',
+                  position: 'relative'
+                }}
+              >
+                {/* Circle */}
+                <div 
+                  className="custom-step-circle"
+                  style={{
+                    width: window.innerWidth <= 768 ? '40px' : '56px',
+                    height: window.innerWidth <= 768 ? '40px' : '56px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: window.innerWidth <= 768 ? '16px' : '20px',
+                    fontWeight: '600',
+                    marginBottom: window.innerWidth <= 768 ? '8px' : '12px',
+                    transition: 'all 0.3s ease',
+                    background: isCompleted 
+                      ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                      : isActive 
+                      ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+                      : '#e5e7eb',
+                    color: isCompleted || isActive ? '#ffffff' : '#9ca3af',
+                    boxShadow: isActive 
+                      ? '0 8px 25px rgba(59, 130, 246, 0.4)'
+                      : isCompleted
+                      ? '0 8px 25px rgba(16, 185, 129, 0.4)'
+                      : '0 2px 8px rgba(0,0,0,0.1)',
+                    border: isActive ? '3px solid rgba(59, 130, 246, 0.3)' : 'none'
+                  }}
+                >
+                  {isCompleted ? (
+                    <CheckOutlined style={{ fontSize: '24px' }} />
+                  ) : (
+                    React.cloneElement(step.icon, { style: { fontSize: '24px' } })
+                  )}
+                  
+                  {/* Step Number */}
+                  <div 
+                    className="custom-step-number"
+                    style={{
+                      position: 'absolute',
+                      top: '-8px',
+                      right: '-8px',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      background: isCompleted 
+                        ? '#10b981'
+                        : isActive 
+                        ? '#3b82f6'
+                        : '#9ca3af',
+                      color: '#ffffff',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                    }}
+                  >
+                    {index + 1}
+                  </div>
+                </div>
+                
+                <div style={{
+                  textAlign: 'center',
+                  maxWidth: '120px'
+                }}>
+                  <h4 style={{
+                    margin: 0,
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: isActive ? '#1f2937' : isCompleted ? '#374151' : '#9ca3af',
+                    transition: 'color 0.3s ease'
+                  }}>
+                    {step.title}
+                  </h4>
+                  <div style={{
+                    marginTop: '4px',
+                    fontSize: '12px',
+                    color: isCompleted ? '#10b981' : isActive ? '#3b82f6' : '#d1d5db',
+                    fontWeight: '500'
+                  }}>
+                    {isCompleted ? 'Completed' : isActive ? 'In Progress' : 'Pending'}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Connector Line */}
+              {index < steps.length - 1 && (
+                <div style={{
+                  width: '80px',
+                  height: '3px',
+                  margin: '0 24px',
+                  marginTop: '-32px',
+                  background: index < current 
+                    ? 'linear-gradient(90deg, #10b981 0%, #059669 100%)'
+                    : '#e5e7eb',
+                  borderRadius: '2px',
+                  transition: 'background 0.3s ease',
+                  position: 'relative'
+                }}>
+                  {/* Animated progress */}
+                  {index === current - 1 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      height: '100%',
+                      width: '100%',
+                      background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)',
+                      borderRadius: '2px',
+                      animation: 'progressFill 0.5s ease-in-out'
+                    }} />
+                  )}
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <>
-      <div style={{ background: THEME_CONSTANTS.colors.background, minHeight: '100vh' }}>
+      <div style={{ 
+        background: THEME_CONSTANTS.colors.background, 
+        minHeight: '100vh',
+        fontFamily: THEME_CONSTANTS.typography.body.fontFamily
+      }}>
         <div style={{ 
           maxWidth: THEME_CONSTANTS.layout.maxContentWidth, 
           margin: '0 auto',
-          padding: THEME_CONSTANTS.spacing.xl
+          padding: `${THEME_CONSTANTS.spacing.xl} ${THEME_CONSTANTS.spacing.lg}`,
+          '@media (max-width: 768px)': {
+            padding: THEME_CONSTANTS.spacing.md
+          }
         }}>
           {/* Enhanced Header Section */}
           <div style={{
@@ -1169,7 +1363,7 @@ function SendMessage() {
             <Row gutter={[16, 16]} align="middle" justify="space-between">
               <Col xs={24} lg={18}>
                 <Row gutter={[16, 16]} align="middle">
-                  <Col xs={24} sm={4} md={3} lg={3}>
+                  <Col xs={24} sm={6} md={4} lg={3}>
                     <div style={{
                       width: '64px',
                       height: '64px',
@@ -1187,23 +1381,20 @@ function SendMessage() {
                       }} />
                     </div>
                   </Col>
-                  <Col xs={24} sm={20} md={21} lg={21}>
-                    <div style={{ textAlign: { xs: 'center', sm: 'left' } }}>
+                  <Col xs={24} sm={18} md={20} lg={21}>
+                    <div>
                       <h1 style={{
-                        fontSize: THEME_CONSTANTS.typography.h1.size,
+                        fontSize: 'clamp(24px, 4vw, 32px)',
                         fontWeight: THEME_CONSTANTS.typography.h1.weight,
                         color: THEME_CONSTANTS.colors.text,
                         marginBottom: THEME_CONSTANTS.spacing.sm,
-                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight,
-                        '@media (max-width: 768px)': {
-                          fontSize: THEME_CONSTANTS.typography.h2.size,
-                        }
+                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight
                       }}>
                         Bulk Message Campaign 📨
                       </h1>
                       <p style={{
                         color: THEME_CONSTANTS.colors.textSecondary,
-                        fontSize: THEME_CONSTANTS.typography.body.size,
+                        fontSize: 'clamp(13px, 2.5vw, 14px)',
                         fontWeight: 500,
                         lineHeight: THEME_CONSTANTS.typography.body.lineHeight,
                         margin: 0
@@ -1215,22 +1406,22 @@ function SendMessage() {
                 </Row>
               </Col>
               <Col xs={24} lg={6}>
-                <div style={{ textAlign: { xs: 'center', lg: 'right' } }}>
-                  <Row gutter={16}>
-                    <Col xs={12}>
+                <div style={{ marginTop: '16px' }}>
+                  <Row gutter={[12, 12]}>
+                    <Col xs={12} sm={12}>
                       <Statistic
                         title="Total Contacts"
                         value={recipients.length}
                         prefix={<TeamOutlined />}
-                        valueStyle={{ color: THEME_CONSTANTS.colors.primary, fontSize: '20px' }}
+                        valueStyle={{ color: THEME_CONSTANTS.colors.primary, fontSize: 'clamp(16px, 3vw, 20px)' }}
                       />
                     </Col>
-                    <Col xs={12}>
+                    <Col xs={12} sm={12}>
                       <Statistic
                         title="Wallet"
                         value={user?.Wallet?.toFixed(2) || '0.00'}
                         prefix="₹"
-                        valueStyle={{ color: THEME_CONSTANTS.colors.success, fontSize: '20px' }}
+                        valueStyle={{ color: THEME_CONSTANTS.colors.success, fontSize: 'clamp(16px, 3vw, 20px)' }}
                       />
                     </Col>
                   </Row>
@@ -1239,34 +1430,40 @@ function SendMessage() {
             </Row>
           </div>
 
-            {/* Steps */}
-            <Card
-              style={{
-                background: THEME_CONSTANTS.colors.surface,
-                border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                borderRadius: THEME_CONSTANTS.radius.lg,
-                marginBottom: THEME_CONSTANTS.spacing.xxxl,
-              }}
-              bodyStyle={{ padding: THEME_CONSTANTS.spacing.xxl }}
-            >
-              <Steps current={currentStep} items={steps.map((s) => ({ ...s }))} onChange={handleStepChange} />
-            </Card>
+          {/* Enhanced Steps Navigation */}
+          <CustomSteps 
+            current={currentStep} 
+            steps={steps} 
+            onChange={handleStepChange}
+          />
 
             {/* Step 0: Select Template */}
             {currentStep === 0 && (
-              <Row gutter={24}>
-                <Col xs={24} lg={16}>
+              <Row gutter={[16, 24]}>
+                <Col xs={24} xl={16}>
                   <Card
                     title={
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span>Select a Template ({templates.length})</span>
-                        <Space>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        gap: '12px'
+                      }}>
+                        <span style={{
+                          color: THEME_CONSTANTS.colors.text,
+                          fontSize: 'clamp(14px, 2.5vw, 16px)',
+                          fontWeight: THEME_CONSTANTS.typography.h5.weight
+                        }}>Select a Template ({templates.length})</span>
+                        <Space size="small">
                           <Button
                             onClick={loadTemplates}
                             icon={<ReloadOutlined />}
                             loading={refreshing}
                             size="small"
-                            style={{ padding: '16px 12px' }}
+                            style={{ 
+                              borderColor: THEME_CONSTANTS.colors.border,
+                              color: THEME_CONSTANTS.colors.textSecondary
+                            }}
                           >
                             Refresh
                           </Button>
@@ -1275,7 +1472,10 @@ function SendMessage() {
                             onClick={() => navigate('/templates')}
                             icon={<PlusOutlined />}
                             size="small"
-                            style={{ padding: '16px 12px' }}
+                            style={{ 
+                              backgroundColor: THEME_CONSTANTS.colors.primary,
+                              borderColor: THEME_CONSTANTS.colors.primary
+                            }}
                           >
                             Create New
                           </Button>
@@ -1286,45 +1486,76 @@ function SendMessage() {
                       background: THEME_CONSTANTS.colors.surface,
                       border: `1px solid ${THEME_CONSTANTS.colors.border}`,
                       borderRadius: THEME_CONSTANTS.radius.lg,
+                      boxShadow: THEME_CONSTANTS.shadow.sm
                     }}
-                    bodyStyle={{ padding: '24px' }}
+                    bodyStyle={{ padding: 'clamp(16px, 3vw, 24px)' }}
                   >
                     {refreshing ? (
-                      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                      <div style={{ textAlign: 'center', padding: `${THEME_CONSTANTS.spacing.xxxl} ${THEME_CONSTANTS.spacing.lg}` }}>
                         <Spin size="large" />
-                        <p style={{ marginTop: '16px', color: THEME_CONSTANTS.colors.textSecondary }}>Loading templates...</p>
+                        <p style={{ 
+                          marginTop: THEME_CONSTANTS.spacing.lg, 
+                          color: THEME_CONSTANTS.colors.textSecondary,
+                          fontSize: THEME_CONSTANTS.typography.body.size
+                        }}>Loading templates...</p>
                       </div>
                     ) : templates.length === 0 ? (
                       <Empty
                         description={
                           <div>
-                            <p style={{ marginBottom: '8px' }}>No templates found</p>
-                            <p style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, margin: 0 }}>
+                            <p style={{ 
+                              marginBottom: THEME_CONSTANTS.spacing.sm,
+                              color: THEME_CONSTANTS.colors.text,
+                              fontSize: THEME_CONSTANTS.typography.body.size
+                            }}>No templates found</p>
+                            <p style={{ 
+                              fontSize: THEME_CONSTANTS.typography.caption.size, 
+                              color: THEME_CONSTANTS.colors.textSecondary, 
+                              margin: 0 
+                            }}>
                               Create your first template to start sending messages
                             </p>
                           </div>
                         }
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                       >
-                        <Button type="primary" onClick={() => navigate('/templates')} icon={<PlusOutlined />}>
+                        <Button 
+                          type="primary" 
+                          onClick={() => navigate('/templates')} 
+                          icon={<PlusOutlined />}
+                          style={{
+                            background: THEME_CONSTANTS.colors.primary,
+                            borderColor: THEME_CONSTANTS.colors.primary,
+                            borderRadius: THEME_CONSTANTS.radius.md
+                          }}
+                        >
                           Create Your First Template
                         </Button>
                       </Empty>
                     ) : (
                       <>
                         {/* Search and Filter */}
-                        <div style={{ marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'ceter', justifyContent: "end" }}>
+                        <div style={{ 
+                          marginBottom: '16px', 
+                          display: 'flex', 
+                          gap: '8px', 
+                          alignItems: 'center', 
+                          justifyContent: 'flex-end',
+                          flexDirection: window.innerWidth <= 768 ? 'column' : 'row'
+                        }}>
                           <Input.Search
-                            placeholder="Search templates by name or content..."
+                            placeholder={window.innerWidth <= 768 ? 'Search...' : 'Search templates...'}
                             value={templateSearch}
                             onChange={(e) => setTemplateSearch(e.target.value)}
-                            style={{ width: 250 }}
+                            style={{ width: window.innerWidth <= 768 ? '100%' : 'min(250px, 100%)', minWidth: '200px' }}
                             allowClear
+                            size={window.innerWidth <= 768 ? 'small' : 'default'}
                           />
                           <Select
                             value={templateFilter}
                             onChange={setTemplateFilter}
-                            style={{ width: 150 }}
+                            style={{ width: window.innerWidth <= 768 ? '100%' : 'min(150px, 100%)', minWidth: '120px' }}
+                            size={window.innerWidth <= 768 ? 'small' : 'default'}
                             options={[
                               { label: 'All Types', value: 'all' },
                               { label: 'Text', value: 'text' },
@@ -1333,26 +1564,6 @@ function SendMessage() {
                               { label: 'Carousel', value: 'carousel' }
                             ]}
                           />
-                          {/* <Space>
-                          <Button
-                            onClick={loadTemplates}
-                            icon={<ReloadOutlined />}
-                            loading={refreshing}
-                            size="small"
-                            style={{ padding: '16px 12px' }}
-                          >
-                            Refresh
-                          </Button>
-                          <Button
-                            type="primary"
-                            onClick={() => navigate('/templates')}
-                            icon={<PlusOutlined />}
-                            size="small"
-                            style={{ padding: '16px 12px' }}
-                          >
-                            Create New
-                          </Button>
-                        </Space> */}
                         </div>
 
                         {/* Templates Table */}
@@ -1360,16 +1571,21 @@ function SendMessage() {
                           dataSource={filteredTemplates}
                           rowKey="_id"
                           pagination={{ pageSize: 10, showSizeChanger: true }}
-                          rowSelection={{
-                            type: 'radio',
-                            selectedRowKeys: selectedTemplate ? [selectedTemplate._id] : [],
-                            onSelect: (record) => handleTemplateSelect(record._id)
-                          }}
+                          onRow={(record) => ({
+                            onClick: () => handleTemplateSelect(record),
+                            style: {
+                              cursor: 'pointer',
+                              backgroundColor: selectedTemplate?._id === record._id ? THEME_CONSTANTS.colors.primaryLight : 'transparent'
+                            }
+                          })}
+                          scroll={{ x: 600 }}
+                          size="small"
                           columns={[
                             {
                               title: 'Template Name',
                               dataIndex: 'name',
                               key: 'name',
+                              width: 200,
                               render: (text, record) => (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   <span style={{ fontSize: '16px' }}>
@@ -1379,8 +1595,14 @@ function SendMessage() {
                                           record.messageType === 'text-with-action' ? '🔗' : '📧'}
                                   </span>
                                   <div>
-                                    <div style={{ fontWeight: 600 }}>{text}</div>
-                                    <div style={{ fontSize: '11px', color: '#666' }}>
+                                    <div style={{ 
+                                      fontWeight: 600,
+                                      color: THEME_CONSTANTS.colors.text
+                                    }}>{text}</div>
+                                    <div style={{ 
+                                      fontSize: '11px', 
+                                      color: THEME_CONSTANTS.colors.textSecondary 
+                                    }}>
                                       {MESSAGE_TYPES[record.messageType] || record.messageType}
                                     </div>
                                   </div>
@@ -1390,15 +1612,24 @@ function SendMessage() {
                             {
                               title: 'Content Preview',
                               key: 'preview',
+                              width: 250,
                               render: (_, record) => (
-                                <div style={{ maxWidth: '300px' }}>
+                                <div style={{ maxWidth: '200px' }}>
                                   {record.text && (
-                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
-                                      {record.text.length > 50 ? record.text.substring(0, 50) + '...' : record.text}
+                                    <div style={{ 
+                                      fontSize: '12px', 
+                                      color: THEME_CONSTANTS.colors.textSecondary, 
+                                      marginBottom: '4px' 
+                                    }}>
+                                      {record.text.length > 30 ? record.text.substring(0, 30) + '...' : record.text}
                                     </div>
                                   )}
                                   {record.richCard?.title && (
-                                    <div style={{ fontSize: '12px', fontWeight: 500 }}>
+                                    <div style={{ 
+                                      fontSize: '12px', 
+                                      fontWeight: 500,
+                                      color: THEME_CONSTANTS.colors.text
+                                    }}>
                                       {record.richCard.title}
                                     </div>
                                   )}
@@ -1409,8 +1640,15 @@ function SendMessage() {
                               title: 'Created',
                               dataIndex: 'createdAt',
                               key: 'createdAt',
-                              width: 120,
-                              render: (date) => new Date(date).toLocaleDateString()
+                              width: 100,
+                              render: (date) => (
+                                <span style={{
+                                  color: THEME_CONSTANTS.colors.textSecondary,
+                                  fontSize: '11px'
+                                }}>
+                                  {new Date(date).toLocaleDateString()}
+                                </span>
+                              )
                             }
                           ]}
                         />
@@ -1429,27 +1667,33 @@ function SendMessage() {
                           setCurrentStep(1);
                         }}
                         icon={<ArrowRightOutlined />}
-                        style={{ padding: '18px 16px' }}
+                        size={window.innerWidth <= 768 ? 'default' : 'large'}
+                        block={window.innerWidth <= 768}
+                        style={{ 
+                          backgroundColor: THEME_CONSTANTS.colors.primary,
+                          borderColor: THEME_CONSTANTS.colors.primary
+                        }}
                       >
-                        Next: Add Recipients
+                        {window.innerWidth <= 768 ? 'Next' : 'Next: Add Recipients'}
                       </Button>
                     </div>
                   </Card>
                 </Col>
 
-                <Col xs={24} lg={8}>
+                <Col xs={24} xl={8}>
                   <div
+                    className="template-preview-section"
                     style={{
                       background: THEME_CONSTANTS.colors.surface,
                       border: `1px solid ${THEME_CONSTANTS.colors.border}`,
                       borderRadius: THEME_CONSTANTS.radius.lg,
                       position: 'sticky',
                       top: '20px',
-                      padding: '16px',
+                      padding: 'clamp(12px, 2vw, 16px)',
                       display: 'flex',
                       justifyContent: 'center',
                       alignItems: 'center',
-                      minHeight: '500px'
+                      minHeight: 'clamp(300px, 50vh, 500px)'
                     }}
                   >
                     {renderTemplatePreview()}
@@ -1460,8 +1704,8 @@ function SendMessage() {
 
             {/* Step 1: Add Recipients */}
             {currentStep === 1 && (
-              <Row gutter={24}>
-                <Col xs={24} lg={16}>
+              <Row gutter={[16, 24]}>
+                <Col xs={24} xl={16}>
                   <Card
                     title={
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1509,7 +1753,7 @@ function SendMessage() {
                       }}>
                         <h4 style={{ margin: '0 0 16px 0', color: THEME_CONSTANTS.colors.text }}>Add Contacts</h4>
                         <Row gutter={[16, 16]}>
-                          <Col xs={24} sm={8}>
+                          <Col xs={12} sm={6}>
                             <Upload
                               beforeUpload={handleExcelUpload}
                               accept=".xlsx,.xls,.csv"
@@ -1520,34 +1764,34 @@ function SendMessage() {
                                 icon={<UploadOutlined />}
                                 loading={checkingCapability}
                                 block
-                                size="large"
-                                style={{ height: '48px', padding: '18px 16px' }}
+                                size={window.innerWidth <= 768 ? 'default' : 'large'}
+                                style={{ height: window.innerWidth <= 768 ? '40px' : '48px' }}
                               >
-                                Import Excel
+                                {window.innerWidth <= 768 ? 'Import' : 'Import Excel'}
                               </Button>
                             </Upload>
                           </Col>
-                          <Col xs={24} sm={8}>
+                          <Col xs={12} sm={6}>
                             <Button
                               icon={<DownloadOutlined />}
                               onClick={downloadDemoExcel}
                               block
-                              size="large"
-                              style={{ height: '48px', padding: '12px 16px' }}
+                              size={window.innerWidth <= 768 ? 'default' : 'large'}
+                              style={{ height: window.innerWidth <= 768 ? '40px' : '48px' }}
                             >
-                              Download Demo
+                              {window.innerWidth <= 768 ? 'Demo' : 'Download Demo'}
                             </Button>
                           </Col>
-                          <Col xs={24} sm={8}>
+                          <Col xs={24} sm={12}>
                             <Button
                               icon={<PlusOutlined />}
                               type="primary"
                               onClick={() => setManualContactModal(true)}
                               block
-                              size="large"
-                              style={{ height: '48px' }}
+                              size={window.innerWidth <= 768 ? 'default' : 'large'}
+                              style={{ height: window.innerWidth <= 768 ? '40px' : '48px' }}
                             >
-                              Add Manually
+                              {window.innerWidth <= 768 ? 'Manual' : 'Add Manually'}
                             </Button>
                           </Col>
                         </Row>
@@ -1562,43 +1806,44 @@ function SendMessage() {
                       {/* Contact Statistics */}
                       {recipients.length > 0 && (
                         <div style={{
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          background: `linear-gradient(135deg, ${THEME_CONSTANTS.colors.primaryLight} 0%, #e0f2fe 100%)`,
                           borderRadius: THEME_CONSTANTS.radius.lg,
-                          padding: '24px',
-                          color: 'white',
+                          padding: 'clamp(16px, 3vw, 24px)',
+                          color: THEME_CONSTANTS.colors.text,
+                          border: `1px solid ${THEME_CONSTANTS.colors.primary}20`
                         }}>
-                          <h4 style={{ color: 'white', margin: '0 0 16px 0' }}>Contact Statistics</h4>
-                          <Row gutter={16}>
+                          <h4 style={{ color: THEME_CONSTANTS.colors.text, margin: '0 0 16px 0', fontSize: 'clamp(14px, 2.5vw, 16px)' }}>Contact Statistics</h4>
+                          <Row gutter={[12, 12]}>
                             <Col xs={12} sm={6}>
-                              <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px' }}>
+                              <div>
+                                <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 700, marginBottom: '4px' }}>
                                   {recipients.length}
                                 </div>
-                                <div style={{ fontSize: '11px', opacity: 0.9 }}>Total Contacts</div>
+                                <div style={{ fontSize: 'clamp(10px, 2vw, 11px)', opacity: 0.9 }}>Total Contacts</div>
                               </div>
                             </Col>
                             <Col xs={12} sm={6}>
-                              <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px', color: '#4ade80' }}>
+                              <div>
+                                <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 700, marginBottom: '4px', color: THEME_CONSTANTS.colors.success }}>
                                   {recipients.filter(r => r.capable === true).length}
                                 </div>
-                                <div style={{ fontSize: '11px', opacity: 0.9 }}>RCS Capable</div>
+                                <div style={{ fontSize: 'clamp(10px, 2vw, 11px)', opacity: 0.9 }}>RCS Capable</div>
                               </div>
                             </Col>
                             <Col xs={12} sm={6}>
-                              <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px', color: '#f87171' }}>
+                              <div>
+                                <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 700, marginBottom: '4px', color: THEME_CONSTANTS.colors.danger }}>
                                   {recipients.filter(r => r.capable === false).length}
                                 </div>
-                                <div style={{ fontSize: '11px', opacity: 0.9 }}>Not Capable</div>
+                                <div style={{ fontSize: 'clamp(10px, 2vw, 11px)', opacity: 0.9 }}>Not Capable</div>
                               </div>
                             </Col>
                             <Col xs={12} sm={6}>
-                              <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px', color: '#fbbf24' }}>
+                              <div>
+                                <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 700, marginBottom: '4px', color: THEME_CONSTANTS.colors.warning }}>
                                   ₹{(recipients.length * 1).toFixed(0)}
                                 </div>
-                                <div style={{ fontSize: '11px', opacity: 0.9 }}>Est. Cost</div>
+                                <div style={{ fontSize: 'clamp(10px, 2vw, 11px)', opacity: 0.9 }}>Est. Cost</div>
                               </div>
                             </Col>
                           </Row>
@@ -1609,17 +1854,17 @@ function SendMessage() {
                       {recipients.length > 0 && (
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                            <h4 style={{ margin: 0 }}>Contact List ({recipients.length})</h4>
+                            <h4 style={{ margin: 0 }}>Valid Contacts ({recipients.filter(r => r.capable === true).length})</h4>
                           </div>
                           <Table
                             columns={contactsColumns}
-                            dataSource={recipients}
+                            dataSource={recipients.filter(r => r.capable === true)}
                             rowKey="id"
                             pagination={{
                               pageSize: 10,
                               showSizeChanger: true,
                               showQuickJumper: true,
-                              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} contacts`,
+                              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} valid contacts`,
                               pageSizeOptions: ['10', '20', '50', '100'],
                             }}
                             size="small"
@@ -1643,35 +1888,36 @@ function SendMessage() {
                       )}
 
                       {/* Navigation Buttons */}
-                      <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                         <Button
-                          style={{ padding: '16px 12px' }}
-
                           onClick={() => setCurrentStep(0)}
-                          icon={<ArrowLeftOutlined
-                          />}>
-                          Previous: Template
+                          icon={<ArrowLeftOutlined />}
+                          size={window.innerWidth <= 768 ? 'default' : 'large'}
+                          style={{ flex: window.innerWidth <= 768 ? '1' : 'none' }}
+                        >
+                          {window.innerWidth <= 768 ? 'Back' : 'Previous'}
                         </Button>
                         <Button
-                          style={{ padding: '16px 12px' }}
                           type="primary"
                           onClick={() => {
-                            if (recipients.length === 0) {
-                              message.error('Please add at least one contact to continue');
+                            if (recipients.filter(r => r.capable === true).length === 0) {
+                              message.error('Please add at least one valid contact to continue');
                               return;
                             }
                             setCurrentStep(2);
                           }}
                           icon={<ArrowRightOutlined />}
+                          size={window.innerWidth <= 768 ? 'default' : 'large'}
+                          style={{ flex: window.innerWidth <= 768 ? '1' : 'none' }}
                         >
-                          Next: Schedule
+                          {window.innerWidth <= 768 ? 'Next' : 'Next: Review & Send'}
                         </Button>
                       </div>
                     </Space>
                   </Card>
                 </Col>
 
-                <Col xs={24} lg={8}>
+                <Col xs={24} xl={8}>
                   <div style={{ position: 'sticky', top: '20px' }}>
                     <Space direction="vertical" style={{ width: '100%' }} size="large">
                       <Card
@@ -1694,7 +1940,7 @@ function SendMessage() {
                         <div>
                           <Statistic
                             title="Total Recipients"
-                            value={recipients.length}
+                            value={recipients.filter(r => r.capable === true).length}
                             valueStyle={{ fontSize: '24px', color: THEME_CONSTANTS.colors.text }}
                           />
                         </div>
@@ -1705,11 +1951,11 @@ function SendMessage() {
                             valueStyle={{ fontSize: '20px', color: THEME_CONSTANTS.colors.success }}
                           />
                         </div>
-                        {recipients.length > 0 && (
+                        {recipients.filter(r => r.capable === true).length > 0 && (
                           <div>
                             <Statistic
                               title="Estimated Cost"
-                              value={`₹${(recipients.length * 1).toFixed(2)}`}
+                              value={`₹${(recipients.filter(r => r.capable === true).length * 1).toFixed(2)}`}
                               valueStyle={{ fontSize: '20px', color: THEME_CONSTANTS.colors.warning }}
                             />
                           </div>
@@ -1743,372 +1989,10 @@ function SendMessage() {
               </Row>
             )}
 
-            {/* Step 2: Schedule Send */}
+            {/* Step 2: Review & Send */}
             {currentStep === 2 && (
-              <Row gutter={24}>
-                <Col xs={24} lg={16}>
-                  <Space direction="vertical" style={{ width: '100%' }} size="large">
-                    {/* Schedule Options Card */}
-                    <Card
-                      style={{
-                        background: THEME_CONSTANTS.colors.surface,
-                        border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                        borderRadius: THEME_CONSTANTS.radius.lg,
-                        boxShadow: THEME_CONSTANTS.shadow.md,
-                      }}
-                      bodyStyle={{ padding: THEME_CONSTANTS.spacing.xxxl }}
-                    >
-                      <div style={{ textAlign: 'center', marginBottom: THEME_CONSTANTS.spacing.xxxl }}>
-                        <div style={{ 
-                          fontSize: '48px', 
-                          marginBottom: THEME_CONSTANTS.spacing.lg,
-                          color: THEME_CONSTANTS.colors.primary 
-                        }}>
-                          <ClockCircleOutlined />
-                        </div>
-                        <h2 style={{ 
-                          margin: `0 0 ${THEME_CONSTANTS.spacing.sm} 0`, 
-                          color: THEME_CONSTANTS.colors.text, 
-                          fontSize: THEME_CONSTANTS.typography.h2.size, 
-                          fontWeight: THEME_CONSTANTS.typography.h2.weight 
-                        }}>
-                          Schedule Your Campaign
-                        </h2>
-                        <p style={{ 
-                          fontSize: THEME_CONSTANTS.typography.body.size, 
-                          color: THEME_CONSTANTS.colors.textSecondary, 
-                          margin: 0 
-                        }}>
-                          Choose when to send your message to {recipients.length} recipients
-                        </p>
-                      </div>
-
-                      <Form layout="vertical">
-                        <Form.Item>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: THEME_CONSTANTS.spacing.xxl }}>
-                            {/* Send Immediately Option */}
-                            <div
-                              onClick={() => setSendSchedule({ ...sendSchedule, type: 'immediate' })}
-                              style={{
-                                padding: THEME_CONSTANTS.spacing.xxl,
-                                borderRadius: THEME_CONSTANTS.radius.lg,
-                                border: `2px solid ${sendSchedule.type === 'immediate' ? THEME_CONSTANTS.colors.primary : THEME_CONSTANTS.colors.border}`,
-                                background: sendSchedule.type === 'immediate' ? THEME_CONSTANTS.colors.primaryLight : THEME_CONSTANTS.colors.surface,
-                                cursor: 'pointer',
-                                transition: THEME_CONSTANTS.transition.normal,
-                                textAlign: 'center',
-                                boxShadow: sendSchedule.type === 'immediate' ? THEME_CONSTANTS.shadow.md : THEME_CONSTANTS.shadow.sm,
-                              }}
-                            >
-                              <div style={{ 
-                                fontSize: '32px', 
-                                marginBottom: THEME_CONSTANTS.spacing.md,
-                                color: THEME_CONSTANTS.colors.success 
-                              }}>
-                                <SendOutlined />
-                              </div>
-                              <h3 style={{ 
-                                margin: `0 0 ${THEME_CONSTANTS.spacing.sm} 0`, 
-                                color: THEME_CONSTANTS.colors.text, 
-                                fontSize: THEME_CONSTANTS.typography.h4.size, 
-                                fontWeight: THEME_CONSTANTS.typography.h4.weight 
-                              }}>
-                                Send Immediately
-                              </h3>
-                              <p style={{ 
-                                fontSize: THEME_CONSTANTS.typography.bodySmall.size, 
-                                color: THEME_CONSTANTS.colors.textSecondary, 
-                                margin: 0 
-                              }}>
-                                Your campaign will be sent right away to all recipients
-                              </p>
-                              {sendSchedule.type === 'immediate' && (
-                                <div style={{ marginTop: THEME_CONSTANTS.spacing.md }}>
-                                  <CheckCircleOutlined style={{ color: THEME_CONSTANTS.colors.success, fontSize: '20px' }} />
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Schedule for Later Option */}
-                            <div
-                              onClick={() => setSendSchedule({ ...sendSchedule, type: 'scheduled' })}
-                              style={{
-                                padding: THEME_CONSTANTS.spacing.xxl,
-                                borderRadius: THEME_CONSTANTS.radius.lg,
-                                border: `2px solid ${sendSchedule.type === 'scheduled' ? THEME_CONSTANTS.colors.primary : THEME_CONSTANTS.colors.border}`,
-                                background: sendSchedule.type === 'scheduled' ? THEME_CONSTANTS.colors.primaryLight : THEME_CONSTANTS.colors.surface,
-                                cursor: 'pointer',
-                                transition: THEME_CONSTANTS.transition.normal,
-                                textAlign: 'center',
-                                boxShadow: sendSchedule.type === 'scheduled' ? THEME_CONSTANTS.shadow.md : THEME_CONSTANTS.shadow.sm,
-                              }}
-                            >
-                              <div style={{ 
-                                fontSize: '32px', 
-                                marginBottom: THEME_CONSTANTS.spacing.md,
-                                color: THEME_CONSTANTS.colors.warning 
-                              }}>
-                                <CalendarOutlined />
-                              </div>
-                              <h3 style={{ 
-                                margin: `0 0 ${THEME_CONSTANTS.spacing.sm} 0`, 
-                                color: THEME_CONSTANTS.colors.text, 
-                                fontSize: THEME_CONSTANTS.typography.h4.size, 
-                                fontWeight: THEME_CONSTANTS.typography.h4.weight 
-                              }}>
-                                Schedule for Later
-                              </h3>
-                              <p style={{ 
-                                fontSize: THEME_CONSTANTS.typography.bodySmall.size, 
-                                color: THEME_CONSTANTS.colors.textSecondary, 
-                                margin: 0 
-                              }}>
-                                Choose a specific date and time to send your campaign
-                              </p>
-                              {sendSchedule.type === 'scheduled' && (
-                                <div style={{ marginTop: THEME_CONSTANTS.spacing.md }}>
-                                  <CheckCircleOutlined style={{ color: THEME_CONSTANTS.colors.success, fontSize: '20px' }} />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </Form.Item>
-
-                        {sendSchedule.type === 'scheduled' && (
-                          <div style={{
-                            background: THEME_CONSTANTS.colors.background,
-                            padding: THEME_CONSTANTS.spacing.xxl,
-                            borderRadius: THEME_CONSTANTS.radius.lg,
-                            border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                            marginTop: THEME_CONSTANTS.spacing.xxl,
-                          }}>
-                            <h4 style={{ 
-                              margin: `0 0 ${THEME_CONSTANTS.spacing.lg} 0`, 
-                              color: THEME_CONSTANTS.colors.text, 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: THEME_CONSTANTS.spacing.sm,
-                              fontSize: THEME_CONSTANTS.typography.h5.size,
-                              fontWeight: THEME_CONSTANTS.typography.h5.weight
-                            }}>
-                              <CalendarOutlined style={{ color: THEME_CONSTANTS.colors.primary }} />
-                              Select Date & Time
-                            </h4>
-                            <DatePicker
-                              showTime
-                              value={sendSchedule.dateTime ? dayjs(sendSchedule.dateTime) : null}
-                              onChange={(date) => setSendSchedule({ ...sendSchedule, dateTime: date?.toDate() })}
-                              style={{ width: '100%', height: '48px' }}
-                              placeholder="Choose when to send your campaign"
-                              format="DD/MM/YYYY HH:mm"
-                            />
-                            {sendSchedule.dateTime && (
-                              <div style={{
-                                marginTop: THEME_CONSTANTS.spacing.lg,
-                                padding: THEME_CONSTANTS.spacing.md,
-                                background: THEME_CONSTANTS.colors.primaryLight,
-                                borderRadius: THEME_CONSTANTS.radius.md,
-                                border: `1px solid ${THEME_CONSTANTS.colors.primary}`,
-                              }}>
-                                <div style={{ 
-                                  fontSize: THEME_CONSTANTS.typography.caption.size, 
-                                  color: THEME_CONSTANTS.colors.primary, 
-                                  fontWeight: 600, 
-                                  marginBottom: THEME_CONSTANTS.spacing.xs 
-                                }}>
-                                  📅 SCHEDULED FOR
-                                </div>
-                                <div style={{ 
-                                  fontSize: THEME_CONSTANTS.typography.h6.size, 
-                                  color: THEME_CONSTANTS.colors.primary, 
-                                  fontWeight: THEME_CONSTANTS.typography.h6.weight 
-                                }}>
-                                  {dayjs(sendSchedule.dateTime).format('dddd, MMMM DD, YYYY at HH:mm')}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        <Alert
-                          message="Campaign Delivery Information"
-                          description="Messages will be sent to all recipients according to the selected schedule. You can track the delivery status in the Reports section."
-                          type="info"
-                          showIcon
-                          style={{ marginTop: THEME_CONSTANTS.spacing.xxl }}
-                        />
-                      </Form>
-
-                      {/* Navigation Buttons */}
-                      <div style={{ 
-                        marginTop: THEME_CONSTANTS.spacing.xxxl, 
-                        display: 'flex', 
-                        justifyContent: 'space-between' 
-                      }}>
-                        <Button
-                          size="large"
-                          onClick={() => setCurrentStep(1)}
-                          icon={<ArrowLeftOutlined />}
-                          style={{ 
-                            padding: `${THEME_CONSTANTS.spacing.md} ${THEME_CONSTANTS.spacing.xxl}`,
-                            height: THEME_CONSTANTS.buttons.height.large
-                          }}
-                        >
-                          Previous: Recipients
-                        </Button>
-                        <Button
-                          type="primary"
-                          size="large"
-                          onClick={() => {
-                            if (sendSchedule.type === 'scheduled' && !sendSchedule.dateTime) {
-                              message.error('Please select date and time for scheduled sending');
-                              return;
-                            }
-                            setCurrentStep(3);
-                          }}
-                          icon={<ArrowRightOutlined />}
-                          style={{ 
-                            padding: `${THEME_CONSTANTS.spacing.md} ${THEME_CONSTANTS.spacing.xxl}`,
-                            height: THEME_CONSTANTS.buttons.height.large
-                          }}
-                        >
-                          Next: Review & Send
-                        </Button>
-                      </div>
-                    </Card>
-                  </Space>
-                </Col>
-
-                <Col xs={24} lg={8}>
-                  <div style={{ position: 'sticky', top: '20px' }}>
-                    <Card
-                      title={
-                        <div style={{ display: 'flex', alignItems: 'center', gap: THEME_CONSTANTS.spacing.sm }}>
-                          <ClockCircleOutlined style={{ color: THEME_CONSTANTS.colors.primary }} />
-                          <span style={{ 
-                            fontSize: THEME_CONSTANTS.typography.h5.size,
-                            fontWeight: THEME_CONSTANTS.typography.h5.weight,
-                            color: THEME_CONSTANTS.colors.text
-                          }}>
-                            Schedule Summary
-                          </span>
-                        </div>
-                      }
-                      style={{
-                        background: THEME_CONSTANTS.colors.surface,
-                        border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                        borderRadius: THEME_CONSTANTS.radius.lg,
-                        boxShadow: THEME_CONSTANTS.shadow.md,
-                      }}
-                      bodyStyle={{ padding: THEME_CONSTANTS.spacing.xxl }}
-                    >
-                      <Space direction="vertical" style={{ width: '100%' }} size="large">
-                        {/* Send Time Display */}
-                        <div style={{
-                          padding: THEME_CONSTANTS.spacing.xl,
-                          background: sendSchedule.type === 'immediate' 
-                            ? `linear-gradient(135deg, ${THEME_CONSTANTS.colors.success} 0%, ${THEME_CONSTANTS.colors.success}dd 100%)`
-                            : `linear-gradient(135deg, ${THEME_CONSTANTS.colors.primary} 0%, ${THEME_CONSTANTS.colors.primaryDark} 100%)`,
-                          borderRadius: THEME_CONSTANTS.radius.lg,
-                          color: THEME_CONSTANTS.colors.surface,
-                          textAlign: 'center',
-                        }}>
-                          <div style={{ fontSize: '32px', marginBottom: THEME_CONSTANTS.spacing.md }}>
-                            {sendSchedule.type === 'immediate' ? <SendOutlined /> : <CalendarOutlined />}
-                          </div>
-                          <div style={{ 
-                            fontSize: THEME_CONSTANTS.typography.caption.size, 
-                            opacity: 0.9, 
-                            marginBottom: THEME_CONSTANTS.spacing.xs,
-                            fontWeight: 600,
-                            letterSpacing: '0.5px'
-                          }}>
-                            SEND TIME
-                          </div>
-                          <div style={{ 
-                            fontSize: THEME_CONSTANTS.typography.h4.size, 
-                            fontWeight: THEME_CONSTANTS.typography.h4.weight, 
-                            marginBottom: THEME_CONSTANTS.spacing.sm 
-                          }}>
-                            {sendSchedule.type === 'immediate'
-                              ? 'Immediately'
-                              : sendSchedule.dateTime
-                                ? dayjs(sendSchedule.dateTime).format('DD/MM/YY HH:mm')
-                                : 'Not selected'}
-                          </div>
-                          {sendSchedule.type === 'scheduled' && sendSchedule.dateTime && (
-                            <div style={{ 
-                              fontSize: THEME_CONSTANTS.typography.bodySmall.size, 
-                              opacity: 0.8 
-                            }}>
-                              {dayjs(sendSchedule.dateTime).fromNow()}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Campaign Stats */}
-                        <div style={{
-                          padding: THEME_CONSTANTS.spacing.lg,
-                          background: THEME_CONSTANTS.colors.background,
-                          borderRadius: THEME_CONSTANTS.radius.md,
-                          border: `1px solid ${THEME_CONSTANTS.colors.border}`
-                        }}>
-                          <Statistic
-                            title="Recipients"
-                            value={recipients.length}
-                            prefix={<TeamOutlined style={{ color: THEME_CONSTANTS.colors.primary }} />}
-                            valueStyle={{ 
-                              fontSize: THEME_CONSTANTS.typography.h3.size, 
-                              color: THEME_CONSTANTS.colors.text,
-                              fontWeight: THEME_CONSTANTS.typography.h3.weight
-                            }}
-                          />
-                        </div>
-                        
-                        <div style={{
-                          padding: THEME_CONSTANTS.spacing.lg,
-                          background: THEME_CONSTANTS.colors.background,
-                          borderRadius: THEME_CONSTANTS.radius.md,
-                          border: `1px solid ${THEME_CONSTANTS.colors.border}`
-                        }}>
-                          <Statistic
-                            title="Template"
-                            value={selectedTemplate?.name || 'None'}
-                            valueStyle={{ 
-                              fontSize: THEME_CONSTANTS.typography.h6.size, 
-                              color: THEME_CONSTANTS.colors.primary,
-                              fontWeight: THEME_CONSTANTS.typography.h6.weight
-                            }}
-                          />
-                        </div>
-
-                        <div style={{
-                          padding: THEME_CONSTANTS.spacing.lg,
-                          background: THEME_CONSTANTS.colors.background,
-                          borderRadius: THEME_CONSTANTS.radius.md,
-                          border: `1px solid ${THEME_CONSTANTS.colors.border}`
-                        }}>
-                          <Statistic
-                            title="Estimated Cost"
-                            value={`₹${(recipients.length * 1).toFixed(2)}`}
-                            valueStyle={{ 
-                              fontSize: THEME_CONSTANTS.typography.h4.size, 
-                              color: THEME_CONSTANTS.colors.warning,
-                              fontWeight: THEME_CONSTANTS.typography.h4.weight
-                            }}
-                          />
-                        </div>
-                      </Space>
-                    </Card>
-                  </div>
-                </Col>
-              </Row>
-            )}
-
-            {/* Step 3: Review & Send */}
-            {currentStep === 3 && (
-              <Row gutter={24}>
-                <Col xs={24} lg={16}>
+              <Row gutter={[16, 24]}>
+                <Col xs={24} xl={16}>
                   <Space direction="vertical" style={{ width: '100%' }} size="large">
                     {/* Campaign Preview */}
                     <Card
@@ -2121,8 +2005,12 @@ function SendMessage() {
                       bodyStyle={{ padding: '24px' }}
                     >
                       <div style={{ marginBottom: THEME_CONSTANTS.spacing.xxl }}>
-                        <h4 style={{ marginBottom: '16px', color: THEME_CONSTANTS.colors.text }}>Message Preview</h4>
-                        <div style={{ background: '#f8fafc', borderRadius: THEME_CONSTANTS.radius.md, padding: '16px' }}>
+                        <div style={{ 
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          minHeight: window.innerWidth <= 768 ? '400px' : '500px'
+                        }}>
                           {renderTemplatePreview(selectedTemplate)}
                         </div>
                       </div>
@@ -2218,7 +2106,7 @@ function SendMessage() {
                       </Form>
 
                       {/* Wallet Check */}
-                      {user?.Wallet < recipients.length * 1 ? (
+                      {user?.Wallet < recipients.filter(r => r.capable === true).length * 1 ? (
                         <Alert
                           type="error"
                           showIcon
@@ -2226,7 +2114,7 @@ function SendMessage() {
                           description={
                             <div>
                               <p style={{ margin: '8px 0' }}>
-                                Required: ₹{(recipients.length * 1).toFixed(2)} | Available: ₹{user?.Wallet?.toFixed(2) || '0.00'}
+                                Required: ₹{(recipients.filter(r => r.capable === true).length * 1).toFixed(2)} | Available: ₹{user?.Wallet?.toFixed(2) || '0.00'}
                               </p>
                               <Button
                                 type="primary"
@@ -2249,36 +2137,45 @@ function SendMessage() {
                         />
                       )}
 
-                      <Space size="large">
+                      <div style={{ 
+                        marginTop: '24px', 
+                        display: 'flex', 
+                        gap: '12px',
+                        flexDirection: window.innerWidth <= 768 ? 'column-reverse' : 'row',
+                        justifyContent: window.innerWidth <= 768 ? 'stretch' : 'flex-start'
+                      }}>
+                        <Button
+                          onClick={() => setCurrentStep(1)}
+                          size={window.innerWidth <= 768 ? 'large' : 'large'}
+                          style={{ 
+                            height: '48px',
+                            flex: window.innerWidth <= 768 ? '1' : 'none',
+                            minWidth: window.innerWidth <= 768 ? 'auto' : '140px'
+                          }}
+                        >
+                          {window.innerWidth <= 768 ? 'Back' : 'Back to Recipients'}
+                        </Button>
                         <Button
                           type="primary"
                           size="large"
                           loading={sendingInProgress}
                           onClick={handleSendCampaign}
                           icon={<SendOutlined />}
-                          disabled={!campaignName.trim() || user?.Wallet < recipients.length * 1}
+                          disabled={!campaignName.trim() || user?.Wallet < recipients.filter(r => r.capable === true).length * 1}
                           style={{
                             height: '48px',
-                            paddingLeft: '32px',
-                            paddingRight: '32px',
-                            borderRadius: THEME_CONSTANTS.radius.md,
+                            flex: window.innerWidth <= 768 ? '1' : 'none',
+                            minWidth: window.innerWidth <= 768 ? 'auto' : '180px'
                           }}
                         >
-                          {sendingInProgress ? 'Sending Campaign...' : 'Send Campaign'}
+                          {sendingInProgress ? 'Sending...' : 'Send Campaign'}
                         </Button>
-                        <Button
-                          onClick={() => setCurrentStep(2)}
-                          size="large"
-                          style={{ height: '48px', paddingLeft: '24px', paddingRight: '24px' }}
-                        >
-                          Back to Schedule
-                        </Button>
-                      </Space>
+                      </div>
                     </Card>
                   </Space>
                 </Col>
 
-                <Col xs={24} lg={8}>
+                <Col xs={24} xl={8}>
                   <Card
                     title="Final Summary"
                     style={{
@@ -2303,8 +2200,8 @@ function SendMessage() {
 
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '14px', color: THEME_CONSTANTS.colors.textSecondary }}>Total Recipients</span>
-                          <span style={{ fontSize: '16px', fontWeight: 600 }}>{recipients.length}</span>
+                          <span style={{ fontSize: '14px', color: THEME_CONSTANTS.colors.textSecondary }}>Valid Recipients</span>
+                          <span style={{ fontSize: '16px', fontWeight: 600 }}>{recipients.filter(r => r.capable === true).length}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                           <span style={{ fontSize: '14px', color: THEME_CONSTANTS.colors.textSecondary }}>RCS Capable</span>
@@ -2315,7 +2212,7 @@ function SendMessage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                           <span style={{ fontSize: '14px', color: THEME_CONSTANTS.colors.textSecondary }}>Campaign Cost</span>
                           <span style={{ fontSize: '16px', fontWeight: 600, color: THEME_CONSTANTS.colors.warning }}>
-                            ₹{(recipients.length * 1).toFixed(2)}
+                            ₹{(recipients.filter(r => r.capable === true).length * 1).toFixed(2)}
                           </span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -2323,7 +2220,7 @@ function SendMessage() {
                           <span style={{
                             fontSize: '16px',
                             fontWeight: 600,
-                            color: user?.Wallet >= recipients.length * 1 ? THEME_CONSTANTS.colors.success : THEME_CONSTANTS.colors.error
+                            color: user?.Wallet >= recipients.filter(r => r.capable === true).length * 1 ? THEME_CONSTANTS.colors.success : THEME_CONSTANTS.colors.error
                           }}>
                             ₹{user?.Wallet?.toFixed(2) || '0.00'}
                           </span>
@@ -2331,21 +2228,21 @@ function SendMessage() {
                       </div>
 
                       <div style={{
-                        background: user?.Wallet >= recipients.length * 1 ? '#f0f9ff' : '#fef2f2',
+                        background: user?.Wallet >= recipients.filter(r => r.capable === true).length * 1 ? '#f0f9ff' : '#fef2f2',
                         padding: '16px',
                         borderRadius: THEME_CONSTANTS.radius.md,
-                        border: `1px solid ${user?.Wallet >= recipients.length * 1 ? '#0ea5e9' : '#ef4444'}20`,
+                        border: `1px solid ${user?.Wallet >= recipients.filter(r => r.capable === true).length * 1 ? '#0ea5e9' : '#ef4444'}20`,
                       }}>
                         <div style={{
                           fontSize: '12px',
-                          color: user?.Wallet >= recipients.length * 1 ? '#0ea5e9' : '#ef4444',
+                          color: user?.Wallet >= recipients.filter(r => r.capable === true).length * 1 ? '#0ea5e9' : '#ef4444',
                           fontWeight: 600,
                           marginBottom: '4px'
                         }}>
-                          {user?.Wallet >= recipients.length * 1 ? '✓ READY TO SEND' : '⚠ INSUFFICIENT BALANCE'}
+                          {user?.Wallet >= recipients.filter(r => r.capable === true).length * 1 ? '✓ READY TO SEND' : '⚠ INSUFFICIENT BALANCE'}
                         </div>
                         <div style={{ fontSize: '11px', color: THEME_CONSTANTS.colors.textSecondary }}>
-                          {user?.Wallet >= recipients.length * 1
+                          {user?.Wallet >= recipients.filter(r => r.capable === true).length * 1
                             ? 'Your campaign will be sent immediately after confirmation'
                             : 'Please add money to your wallet to proceed'
                           }
@@ -2357,65 +2254,7 @@ function SendMessage() {
               </Row>
             )}
 
-            {/* Step 4: Campaign Sent */}
-            {currentStep === 4 && campaignSummary && (
-              <Card
-                style={{
-                  background: THEME_CONSTANTS.colors.surface,
-                  border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                  borderRadius: THEME_CONSTANTS.radius.lg,
-                  textAlign: 'center',
-                  padding: THEME_CONSTANTS.spacing.xxxl,
-                }}
-              >
-                <div style={{ marginBottom: THEME_CONSTANTS.spacing.xxl }}>
-                  <CheckCircleOutlined style={{ fontSize: '64px', color: THEME_CONSTANTS.colors.success, marginBottom: '16px' }} />
-                  <h2 style={{ color: THEME_CONSTANTS.colors.text, margin: 0 }}>Campaign Sent Successfully!</h2>
-                  <p style={{ color: THEME_CONSTANTS.colors.textSecondary, margin: '8px 0 0 0' }}>
-                    Your campaign has been sent to {campaignSummary.totalRecipients} recipients
-                  </p>
-                </div>
 
-                <Row gutter={24} style={{ marginBottom: THEME_CONSTANTS.spacing.xxl }}>
-                  <Col xs={24} sm={12}>
-                    <Statistic title="Campaign ID" value={campaignSummary.id} />
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Statistic title="Template" value={campaignSummary.template} />
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Statistic
-                      title="Success Count"
-                      value={campaignSummary.successCount}
-                      valueStyle={{ color: THEME_CONSTANTS.colors.success }}
-                    />
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Statistic
-                      title="Total Cost"
-                      value={`₹${campaignSummary.cost}`}
-                      valueStyle={{ color: THEME_CONSTANTS.colors.primary }}
-                    />
-                  </Col>
-                </Row>
-
-                <Space>
-                  <Button
-                    type="primary"
-                    onClick={() => {
-                      setCurrentStep(0);
-                      setSelectedTemplate(null);
-                      setRecipients([]);
-                      setCampaignSummary(null);
-                      setCampaignName('');
-                    }}
-                  >
-                    Create Another Campaign
-                  </Button>
-                  <Button onClick={() => navigate('/reports')}>View Reports</Button>
-                </Space>
-              </Card>
-            )}
         </div>
       </div>
 
@@ -2481,7 +2320,7 @@ function SendMessage() {
 
       {/* Manual Contact Modal */}
       <Modal
-        title="Add Contact Manually"
+        title="Add Contacts Manually"
         open={manualContactModal}
         onCancel={() => {
           setManualContactModal(false);
@@ -2500,24 +2339,32 @@ function SendMessage() {
             loading={checkingCapability}
             onClick={() => manualContactForm.submit()}
           >
-            Add Contact
+            Add Contacts
           </Button>
         ]}
       >
         <Form form={manualContactForm} layout="vertical" onFinish={handleAddContact}>
           <Form.Item
-            label="Phone Number"
+            label="Phone Numbers"
             name="phone"
             rules={[
-              { required: true, message: 'Please enter phone number' },
-              { pattern: /^[+]?[0-9\s\-()]{10,15}$/, message: 'Please enter a valid phone number' }
+              { required: true, message: 'Please enter phone numbers' }
             ]}
           >
-            <Input
-              placeholder="Enter 10-digit phone number (e.g., 9876543210)"
-              maxLength={15}
+            <Input.TextArea
+              rows={6}
+              placeholder={`Enter phone numbers (one per line or comma separated):
+9876543210
+9876543211
+9876543212
+
+Or comma separated: 9876543210, 9876543211, 9876543212`}
+              style={{ fontFamily: 'monospace' }}
             />
           </Form.Item>
+          <div style={{ fontSize: '12px', color: '#666', marginTop: '-16px', marginBottom: '16px' }}>
+            💡 You can add multiple numbers separated by commas or new lines. Numbers will be automatically formatted with +91 prefix.
+          </div>
         </Form>
       </Modal>
     </>

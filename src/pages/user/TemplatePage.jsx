@@ -529,31 +529,32 @@ export default function CreateTemplatePage() {
     };
 
     const renderRcsMessage = () => {
-      if (!richCard.title && !richCard.imageUrl) return null;
+      const card = typeof data === 'object' ? data.richCard : richCard;
+      if (!card || (!card.title && !card.imageUrl)) return null;
 
       return (
         <div style={messageBubbleStyle}>
-          {richCard.imageUrl && (
+          {card.imageUrl && (
             <img
-              src={richCard.imageUrl}
+              src={card.imageUrl}
               alt="RCS Media"
               style={{ width: '100%', height: '160px', objectFit: 'cover' }}
             />
           )}
           <div style={{ padding: '12px' }}>
-            {richCard.title && (
+            {card.title && (
               <h4 style={{ color: '#000', fontSize: '14px', fontWeight: 600, margin: '0 0 4px 0' }}>
-                {richCard.title}
+                {card.title}
               </h4>
             )}
-            {richCard.subtitle && (
+            {card.subtitle && (
               <p style={{ color: '#333', fontSize: '12px', margin: '0 0 12px 0', lineHeight: 1.4 }}>
-                {richCard.subtitle}
+                {card.subtitle}
               </p>
             )}
-            {richCard.actions && richCard.actions.length > 0 && (
+            {card.actions && card.actions.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {richCard.actions.filter(a => a.title.trim()).slice(0, 2).map((action, idx) => (
+                {card.actions.filter(a => a.title && a.title.trim()).slice(0, 2).map((action, idx) => (
                   <button
                     key={idx}
                     style={{
@@ -580,7 +581,8 @@ export default function CreateTemplatePage() {
     };
 
     const renderTextMessage = () => {
-      if (!formData.text) return null;
+      const text = typeof data === 'object' ? data.text : formData.text;
+      if (!text) return null;
 
       return (
         <div style={{
@@ -589,14 +591,15 @@ export default function CreateTemplatePage() {
           padding: '12px 16px',
         }}>
           <p style={{ color: '#ffffff', fontSize: '14px', margin: 0, lineHeight: 1.4 }}>
-            {formData.text}
+            {text}
           </p>
         </div>
       );
     };
 
     const renderCarouselMessage = () => {
-      const validItems = carouselItems.filter(item => item.title.trim());
+      const items = typeof data === 'object' ? data.carouselItems : carouselItems;
+      const validItems = items ? items.filter(item => item.title && item.title.trim()) : [];
       if (validItems.length === 0) return null;
 
       return (
@@ -631,7 +634,7 @@ export default function CreateTemplatePage() {
                   )}
                   {item.actions && item.actions.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      {item.actions.filter(a => a.title.trim()).slice(0, 2).map((action, actionIdx) => (
+                      {item.actions.filter(a => a.title && a.title.trim()).slice(0, 2).map((action, actionIdx) => (
                         <button
                           key={actionIdx}
                           style={{
@@ -659,6 +662,9 @@ export default function CreateTemplatePage() {
       );
     };
 
+    const messageType = typeof data === 'object' ? data.messageType : data;
+    const actionButtons = typeof data === 'object' ? data.actions : actions;
+
     return (
       <div style={{ padding: '20px', background: '#f5f7fa', borderRadius: '12px' }}>
         <div style={phoneStyle}>
@@ -677,15 +683,15 @@ export default function CreateTemplatePage() {
 
             {/* Chat Area */}
             <div style={chatAreaStyle}>
-              {data === 'rcs' && renderRcsMessage()}
-              {data === 'text' && renderTextMessage()}
-              {data === 'text-with-action' && (
+              {messageType === 'rcs' && renderRcsMessage()}
+              {messageType === 'text' && renderTextMessage()}
+              {messageType === 'text-with-action' && (
                 <>
                   {renderTextMessage()}
-                  {actions.some(a => a.title.trim()) && (
+                  {actionButtons && actionButtons.length > 0 && actionButtons.some(a => a.title && a.title.trim()) && (
                     <div style={{ alignSelf: 'flex-end', maxWidth: '95%', marginTop: '1px' }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {actions.filter(a => a.title.trim()).slice(0, 3).map((action, idx) => (
+                        {actionButtons.filter(a => a.title && a.title.trim()).slice(0, 3).map((action, idx) => (
                           <button
                             key={idx}
                             style={{
@@ -708,7 +714,7 @@ export default function CreateTemplatePage() {
                   )}
                 </>
               )}
-              {data === 'carousel' && renderCarouselMessage()}
+              {messageType === 'carousel' && renderCarouselMessage()}
               
               {/* Delivery Status */}
               <div style={{ alignSelf: 'flex-end', marginTop: '4px' }}>
@@ -1671,7 +1677,7 @@ export default function CreateTemplatePage() {
             maxHeight: '600px',
             overflowY: 'auto',
           }}>
-            <RCSMessagePreview data={previewData.messageType} />
+            <RCSMessagePreview data={previewData} />
           </div>
         </Modal>
       )}
