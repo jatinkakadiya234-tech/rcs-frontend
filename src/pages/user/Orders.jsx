@@ -31,6 +31,7 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   PhoneOutlined,
+  ClockCircleOutlined,
 } from '@ant-design/icons';
 import { THEME_CONSTANTS } from '../../theme';
 import toast from 'react-hot-toast';
@@ -146,62 +147,95 @@ export default function Orders() {
   const getStatusBadge = (order) => {
     const successCount = order?.successCount || 0;
     const failedCount = order?.failedCount || 0;
+    const totalMessages = successCount + failedCount;
 
-    if (successCount > failedCount && failedCount === 0) {
+    // Calculate success rate based on actual messages sent
+    const successRate = totalMessages > 0 ? (successCount / totalMessages) * 100 : 0;
+
+    // If no messages sent yet, show pending
+    if (totalMessages === 0) {
       return (
-        <Tag
-          icon={<CheckCircleOutlined />}
-          color="#f6ffed"
-          style={{
-            color: THEME_CONSTANTS.colors.success,
-            border: `1px solid ${THEME_CONSTANTS.colors.success}`,
-            fontWeight: 600,
-            padding: '4px 12px',
-            borderRadius: THEME_CONSTANTS.radius.sm,
-          }}
-        >
-          Success
-        </Tag>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
+          <Progress
+            type="circle"
+            size={36}
+            percent={0}
+            strokeColor={THEME_CONSTANTS.colors.warning}
+            trailColor="#f0f0f0"
+            strokeWidth={6}
+            showInfo={false}
+          />
+          <Tag
+            color="#fffbe6"
+            style={{
+              color: '#faad14',
+              border: '1px solid #faad14',
+              fontWeight: 600,
+              padding: '4px 8px',
+              borderRadius: THEME_CONSTANTS.radius.sm,
+              fontSize: '11px'
+            }}
+          >
+            Pending
+          </Tag>
+        </div>
       );
     }
-    if (failedCount > 0) {
-      return (
-        <Tag
-          icon={<CloseCircleOutlined />}
-          color="#fff1f0"
-          style={{
-            color: '#ff4d4f',
-            border: '1px solid #ff4d4f',
-            fontWeight: 600,
-            padding: '4px 12px',
-            borderRadius: THEME_CONSTANTS.radius.sm,
-          }}
-        >
-          Failed
-        </Tag>
-      );
-    }
+
+    // Show circular progress with percentage
+    const getProgressColor = () => {
+      if (successRate >= 80) return THEME_CONSTANTS.colors.success;
+      if (successRate >= 50) return '#fa8c16';
+      return '#ff4d4f';
+    };
+
+    const getStatusText = () => {
+      if (successRate >= 80) return 'Success';
+      if (successRate > 0) return 'Partial';
+      return 'Failed';
+    };
 
     return (
-      <Tag
-        color="#fffbe6"
-        style={{
-          color: '#faad14',
-          border: '1px solid #faad14',
-          fontWeight: 600,
-          padding: '4px 12px',
-          borderRadius: THEME_CONSTANTS.radius.sm,
-        }}
-      >
-        Pending
-      </Tag>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
+        <Progress
+          type="circle"
+          size={36}
+          percent={Math.round(successRate)}
+          strokeColor={getProgressColor()}
+          trailColor="#f0f0f0"
+          strokeWidth={6}
+          format={(percent) => (
+            <span style={{ 
+              fontSize: '9px', 
+              fontWeight: 700, 
+              color: getProgressColor(),
+              padding: '3px'
+            }}>
+              {percent}%
+            </span>
+          )}
+        />
+        <Tag
+          color={successRate >= 80 ? "#f6ffed" : successRate > 0 ? "#fff7e6" : "#fff1f0"}
+          style={{
+            color: getProgressColor(),
+            border: `1px solid ${getProgressColor()}`,
+            fontWeight: 600,
+            padding: '4px 8px',
+            borderRadius: THEME_CONSTANTS.radius.sm,
+            fontSize: '11px'
+          }}
+        >
+          {getStatusText()}
+        </Tag>
+      </div>
     );
   };
 
   const { data: orderDetailsData, isLoading: detailsLoading } = useOrderDetails(
     selectedOrder?._id,
     modalCurrentPage,
-    50
+    10
   );
 
   const modalOrder = orderDetailsData?.data || selectedOrder;
@@ -580,7 +614,7 @@ export default function Orders() {
                     orders?.length > 0
                       ? (
                           (orders?.reduce((acc, order) => acc + (order?.successCount || 0), 0) /
-                            (orders?.reduce((acc, order) => acc + (order?.cost || 0), 0) || 1)) *
+                            (orders?.reduce((acc, order) => acc + ((order?.successCount || 0) + (order?.failedCount || 0)), 0) || 1)) *
                           100
                         ).toFixed(2)
                       : 0
@@ -975,7 +1009,7 @@ export default function Orders() {
                     padding: '4px 12px',
                     borderRadius: '6px'
                   }}>
-                    {modalOrder?.results?.length || 0} Records
+                    {orderDetailsData?.data?.results?.length || 0} Records
                   </Tag>
                 </div>
                 
@@ -1000,8 +1034,13 @@ export default function Orders() {
                       dataIndex: 'messaestatus',
                       key: 'status',
                       width: '25%',
-                      render: (status) => {
-                        const getStatusConfig = (status) => {
+                      render: (status, record) => {
+                        const getStatusConfig = (status, record) => {
+                          // Check status code first
+                          if (record?.status === 201) {
+                            return { color: 'success', icon: <CheckCircleOutlined />, text: 'Success' };
+                          }
+                          
                           switch(status) {
                             case 'MESSAGE_DELIVERED':
                               return { color: 'success', icon: <CheckCircleOutlined />, text: 'Delivered' };
@@ -1016,7 +1055,7 @@ export default function Orders() {
                           }
                         };
                         
-                        const config = getStatusConfig(status);
+                        const config = getStatusConfig(status, record);
                         return (
                           <Tag 
                             color={config.color} 
@@ -1047,14 +1086,18 @@ export default function Orders() {
                       ),
                     },
                   ]}
-                  dataSource={modalOrder?.results?.slice(0, 100) || []}
+                  dataSource={orderDetailsData?.data?.results || []}
                   rowKey={(record, index) => index}
                   pagination={{
-                    pageSize: 8,
+                    current: modalCurrentPage,
+                    pageSize: 10,
+                    total: orderDetailsData?.data?.resultsPagination?.total || 0,
+                    onChange: setModalCurrentPage,
                     showSizeChanger: false,
                     showQuickJumper: true,
                     showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} messages`
                   }}
+                  loading={detailsLoading}
                   size="small"
                   scroll={{ y: 300 }}
                   style={{

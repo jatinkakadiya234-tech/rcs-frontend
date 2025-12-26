@@ -132,23 +132,38 @@ export default function CreateTemplatePage() {
 
   const handleImageSelect = async (file, target = 'main', index = null) => {
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target.result;
-        
+      // Set uploading state
+      if (target === 'carousel' && index !== null) {
+        setUploadingIndexes(prev => new Set([...prev, index]));
+      }
+      
+      // Upload file and get URL
+      const uploadedUrl = await uploadFile(file);
+      
+      if (uploadedUrl) {
         if (target === 'main') {
           setMediaFile(file);
-          setFormData({ ...formData, imageUrl: base64 });
+          setFormData({ ...formData, imageUrl: uploadedUrl });
         } else if (target === 'richCard') {
-          setRichCard({ ...richCard, imageUrl: base64, mediaFile: file });
+          setRichCard({ ...richCard, imageUrl: uploadedUrl, mediaFile: file });
         } else if (target === 'carousel' && index !== null) {
           const newItems = [...carouselItems];
-          newItems[index].imageUrl = base64;
+          newItems[index].imageUrl = uploadedUrl;
           newItems[index].mediaFile = file;
           setCarouselItems(newItems);
         }
-      };
-      reader.readAsDataURL(file);
+        toast.success('Image uploaded successfully');
+      }
+      
+      // Remove uploading state
+      if (target === 'carousel' && index !== null) {
+        setUploadingIndexes(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(index);
+          return newSet;
+        });
+      }
+      
       return false;
     }
   };

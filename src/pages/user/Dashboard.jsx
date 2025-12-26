@@ -46,11 +46,13 @@ import { THEME_CONSTANTS } from '../../theme';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const { useBreakpoint } = Grid;
 
 export default function Dashboard() {
   const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const screens = useBreakpoint();
   const [messageReports, setMessageReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -486,7 +488,15 @@ export default function Dashboard() {
                         color: THEME_CONSTANTS.colors.text,
                       }}
                     >
-                      ₹{user?.creditUsed || 0}
+                      ₹{loading ? 0 : (() => {
+                        const totalCost = messageReports.reduce((total, report) => {
+                          console.log("report:", report);
+                          return total + (report.cost || 0);
+                        }, 0);
+                        console.log("Total cost calculated:", totalCost);
+                        console.log("Message reports:", messageReports);
+                        return totalCost;
+                      })()}
                     </span>
                     <span 
                       style={{ 
@@ -498,7 +508,7 @@ export default function Dashboard() {
                     </span>
                   </div>
                   <Progress
-                    percent={user?.Wallet ? Math.round(((user?.creditUsed || 0) / user.Wallet) * 100) : 0}
+                    percent={user?.Wallet && messageReports.length > 0 ? Math.min(100, Math.round(((messageReports.reduce((total, report) => total + (report.cost || 0), 0)) / user.Wallet) * 100)) : 0}
                     strokeColor={{ '0%': THEME_CONSTANTS.colors.primary, '100%': THEME_CONSTANTS.colors.primaryDark }}
                   />
                 </div>
@@ -532,7 +542,7 @@ export default function Dashboard() {
                         color: THEME_CONSTANTS.colors.success,
                       }}
                     >
-                      {formatCurrency((user?.Wallet || 0) - (user?.creditUsed || 0))}
+                      {formatCurrency((user?.Wallet || 0) - (loading ? 0 : messageReports.reduce((total, report) => total + (report.cost || 0), 0)))}
                     </span>
                   </div>
                   <p 
@@ -620,7 +630,7 @@ export default function Dashboard() {
                     fontWeight: THEME_CONSTANTS.typography.label.weight,
                   }}
                 >
-                  <ArrowUpOutlined /> 2 new this month
+                  <ArrowUpOutlined /> {loading ? '-' : stats.totalCampaigns > 0 ? `${Math.max(0, stats.totalCampaigns - (stats.totalCampaigns - 2))} new this month` : 'No new campaigns'}
                 </div>
               </Card>
             </Col>
@@ -834,7 +844,7 @@ export default function Dashboard() {
                     fontWeight: THEME_CONSTANTS.typography.label.weight,
                   }}
                 >
-                  Excellent performance.
+                  {loading ? 'Loading...' : stats.totalMessages > 0 && ((stats.totalSuccessCount / stats.totalMessages) * 100) >= 90 ? 'Excellent performance.' : stats.totalMessages > 0 ? 'Good performance.' : 'No data yet.'}
                 </p>
               </Card>
             </Col>
@@ -1134,6 +1144,7 @@ export default function Dashboard() {
               </h3>
               <Button
                 type="primary"
+                onClick={() => navigate('/reports')}
                 style={{
                   background: THEME_CONSTANTS.colors.primary,
                   border: 'none',
@@ -1142,7 +1153,7 @@ export default function Dashboard() {
                   height: '40px'
                 }}
               >
-                View All Campaigns
+                View All Reports
               </Button>
             </div>
             <div style={{ overflowX: 'auto' }}>
