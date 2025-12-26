@@ -953,13 +953,23 @@ export default function Orders() {
                   <Col xs={24} md={12}>
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 500, color: THEME_CONSTANTS.colors.text }}>Delivery Rate</span>
+                        <span style={{ fontSize: '14px', fontWeight: 500, color: THEME_CONSTANTS.colors.text }}>Success Rate</span>
                         <span style={{ fontSize: '14px', fontWeight: 600, color: THEME_CONSTANTS.colors.success }}>
-                          {modalOrder?.cost > 0 ? ((modalOrder?.successCount / modalOrder?.cost) * 100).toFixed(1) : 0}%
+                          {(() => {
+                            const successCount = modalOrder?.successCount || 0;
+                            const failedCount = modalOrder?.failedCount || 0;
+                            const totalSent = successCount + failedCount;
+                            return totalSent > 0 ? ((successCount / totalSent) * 100).toFixed(1) : 0;
+                          })()}%
                         </span>
                       </div>
                       <Progress
-                        percent={modalOrder?.cost > 0 ? ((modalOrder?.successCount / modalOrder?.cost) * 100) : 0}
+                        percent={(() => {
+                          const successCount = modalOrder?.successCount || 0;
+                          const failedCount = modalOrder?.failedCount || 0;
+                          const totalSent = successCount + failedCount;
+                          return totalSent > 0 ? ((successCount / totalSent) * 100) : 0;
+                        })()}
                         strokeColor={THEME_CONSTANTS.colors.success}
                         trailColor="#f0f0f0"
                         strokeWidth={6}
@@ -972,11 +982,19 @@ export default function Orders() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <span style={{ fontSize: '14px', fontWeight: 500, color: THEME_CONSTANTS.colors.text }}>Read Rate</span>
                         <span style={{ fontSize: '14px', fontWeight: 600, color: THEME_CONSTANTS.colors.primary }}>
-                          {modalOrder?.successCount > 0 ? ((modalOrder?.totalRead / modalOrder?.successCount) * 100).toFixed(1) : 0}%
+                          {(() => {
+                            const totalDelivered = modalOrder?.totalDelivered || 0;
+                            const totalRead = modalOrder?.totalRead || 0;
+                            return totalDelivered > 0 ? ((totalRead / totalDelivered) * 100).toFixed(1) : 0;
+                          })()}%
                         </span>
                       </div>
                       <Progress
-                        percent={modalOrder?.successCount > 0 ? ((modalOrder?.totalRead / modalOrder?.successCount) * 100) : 0}
+                        percent={(() => {
+                          const totalDelivered = modalOrder?.totalDelivered || 0;
+                          const totalRead = modalOrder?.totalRead || 0;
+                          return totalDelivered > 0 ? ((totalRead / totalDelivered) * 100) : 0;
+                        })()}
                         strokeColor={THEME_CONSTANTS.colors.primary}
                         trailColor="#f0f0f0"
                         strokeWidth={6}

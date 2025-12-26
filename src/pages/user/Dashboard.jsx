@@ -207,11 +207,28 @@ export default function Dashboard() {
       title: 'Success Rate',
       key: 'successRate',
       render: (text, record) => {
-        const rate = record.successCount && record.cost ? Math.round((record.successCount / record.cost) * 100) : 0;
+        const successCount = record.successCount || 0;
+        const failedCount = record.failedCount || 0;
+        const totalSent = successCount + failedCount;
+        const rate = totalSent > 0 ? Math.round((successCount / totalSent) * 100) : 0;
+        
+        const getProgressColor = () => {
+          if (rate >= 90) return THEME_CONSTANTS.colors.success;
+          if (rate >= 70) return THEME_CONSTANTS.colors.primary;
+          if (rate >= 50) return '#fa8c16';
+          return '#ff4d4f';
+        };
+        
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontWeight: 600, color: THEME_CONSTANTS.colors.primary }}>{rate}%</span>
-            <Progress percent={rate} size="small" style={{ width: '50px' }} />
+            <span style={{ fontWeight: 600, color: getProgressColor(), fontSize: '13px' }}>{rate}%</span>
+            <Progress 
+              percent={rate} 
+              size="small" 
+              style={{ width: '50px' }} 
+              strokeColor={getProgressColor()}
+              showInfo={false}
+            />
           </div>
         );
       },
@@ -224,48 +241,78 @@ export default function Dashboard() {
       render: (text, record) => {
         const successCount = record?.successCount || 0;
         const failedCount = record?.failedCount || 0;
+        const totalSent = successCount + failedCount;
+        const successRate = totalSent > 0 ? Math.round((successCount / totalSent) * 100) : 0;
         
-        if (successCount > failedCount && failedCount === 0) {
+        // If no messages sent yet, show pending
+        if (totalSent === 0) {
           return (
-            <Tag
-              icon={<CheckCircleOutlined />}
-              color="#f6ffed"
-              style={{
-                color: THEME_CONSTANTS.colors.success,
-                border: `1px solid ${THEME_CONSTANTS.colors.success}`,
-                fontWeight: 600,
-              }}
-            >
-              Success
-            </Tag>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Tag
+                icon={<ClockCircleOutlined />}
+                color="#fffbe6"
+                style={{
+                  color: '#faad14',
+                  border: '1px solid #faad14',
+                  fontWeight: 600,
+                }}
+              >
+                Pending
+              </Tag>
+            </div>
           );
         }
-        if (failedCount > 0) {
-          return (
-            <Tag
-              icon={<CloseCircleOutlined />}
-              color="#fff1f0"
-              style={{
-                color: '#ff4d4f',
-                border: '1px solid #ff4d4f',
-                fontWeight: 600,
-              }}
-            >
-              Failed
-            </Tag>
-          );
-        }
+        
+        // Determine status based on success rate
+        const getStatusConfig = () => {
+          if (successRate >= 90) {
+            return {
+              color: THEME_CONSTANTS.colors.success,
+              bgColor: '#f6ffed',
+              border: `1px solid ${THEME_CONSTANTS.colors.success}`,
+              icon: <CheckCircleOutlined />,
+              text: 'Excellent'
+            };
+          } else if (successRate >= 70) {
+            return {
+              color: THEME_CONSTANTS.colors.primary,
+              bgColor: '#e6f7ff',
+              border: `1px solid ${THEME_CONSTANTS.colors.primary}`,
+              icon: <CheckCircleOutlined />,
+              text: 'Good'
+            };
+          } else if (successRate >= 50) {
+            return {
+              color: '#fa8c16',
+              bgColor: '#fff7e6',
+              border: '1px solid #fa8c16',
+              icon: <CloseCircleOutlined />,
+              text: 'Partial'
+            };
+          } else {
+            return {
+              color: '#ff4d4f',
+              bgColor: '#fff1f0',
+              border: '1px solid #ff4d4f',
+              icon: <CloseCircleOutlined />,
+              text: 'Poor'
+            };
+          }
+        };
+        
+        const config = getStatusConfig();
+        
         return (
           <Tag
-            icon={<ClockCircleOutlined />}
-            color="#fffbe6"
+            icon={config.icon}
+            color={config.bgColor}
             style={{
-              color: '#faad14',
-              border: '1px solid #faad14',
+              color: config.color,
+              border: config.border,
               fontWeight: 600,
             }}
           >
-            Pending
+            {config.text}
           </Tag>
         );
       },
@@ -816,7 +863,10 @@ export default function Dashboard() {
                         color: THEME_CONSTANTS.colors.text,
                       }}
                     >
-                      {loading ? '-' : stats.totalMessages > 0 ? ((stats.totalSuccessCount / stats.totalMessages) * 100).toFixed(1) : 0}%
+                      {loading ? '-' : (() => {
+                        const totalSent = stats.totalSuccessCount + stats.totalFailedCount;
+                        return totalSent > 0 ? ((stats.totalSuccessCount / totalSent) * 100).toFixed(1) : 0;
+                      })()}%
                     </h3>
                   </div>
                   <div
@@ -844,7 +894,11 @@ export default function Dashboard() {
                     fontWeight: THEME_CONSTANTS.typography.label.weight,
                   }}
                 >
-                  {loading ? 'Loading...' : stats.totalMessages > 0 && ((stats.totalSuccessCount / stats.totalMessages) * 100) >= 90 ? 'Excellent performance.' : stats.totalMessages > 0 ? 'Good performance.' : 'No data yet.'}
+                  {loading ? 'Loading...' : (() => {
+                    const totalSent = stats.totalSuccessCount + stats.totalFailedCount;
+                    const successRate = totalSent > 0 ? ((stats.totalSuccessCount / totalSent) * 100) : 0;
+                    return successRate >= 90 ? 'Excellent performance.' : totalSent > 0 ? 'Good performance.' : 'No data yet.';
+                  })()}
                 </p>
               </Card>
             </Col>
@@ -911,7 +965,10 @@ export default function Dashboard() {
                       </span>
                     </div>
                     <Progress
-                      percent={loading ? 0 : stats.totalMessages > 0 ? Math.round((stats.totalSuccessCount / stats.totalMessages) * 100) : 0}
+                      percent={loading ? 0 : (() => {
+                        const totalSent = stats.totalSuccessCount + stats.totalFailedCount;
+                        return totalSent > 0 ? Math.round((stats.totalSuccessCount / totalSent) * 100) : 0;
+                      })()}
                       strokeColor={THEME_CONSTANTS.colors.success}
                     />
                   </div>
@@ -946,7 +1003,10 @@ export default function Dashboard() {
                       </span>
                     </div>
                     <Progress
-                      percent={loading ? 0 : stats.totalMessages > 0 ? Math.round((stats.totalFailedCount / stats.totalMessages) * 100) : 0}
+                      percent={loading ? 0 : (() => {
+                        const totalSent = stats.totalSuccessCount + stats.totalFailedCount;
+                        return totalSent > 0 ? Math.round((stats.totalFailedCount / totalSent) * 100) : 0;
+                      })()}
                       strokeColor={THEME_CONSTANTS.colors.danger}
                     />
                   </div>
@@ -976,7 +1036,10 @@ export default function Dashboard() {
                           color: THEME_CONSTANTS.colors.success,
                         }}
                       >
-                        {loading ? '-' : stats.totalMessages > 0 ? ((stats.totalSuccessCount / stats.totalMessages) * 100).toFixed(1) : 0}%
+                        {loading ? '-' : (() => {
+                          const totalSent = stats.totalSuccessCount + stats.totalFailedCount;
+                          return totalSent > 0 ? ((stats.totalSuccessCount / totalSent) * 100).toFixed(1) : 0;
+                        })()}%
                       </span>
                     </p>
                   </div>
@@ -1197,7 +1260,7 @@ export default function Dashboard() {
           </Card>
 
           {/* PROFILE & QUICK ACTIONS */}
-          <Row gutter={[16, 16]}>
+          {/* <Row gutter={[16, 16]}>
             <Col xs={24} lg={12}>
               <Card
                 style={{
@@ -1266,7 +1329,7 @@ export default function Dashboard() {
                 </Space>
               </Card>
             </Col>
-          </Row>
+          </Row> */}
         </div>
       </div>
 

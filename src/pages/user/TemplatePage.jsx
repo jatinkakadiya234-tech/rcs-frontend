@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback , useMemo} from 'react';
 import {
   Layout,
   Form,
@@ -24,12 +24,13 @@ import {
   Popconfirm,
   Spin,
   Progress,
+  Slider,
 } from 'antd';
 import {
   PlusOutlined,
   DeleteOutlined,
   EditOutlined,
-  EyeOutlined,
+
   CloudUploadOutlined,
   HomeOutlined,
   FileTextOutlined,
@@ -48,6 +49,11 @@ import {
   ClearOutlined,
   CheckOutlined,
   ExclamationCircleOutlined,
+  BorderOutlined,
+  RotateLeftOutlined,
+  RotateRightOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
 } from '@ant-design/icons';
 import { THEME_CONSTANTS } from '../../theme';
 import ApiService from '../../services/api';
@@ -95,6 +101,19 @@ export default function CreateTemplatePage() {
 
   // Upload states
   const [uploadingIndexes, setUploadingIndexes] = useState(new Set());
+  
+  // Image cropping states
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState(null);
+  const [cropTarget, setCropTarget] = useState({ type: 'main', index: null });
+  const [crop, setCrop] = useState({ x: 50, y: 50, width: 200, height: 150 });
+  const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [cropLoading, setCropLoading] = useState(false);
+  const cropCanvasRef = useRef(null);
+  const imageRef = useRef(null);
 
   // Preview states
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -132,41 +151,135 @@ export default function CreateTemplatePage() {
 
   const handleImageSelect = async (file, target = 'main', index = null) => {
     if (file) {
-      // Set uploading state
-      if (target === 'carousel' && index !== null) {
-        setUploadingIndexes(prev => new Set([...prev, index]));
-      }
+      // Create image URL for cropping
+      const imageUrl = URL.createObjectURL(file);
+      setCropImageSrc(imageUrl);
+      setCropTarget({ type: target, index, file });
+      setCropModalOpen(true);
       
-      // Upload file and get URL
-      const uploadedUrl = await uploadFile(file);
-      
-      if (uploadedUrl) {
-        if (target === 'main') {
-          setMediaFile(file);
-          setFormData({ ...formData, imageUrl: uploadedUrl });
-        } else if (target === 'richCard') {
-          setRichCard({ ...richCard, imageUrl: uploadedUrl, mediaFile: file });
-        } else if (target === 'carousel' && index !== null) {
-          const newItems = [...carouselItems];
-          newItems[index].imageUrl = uploadedUrl;
-          newItems[index].mediaFile = file;
-          setCarouselItems(newItems);
-        }
-        toast.success('Image uploaded successfully');
-      }
-      
-      // Remove uploading state
-      if (target === 'carousel' && index !== null) {
-        setUploadingIndexes(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(index);
-          return newSet;
-        });
-      }
-      
-      return false;
+      return false; // Prevent default upload
     }
   };
+
+  const handleCropComplete = useCallback(async () => {
+    if (!cropImageSrc || !cropTarget.file) return;
+    
+    setCropLoading(true);
+    try {
+      // Create a new image element
+      const image = new Image();
+      
+      image.onload = async () => {
+        // Create canvas for processing
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size (you can adjust these dimensions as needed)
+        const outputWidth = 800;
+        const outputHeight = 600;
+        canvas.width = outputWidth;
+        canvas.height = outputHeight;
+        
+        // Clear canvas
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, outputWidth, outputHeight);
+        
+        // Calculate image dimensions and positioning
+        const imageAspect = image.width / image.height;
+        const canvasAspect = outputWidth / outputHeight;
+        
+        let drawWidth, drawHeight, drawX, drawY;
+        
+        if (imageAspect > canvasAspect) {
+          // Image is wider than canvas
+          drawHeight = outputHeight * zoom;
+          drawWidth = drawHeight * imageAspect;
+        } else {
+          // Image is taller than canvas
+          drawWidth = outputWidth * zoom;
+          drawHeight = drawWidth / imageAspect;
+        }
+        
+        drawX = (outputWidth - drawWidth) / 2;
+        drawY = (outputHeight - drawHeight) / 2;
+        
+        // Apply transformations
+        ctx.save();
+        ctx.translate(outputWidth / 2, outputHeight / 2);
+        ctx.rotate((rotation * Math.PI) / 180);
+        ctx.translate(-outputWidth / 2, -outputHeight / 2);
+        
+        // Draw the image
+        ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+        ctx.restore();
+        
+        // Convert to blob
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            const croppedFile = new File([blob], cropTarget.file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            
+            // Set uploading state
+            const { type, index } = cropTarget;
+            if (type === 'carousel' && index !== null) {
+              setUploadingIndexes(prev => new Set([...prev, index]));
+            }
+            
+            // Upload cropped file
+            const uploadedUrl = await uploadFile(croppedFile);
+            
+            if (uploadedUrl) {
+              if (type === 'main') {
+                setMediaFile(croppedFile);
+                setFormData(prev => ({ ...prev, imageUrl: uploadedUrl }));
+              } else if (type === 'richCard') {
+                setRichCard(prev => ({ ...prev, imageUrl: uploadedUrl, mediaFile: croppedFile }));
+              } else if (type === 'carousel' && index !== null) {
+                setCarouselItems(prev => {
+                  const newItems = [...prev];
+                  newItems[index].imageUrl = uploadedUrl;
+                  newItems[index].mediaFile = croppedFile;
+                  return newItems;
+                });
+              }
+              toast.success('Image processed and uploaded successfully!');
+            }
+            
+            // Remove uploading state
+            if (type === 'carousel' && index !== null) {
+              setUploadingIndexes(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(index);
+                return newSet;
+              });
+            }
+            
+            // Close crop modal and reset
+            setCropModalOpen(false);
+            setCropImageSrc(null);
+            setCrop({ x: 50, y: 50, width: 200, height: 150 });
+            setZoom(1);
+            setRotation(0);
+            URL.revokeObjectURL(cropImageSrc);
+          }
+          setCropLoading(false);
+        }, 'image/jpeg', 0.9);
+      };
+      
+      image.onerror = () => {
+        toast.error('Failed to load image for processing');
+        setCropLoading(false);
+      };
+      
+      image.src = cropImageSrc;
+    } catch (error) {
+      console.error('Crop processing error:', error);
+      toast.error('Failed to process image: ' + error.message);
+      setCropLoading(false);
+    }
+  }, [cropImageSrc, zoom, rotation, cropTarget]);
 
   const handleDeleteImage = (target = 'main', index = null) => {
     if (target === 'main') {
@@ -796,22 +909,6 @@ export default function CreateTemplatePage() {
       width: '20%',
     },
     {
-      title: 'Preview',
-      key: 'preview',
-      render: (text, record) => (
-        <Button
-          type="text"
-          size="small"
-          icon={<EyeOutlined />}
-          onClick={() => handlePreview(record)}
-          style={{ color: '#1890ff' }}
-        >
-          View
-        </Button>
-      ),
-      width: '15%',
-    },
-    {
       title: 'Status',
       key: 'status',
       render: (text, record) => {
@@ -858,7 +955,6 @@ export default function CreateTemplatePage() {
     },
   ];
 
-  // Render carousel item editor
   const renderCarouselItemEditor = (item, index) => (
     <Card
       key={index}
@@ -1037,6 +1133,387 @@ export default function CreateTemplatePage() {
     </Card>
   );
 
+  // Mouse event handlers for dragging
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!imageRef.current) return;
+    setIsDragging(true);
+    const rect = imageRef.current.getBoundingClientRect();
+    setDragStart({
+      x: e.clientX - rect.left - crop.x,
+      y: e.clientY - rect.top - crop.y
+    });
+  }, [crop.x, crop.y]);
+
+  const handleMouseMove = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging || !imageRef.current) return;
+    const rect = imageRef.current.getBoundingClientRect();
+    const newX = Math.max(0, Math.min(rect.width - crop.width, e.clientX - rect.left - dragStart.x));
+    const newY = Math.max(0, Math.min(rect.height - crop.height, e.clientY - rect.top - dragStart.y));
+    setCrop(prev => ({ ...prev, x: newX, y: newY }));
+  }, [isDragging, crop.width, crop.height, dragStart.x, dragStart.y]);
+
+  const handleMouseUp = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  // Image Cropping Modal Component - Memoized to prevent re-renders
+  const ImageCropModal = useMemo(() => (
+    <Modal
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <BorderOutlined style={{ color: THEME_CONSTANTS.colors.primary }} />
+          <span style={{ fontWeight: 600, fontSize: '18px' }}>Crop Your Image</span>
+        </div>
+      }
+      open={cropModalOpen}
+      onCancel={() => {
+        setCropModalOpen(false);
+        setCropImageSrc(null);
+        if (cropImageSrc) URL.revokeObjectURL(cropImageSrc);
+        setCrop({ x: 50, y: 50, width: 200, height: 150 });
+        setZoom(1);
+        setRotation(0);
+      }}
+      width={1000}
+      footer={[
+        <Button 
+          key="cancel" 
+          size="large"
+          onClick={() => {
+            setCropModalOpen(false);
+            setCropImageSrc(null);
+            if (cropImageSrc) URL.revokeObjectURL(cropImageSrc);
+          }}
+        >
+          Cancel
+        </Button>,
+        <Button 
+          key="crop" 
+          type="primary" 
+          size="large"
+          loading={cropLoading}
+          onClick={handleCropComplete}
+          style={{ background: THEME_CONSTANTS.colors.primary }}
+        >
+          {cropLoading ? 'Processing...' : 'Crop & Use Image'}
+        </Button>,
+      ]}
+      bodyStyle={{ padding: '24px' }}
+      centered
+      destroyOnClose={false}
+      maskClosable={false}
+    >
+      <div style={{ display: 'flex', gap: '24px' }}>
+        {/* Left: Image with Crop Area */}
+        <div style={{ flex: 1 }}>
+          <div style={{
+            background: '#f8f9fa',
+            border: '2px solid #e9ecef',
+            borderRadius: '12px',
+            padding: '16px',
+            marginBottom: '16px'
+          }}>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: '#495057', marginBottom: '8px' }}>
+              💡 Drag the blue box to select crop area
+            </div>
+            <div style={{ fontSize: '13px', color: '#6c757d' }}>
+              Resize with corner handles • Use controls below to zoom & rotate
+            </div>
+          </div>
+
+          <div 
+            ref={imageRef}
+            style={{
+              position: 'relative',
+              width: '100%',
+              height: '500px',
+              background: '#000',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              cursor: isDragging ? 'grabbing' : 'grab'
+            }}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            {cropImageSrc && (
+              <>
+                <img
+                  src={cropImageSrc}
+                  alt="Crop source"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    transform: `scale(${zoom}) rotate(${rotation}deg)`,
+                    transition: isDragging ? 'none' : 'transform 0.3s ease'
+                  }}
+                  draggable={false}
+                />
+                
+                {/* Crop Selection Overlay */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0,0,0,0.5)'
+                }} />
+                
+                {/* Crop Area */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: crop.x,
+                    top: crop.y,
+                    width: crop.width,
+                    height: crop.height,
+                    border: '3px solid #1890ff',
+                    background: 'transparent',
+                    cursor: 'move',
+                    boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)'
+                  }}
+                  onMouseDown={handleMouseDown}
+                >
+                  {/* Corner Handles */}
+                  {['nw', 'ne', 'sw', 'se'].map(corner => (
+                    <div
+                      key={corner}
+                      style={{
+                        position: 'absolute',
+                        width: '12px',
+                        height: '12px',
+                        background: '#1890ff',
+                        border: '2px solid white',
+                        borderRadius: '50%',
+                        cursor: corner.includes('n') && corner.includes('w') ? 'nw-resize' :
+                               corner.includes('n') && corner.includes('e') ? 'ne-resize' :
+                               corner.includes('s') && corner.includes('w') ? 'sw-resize' : 'se-resize',
+                        ...(corner.includes('n') ? { top: '-6px' } : { bottom: '-6px' }),
+                        ...(corner.includes('w') ? { left: '-6px' } : { right: '-6px' })
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        // Handle resize logic here if needed
+                      }}
+                    />
+                  ))}
+                  
+                  {/* Center indicator */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '20px',
+                    height: '20px',
+                    background: 'rgba(24, 144, 255, 0.8)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '12px',
+                    pointerEvents: 'none'
+                  }}>
+                    ✚
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Controls */}
+        <div style={{ width: '280px' }}>
+          {/* Preview */}
+          <div style={{
+            background: '#f8f9fa',
+            borderRadius: '12px',
+            padding: '16px',
+            marginBottom: '20px',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: '#495057' }}>
+              📱 Crop Preview
+            </div>
+            <div style={{
+              width: '120px',
+              height: '90px',
+              background: '#fff',
+              border: '2px solid #dee2e6',
+              borderRadius: '8px',
+              margin: '0 auto',
+              overflow: 'hidden',
+              position: 'relative'
+            }}>
+              {cropImageSrc && (
+                <img
+                  src={cropImageSrc}
+                  alt="Preview"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    transform: `scale(${zoom}) rotate(${rotation}deg)`
+                  }}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div style={{
+            background: '#f8f9fa',
+            borderRadius: '12px',
+            padding: '16px',
+            marginBottom: '20px'
+          }}>
+            <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: '#495057' }}>
+              🎯 Quick Actions
+            </div>
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              <Button 
+                block 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCrop({ x: 50, y: 50, width: 200, height: 150 });
+                }}
+                icon={<BorderOutlined />}
+              >
+                Center Crop
+              </Button>
+              <Button 
+                block 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setZoom(1);
+                }}
+                icon={<ZoomOutOutlined />}
+              >
+                Reset Zoom
+              </Button>
+              <Button 
+                block 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRotation(0);
+                }}
+                icon={<RotateLeftOutlined />}
+              >
+                Reset Rotation
+              </Button>
+            </Space>
+          </div>
+
+          {/* Zoom Control */}
+          <div style={{
+            background: '#f8f9fa',
+            borderRadius: '12px',
+            padding: '16px',
+            marginBottom: '16px'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              marginBottom: '12px' 
+            }}>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#495057' }}>🔍 Zoom</span>
+              <span style={{ 
+                fontSize: '12px', 
+                fontWeight: 600, 
+                color: THEME_CONSTANTS.colors.primary,
+                background: '#e3f2fd',
+                padding: '2px 8px',
+                borderRadius: '4px'
+              }}>
+                {Math.round(zoom * 100)}%
+              </span>
+            </div>
+            <Slider
+              min={0.5}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={(value) => {
+                setZoom(value);
+              }}
+              trackStyle={{ background: THEME_CONSTANTS.colors.primary }}
+              handleStyle={{ borderColor: THEME_CONSTANTS.colors.primary }}
+            />
+          </div>
+
+          {/* Rotation Control */}
+          <div style={{
+            background: '#f8f9fa',
+            borderRadius: '12px',
+            padding: '16px'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              marginBottom: '12px' 
+            }}>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#495057' }}>🔄 Rotate</span>
+              <span style={{ 
+                fontSize: '12px', 
+                fontWeight: 600, 
+                color: THEME_CONSTANTS.colors.primary,
+                background: '#e3f2fd',
+                padding: '2px 8px',
+                borderRadius: '4px'
+              }}>
+                {rotation}°
+              </span>
+            </div>
+            <Slider
+              min={-180}
+              max={180}
+              step={15}
+              value={rotation}
+              onChange={(value) => {
+                setRotation(value);
+              }}
+              trackStyle={{ background: THEME_CONSTANTS.colors.primary }}
+              handleStyle={{ borderColor: THEME_CONSTANTS.colors.primary }}
+            />
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <Button 
+                size="small" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRotation(rotation - 90);
+                }} 
+                style={{ flex: 1 }}
+              >
+                ↺ 90°
+              </Button>
+              <Button 
+                size="small" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRotation(rotation + 90);
+                }} 
+                style={{ flex: 1 }}
+              >
+                ↻ 90°
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  ), [cropModalOpen, cropImageSrc, crop, zoom, rotation, isDragging, cropLoading, handleCropComplete, handleMouseDown, handleMouseMove, handleMouseUp]);
+
   return (
     <>
       <div style={{ background: THEME_CONSTANTS.colors.background, minHeight: '100vh' }}>
@@ -1102,7 +1579,7 @@ export default function CreateTemplatePage() {
                           fontSize: THEME_CONSTANTS.typography.h2.size,
                         }
                       }}>
-                        {editingTemplate ? 'Edit Template 📝' : 'Create New Template 🎨'}
+                        {editingTemplate ? 'Edit Template ' : 'Create New Template '}
                       </h1>
                       <p style={{
                         color: THEME_CONSTANTS.colors.textSecondary,
@@ -1335,7 +1812,7 @@ export default function CreateTemplatePage() {
                         </Row>
 
                         {/* Rich Card Image */}
-                        <Form.Item label="Card Image (Aspect Ratio: 2:1)">
+                        <Form.Item label="Card Image">
                           <Upload
                             accept="image/*"
                             maxCount={1}
@@ -1535,7 +2012,7 @@ export default function CreateTemplatePage() {
                           onClick={handleSubmit}
                           icon={editingTemplate ? <EditOutlined /> : <CheckOutlined />}
                         >
-                          {editingTemplate ? '💾 Update Template' : '✨ Create Template'}
+                          {editingTemplate ? 'Update Template' : ' Create Template'}
                         </Button>
                       </Space>
                     </Form.Item>
@@ -1665,6 +2142,9 @@ export default function CreateTemplatePage() {
             </Card>
         </div>
       </div>
+
+      {/* Image Crop Modal */}
+      {ImageCropModal}
 
       {/* Full-Screen Preview Modal */}
       {previewOpen && previewData && (

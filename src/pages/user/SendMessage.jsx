@@ -29,6 +29,7 @@ import {
   Popconfirm,
   Select,
   Table,
+  message,
 } from 'antd';
 import {
   SendOutlined,
@@ -58,6 +59,7 @@ import {
   ReloadOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons';
+import { FaMobileAlt, FaCheckDouble } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -210,7 +212,7 @@ function SendMessage() {
   const [templateFilter, setTemplateFilter] = useState('all');
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [messageType, setMessageType] = useState('text');
-  const [message, setMessage] = useState('');
+  const [messageText, setMessageText] = useState('');
   const [cardDescription, setCardDescription] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
   const [footer, setFooter] = useState('');
@@ -296,7 +298,7 @@ function SendMessage() {
       setMessageType(template.messageType);
 
       // Reset all fields
-      setMessage(template.text || template?.richCard?.title || '');
+      setMessageText(template.text || template?.richCard?.title || '');
       setCardDescription(template?.richCard?.description || template?.richCard?.subtitle || '');
       setMediaUrl(template?.richCard?.imageUrl || template?.imageUrl || '');
 
@@ -629,6 +631,7 @@ function SendMessage() {
 
   // Send Campaign
   const handleSendCampaign = async () => {
+    console.log('handleSendCampaign called');
     try {
       // Validation
       if (!selectedTemplate) {
@@ -657,6 +660,7 @@ function SendMessage() {
         return;
       }
 
+      console.log('Starting campaign send...');
       setSendingInProgress(true);
 
       // Build payload based on message type
@@ -737,7 +741,7 @@ function SendMessage() {
             standalone: {
               cardOrientation: 'VERTICAL',
               content: {
-                cardTitle: message,
+                cardTitle: messageText,
                 cardDescription: cardDescription,
                 cardMedia: {
                   mediaHeight: 'TALL',
@@ -780,7 +784,7 @@ function SendMessage() {
         }
 
         payload.content = {
-          plainText: message,
+          plainText: messageText,
           suggestions: validButtons.map((btn) => {
             if (btn.type === 'Call Button') {
               return {
@@ -810,7 +814,7 @@ function SendMessage() {
         };
       } else if (messageType === 'webview') {
         payload.content = {
-          plainText: message,
+          plainText: messageText,
           suggestions: buttons.map((btn) => ({
             action: {
               plainText: btn.title,
@@ -825,7 +829,7 @@ function SendMessage() {
         };
       } else if (messageType === 'dialer-action') {
         payload.content = {
-          plainText: message,
+          plainText: messageText,
           suggestions: buttons.map((btn) => ({
             action: {
               plainText: btn.title,
@@ -836,17 +840,27 @@ function SendMessage() {
         };
       } else {
         // Plain text
-        payload.content = { plainText: message };
+        payload.content = { plainText: messageText };
       }
 
       // Send to backend
       const response = await api.sendMessage(payload);
       console.log('Campaign response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response success:', response.data.success);
 
       if (response.data.success) {
+        console.log('helllo=========');
         message.success('Campaign sent successfully!');
+        console.log('About to refresh user...');
         await refreshUser();
+        console.log('User refreshed, about to navigate...');
+        console.log('Navigate function:', navigate);
         navigate('/reports');
+        console.log('Navigate called');
+      } else {
+        console.log('Response success is false or undefined');
+        message.error('Campaign failed to send');
       }
     } catch (error) {
       if (error.response?.data?.message === 'Insufficient balance') {
@@ -922,7 +936,7 @@ function SendMessage() {
     if (!template) {
       return (
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>📱</div>
+          <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}><FaMobileAlt /></div>
           <h4 style={{ color: THEME_CONSTANTS.colors.textSecondary, margin: 0 }}>Select a template to preview</h4>
         </div>
       );
@@ -1163,7 +1177,9 @@ function SendMessage() {
 
               {/* Delivery Status */}
               <div style={{ alignSelf: 'flex-end', marginTop: '4px' }}>
-                <span style={{ fontSize: '10px', color: '#666' }}>✓✓ Delivered</span>
+                <span style={{ fontSize: '10px', color: '#666', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                  <FaCheckDouble /> Delivered
+                </span>
               </div>
             </div>
           </div>
