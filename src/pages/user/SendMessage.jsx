@@ -1044,6 +1044,44 @@ function SendMessage() {
       );
     };
 
+    const renderTextWithActionMessage = () => {
+      if (!template.text && !template.actions) return null;
+
+      return (
+        <div style={messageBubbleStyle}>
+          <div style={{ padding: '12px 16px' }}>
+            {template.text && (
+              <p style={{ color: '#000', fontSize: '14px', margin: '0 0 12px 0', lineHeight: 1.4 }}>
+                {template.text}
+              </p>
+            )}
+            {template.actions && template.actions.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {template.actions.slice(0, 3).map((action, idx) => (
+                  <button
+                    key={idx}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid #666',
+                      borderRadius: '16px',
+                      color: '#1976d2',
+                      padding: '8px 16px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {action.title}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
     const renderCarouselMessage = () => {
       if (!template.carouselItems || template.carouselItems.length === 0) return null;
 
@@ -1120,6 +1158,7 @@ function SendMessage() {
             <div style={chatAreaStyle}>
               {template.messageType === 'rcs' && renderRcsMessage()}
               {template.messageType === 'text' && renderTextMessage()}
+              {template.messageType === 'text-with-action' && renderTextWithActionMessage()}
               {template.messageType === 'carousel' && renderCarouselMessage()}
 
               {/* Delivery Status */}
@@ -1631,6 +1670,18 @@ function SendMessage() {
                                       color: THEME_CONSTANTS.colors.text
                                     }}>
                                       {record.richCard.title}
+                                    </div>
+                                  )}
+                                  {record.messageType === 'text-with-action' && record.actions && record.actions.length > 0 && (
+                                    <div style={{ marginTop: '4px' }}>
+                                      {record.actions.slice(0, 2).map((action, idx) => (
+                                        <Tag key={idx} size="small" style={{ fontSize: '10px', marginBottom: '2px' }}>
+                                          {action.title}
+                                        </Tag>
+                                      ))}
+                                      {record.actions.length > 2 && (
+                                        <Tag size="small" style={{ fontSize: '10px' }}>+{record.actions.length - 2} more</Tag>
+                                      )}
                                     </div>
                                   )}
                                 </div>

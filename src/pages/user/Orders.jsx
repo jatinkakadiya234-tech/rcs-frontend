@@ -30,6 +30,7 @@ import {
   HomeOutlined,
   DeleteOutlined,
   ReloadOutlined,
+  PhoneOutlined,
 } from '@ant-design/icons';
 import { THEME_CONSTANTS } from '../../theme';
 import toast from 'react-hot-toast';
@@ -751,188 +752,372 @@ export default function Orders() {
         </div>
       </div>
 
-      {/* Modal for Campaign Details */}
+      {/* Professional Modal for Campaign Details */}
       <Modal
-        title={
-          <div>
-            <div style={{ fontSize: '18px', fontWeight: 700, color: THEME_CONSTANTS.colors.textPrimary }}>
-              Campaign Report
-            </div>
-            <div
-              style={{
-                fontSize: '13px',
-                color: THEME_CONSTANTS.colors.textSecondary,
-                marginTop: '4px',
-              }}
-            >
-              {selectedOrder?.type} • {selectedOrder?.CampaignName}
-            </div>
-          </div>
-        }
+        title={null}
         open={showModal}
         onCancel={closeModal}
-        width={900}
+        width={1000}
         footer={null}
-        bodyStyle={{ padding: '24px' }}
+        bodyStyle={{ padding: 0 }}
+        style={{ top: 20 }}
       >
         {modalOrder && (
           <div>
-            {/* Stats Grid */}
-            <Row gutter={[12, 12]} style={{ marginBottom: '24px' }}>
-              <Col xs={12} sm={8} md={6}>
-                <Card bodyStyle={{ padding: '16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 700, color: THEME_CONSTANTS.colors.primary }}>
-                    {modalOrder?.cost || 0}
+            {/* Clean Header */}
+            <div style={{
+              background: '#ffffff',
+              padding: '24px 32px',
+              borderBottom: `1px solid ${THEME_CONSTANTS.colors.border}`,
+              borderRadius: '8px 8px 0 0'
+            }}>
+              <Row align="middle" justify="space-between">
+                <Col>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      background: THEME_CONSTANTS.colors.primaryLight,
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <BarChartOutlined style={{ fontSize: '24px', color: THEME_CONSTANTS.colors.primary }} />
+                    </div>
+                    <div>
+                      <h2 style={{ color: THEME_CONSTANTS.colors.text, margin: 0, fontSize: '20px', fontWeight: 600 }}>
+                        Campaign Analytics
+                      </h2>
+                      <div style={{ fontSize: '14px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '4px' }}>
+                        {selectedOrder?.CampaignName} • {selectedOrder?.type}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '8px' }}>
-                    Total Recipients
+                </Col>
+                <Col>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Created</div>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: THEME_CONSTANTS.colors.text }}>
+                      {new Date(selectedOrder?.createdAt).toLocaleDateString()}
+                    </div>
                   </div>
-                </Card>
-              </Col>
-
-              <Col xs={12} sm={8} md={6}>
-                <Card bodyStyle={{ padding: '16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 700, color: THEME_CONSTANTS.colors.success }}>
-                    {modalOrder?.successCount || 0}
-                  </div>
-                  <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '8px' }}>
-                    Sent
-                  </div>
-                </Card>
-              </Col>
-
-              <Col xs={12} sm={8} md={6}>
-                <Card bodyStyle={{ padding: '16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#faad14' }}>
-                    {modalOrder?.totalDelivered || 0}
-                  </div>
-                  <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '8px' }}>
-                    Delivered
-                  </div>
-                </Card>
-              </Col>
-
-              <Col xs={12} sm={8} md={6}>
-                <Card bodyStyle={{ padding: '16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 700, color: THEME_CONSTANTS.colors.success }}>
-                    {modalOrder?.totalRead || 0}
-                  </div>
-                  <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '8px' }}>
-                    Read
-                  </div>
-                </Card>
-              </Col>
-
-              <Col xs={12} sm={8} md={6}>
-                <Card bodyStyle={{ padding: '16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#ff4d4f' }}>
-                    {modalOrder?.failedCount || 0}
-                  </div>
-                  <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '8px' }}>
-                    Failed
-                  </div>
-                </Card>
-              </Col>
-
-              <Col xs={12} sm={8} md={6}>
-                <Card bodyStyle={{ padding: '16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 700, color: THEME_CONSTANTS.colors.primary }}>
-                    {modalOrder?.userClickCount || 0}
-                  </div>
-                  <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary, marginTop: '8px' }}>
-                    Clicked
-                  </div>
-                </Card>
-              </Col>
-            </Row>
-
-            <Divider />
-
-            {/* Detailed Results Table */}
-            <div style={{ marginTop: '24px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: THEME_CONSTANTS.colors.textPrimary }}>
-                Message Details
-              </div>
-              <Table
-                columns={[
-                  {
-                    title: 'Phone Number',
-                    dataIndex: 'phone',
-                    key: 'phone',
-                    render: (text, record) => (
-                      <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
-                        {text || '-'}
-                      </span>
-                    ),
-                  },
-                  {
-                    title: 'Status',
-                    dataIndex: 'messaestatus',
-                    key: 'status',
-                    render: (status) => (
-                      <Tag
-                        color={
-                          status === 'MESSAGE_DELIVERED' || status === 'SEND_MESSAGE_SUCCESS' || status === 'MESSAGE_READ'
-                            ? 'green'
-                            : status === 'SEND_MESSAGE_FAILURE'
-                            ? 'red'
-                            : 'orange'
-                        }
-                      >
-                        {status === 'MESSAGE_DELIVERED'
-                          ? 'Delivered'
-                          : status === 'SEND_MESSAGE_SUCCESS'
-                          ? 'Sent'
-                          : status === 'MESSAGE_READ'
-                          ? 'Read'
-                          : 'Pending'}
-                      </Tag>
-                    ),
-                  },
-                  {
-                    title: 'Sent At',
-                    dataIndex: 'timestamp',
-                    key: 'timestamp',
-                    render: (text) => (
-                      <span style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
-                        {text ? new Date(text).toLocaleString() : '-'}
-                      </span>
-                    ),
-                  },
-                ]}
-                dataSource={modalOrder?.results?.slice(0, 50) || []}
-                rowKey={(record, index) => index}
-                pagination={{ pageSize: 10 }}
-                size="small"
-              />
+                </Col>
+              </Row>
             </div>
 
-            <Divider />
+            {/* Professional Stats Grid */}
+            <div style={{ padding: '32px' }}>
+              <Row gutter={[16, 16]} style={{ marginBottom: '32px' }}>
+                <Col xs={12} sm={8} md={4}>
+                  <Card style={{
+                    background: '#ffffff',
+                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    height: '100px'
+                  }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: THEME_CONSTANTS.colors.primary }}>
+                      {modalOrder?.cost || 0}
+                    </div>
+                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Total Recipients</div>
+                  </Card>
+                </Col>
 
-            {/* Modal Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <Button onClick={closeModal}>Close</Button>
-              <Button
-                type="primary"
-                icon={<DownloadOutlined />}
-                onClick={() => {
-                  const exportData = modalOrder?.phoneNumbers?.map((phone, idx) => ({
-                    'S.No': idx + 1,
-                    'Phone Number': phone || 'N/A',
-                    'Message Type': modalOrder?.type || 'N/A',
-                    'Status': 'Sent',
-                    'Date': new Date(modalOrder?.createdAt).toLocaleDateString(),
-                  })) || [];
+                <Col xs={12} sm={8} md={4}>
+                  <Card style={{
+                    background: '#ffffff',
+                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    height: '100px'
+                  }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: THEME_CONSTANTS.colors.success }}>
+                      {modalOrder?.successCount || 0}
+                    </div>
+                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Successfully Sent</div>
+                  </Card>
+                </Col>
 
-                  const ws = XLSX.utils.json_to_sheet(exportData);
-                  const wb = XLSX.utils.book_new();
-                  XLSX.utils.book_append_sheet(wb, ws, 'Campaign Details');
-                  XLSX.writeFile(wb, `campaign-${modalOrder?.CampaignName}-${new Date().toISOString().split('T')[0]}.xlsx`);
-                  toast.success('Report exported successfully');
-                }}
-              >
-                Export Details
-              </Button>
+                <Col xs={12} sm={8} md={4}>
+                  <Card style={{
+                    background: '#ffffff',
+                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    height: '100px'
+                  }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: '#f59e0b' }}>
+                      {modalOrder?.totalDelivered || 0}
+                    </div>
+                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Delivered</div>
+                  </Card>
+                </Col>
+
+                <Col xs={12} sm={8} md={4}>
+                  <Card style={{
+                    background: '#ffffff',
+                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    height: '100px'
+                  }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: '#8b5cf6' }}>
+                      {modalOrder?.totalRead || 0}
+                    </div>
+                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Read</div>
+                  </Card>
+                </Col>
+
+                <Col xs={12} sm={8} md={4}>
+                  <Card style={{
+                    background: '#ffffff',
+                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    height: '100px'
+                  }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: THEME_CONSTANTS.colors.error }}>
+                      {modalOrder?.failedCount || 0}
+                    </div>
+                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Failed</div>
+                  </Card>
+                </Col>
+
+                <Col xs={12} sm={8} md={4}>
+                  <Card style={{
+                    background: '#ffffff',
+                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    height: '100px'
+                  }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: '#06b6d4' }}>
+                      {modalOrder?.userClickCount || 0}
+                    </div>
+                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Clicked</div>
+                  </Card>
+                </Col>
+              </Row>
+
+              {/* Performance Metrics */}
+              <Card style={{
+                background: '#ffffff',
+                border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                borderRadius: '8px',
+                marginBottom: '24px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+              }} bodyStyle={{ padding: '24px' }}>
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', fontWeight: 600, color: THEME_CONSTANTS.colors.text }}>Performance Overview</h3>
+                <Row gutter={[32, 16]}>
+                  <Col xs={24} md={12}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 500, color: THEME_CONSTANTS.colors.text }}>Delivery Rate</span>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: THEME_CONSTANTS.colors.success }}>
+                          {modalOrder?.cost > 0 ? ((modalOrder?.successCount / modalOrder?.cost) * 100).toFixed(1) : 0}%
+                        </span>
+                      </div>
+                      <Progress
+                        percent={modalOrder?.cost > 0 ? ((modalOrder?.successCount / modalOrder?.cost) * 100) : 0}
+                        strokeColor={THEME_CONSTANTS.colors.success}
+                        trailColor="#f0f0f0"
+                        strokeWidth={6}
+                        showInfo={false}
+                      />
+                    </div>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 500, color: THEME_CONSTANTS.colors.text }}>Read Rate</span>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: THEME_CONSTANTS.colors.primary }}>
+                          {modalOrder?.successCount > 0 ? ((modalOrder?.totalRead / modalOrder?.successCount) * 100).toFixed(1) : 0}%
+                        </span>
+                      </div>
+                      <Progress
+                        percent={modalOrder?.successCount > 0 ? ((modalOrder?.totalRead / modalOrder?.successCount) * 100) : 0}
+                        strokeColor={THEME_CONSTANTS.colors.primary}
+                        trailColor="#f0f0f0"
+                        strokeWidth={6}
+                        showInfo={false}
+                      />
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
+
+              {/* Message Details Table */}
+              <Card style={{
+                background: '#ffffff',
+                border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+              }} bodyStyle={{ padding: '24px' }}>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  marginBottom: '20px' 
+                }}>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: THEME_CONSTANTS.colors.text }}>Message Details</h3>
+                  <Tag style={{ 
+                    background: THEME_CONSTANTS.colors.primaryLight, 
+                    color: THEME_CONSTANTS.colors.primary,
+                    border: 'none',
+                    fontSize: '12px', 
+                    padding: '4px 12px',
+                    borderRadius: '6px'
+                  }}>
+                    {modalOrder?.results?.length || 0} Records
+                  </Tag>
+                </div>
+                
+                <Table
+                  columns={[
+                    {
+                      title: 'Phone Number',
+                      dataIndex: 'phone',
+                      key: 'phone',
+                      width: '30%',
+                      render: (text, record) => (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <PhoneOutlined style={{ color: THEME_CONSTANTS.colors.textSecondary, fontSize: '12px' }} />
+                          <span style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 500, color: THEME_CONSTANTS.colors.text }}>
+                            {text || '-'}
+                          </span>
+                        </div>
+                      ),
+                    },
+                    {
+                      title: 'Status',
+                      dataIndex: 'messaestatus',
+                      key: 'status',
+                      width: '25%',
+                      render: (status) => {
+                        const getStatusConfig = (status) => {
+                          switch(status) {
+                            case 'MESSAGE_DELIVERED':
+                              return { color: 'success', icon: <CheckCircleOutlined />, text: 'Delivered' };
+                            case 'SEND_MESSAGE_SUCCESS':
+                              return { color: 'processing', icon: <CheckCircleOutlined />, text: 'Sent' };
+                            case 'MESSAGE_READ':
+                              return { color: 'success', icon: <EyeOutlined />, text: 'Read' };
+                            case 'SEND_MESSAGE_FAILURE':
+                              return { color: 'error', icon: <CloseCircleOutlined />, text: 'Failed' };
+                            default:
+                              return { color: 'warning', icon: <ClockCircleOutlined />, text: 'Pending' };
+                          }
+                        };
+                        
+                        const config = getStatusConfig(status);
+                        return (
+                          <Tag 
+                            color={config.color} 
+                            icon={config.icon}
+                            style={{ fontSize: '12px', padding: '4px 8px', fontWeight: 500 }}
+                          >
+                            {config.text}
+                          </Tag>
+                        );
+                      },
+                    },
+                    {
+                      title: 'Timestamp',
+                      dataIndex: 'timestamp',
+                      key: 'timestamp',
+                      width: '25%',
+                      render: (text) => (
+                        <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
+                          {text ? (
+                            <>
+                              <div>{new Date(text).toLocaleDateString()}</div>
+                              <div style={{ fontSize: '11px', opacity: 0.8 }}>
+                                {new Date(text).toLocaleTimeString()}
+                              </div>
+                            </>
+                          ) : '-'}
+                        </div>
+                      ),
+                    },
+                  ]}
+                  dataSource={modalOrder?.results?.slice(0, 100) || []}
+                  rowKey={(record, index) => index}
+                  pagination={{
+                    pageSize: 8,
+                    showSizeChanger: false,
+                    showQuickJumper: true,
+                    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} messages`
+                  }}
+                  size="small"
+                  scroll={{ y: 300 }}
+                  style={{
+                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                    borderRadius: '6px'
+                  }}
+                />
+              </Card>
+            </div>
+
+            {/* Clean Footer Actions */}
+            <div style={{
+              padding: '20px 32px',
+              background: '#fafbfc',
+              borderTop: `1px solid ${THEME_CONSTANTS.colors.border}`,
+              borderRadius: '0 0 8px 8px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
+                Campaign ID: <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{selectedOrder?._id}</span>
+              </div>
+              <Space size="middle">
+                <Button 
+                  onClick={closeModal}
+                  style={{ 
+                    borderRadius: '6px',
+                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                    color: THEME_CONSTANTS.colors.text
+                  }}
+                >
+                  Close
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={() => {
+                    const exportData = modalOrder?.results?.map((result, idx) => ({
+                      'S.No': idx + 1,
+                      'Phone Number': result?.phone || 'N/A',
+                      'Status': result?.messaestatus || 'N/A',
+                      'Message Type': modalOrder?.type || 'N/A',
+                      'Campaign Name': modalOrder?.CampaignName || 'N/A',
+                      'Sent At': result?.timestamp ? new Date(result.timestamp).toLocaleString() : 'N/A',
+                      'Created Date': new Date(modalOrder?.createdAt).toLocaleDateString(),
+                    })) || [];
+
+                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Campaign Details');
+                    XLSX.writeFile(wb, `campaign-${modalOrder?.CampaignName}-${new Date().toISOString().split('T')[0]}.xlsx`);
+                    toast.success('Detailed report exported successfully');
+                  }}
+                  style={{ 
+                    borderRadius: '6px',
+                    background: THEME_CONSTANTS.colors.primary,
+                    borderColor: THEME_CONSTANTS.colors.primary
+                  }}
+                >
+                  Export Report
+                </Button>
+              </Space>
             </div>
           </div>
         )}
