@@ -48,6 +48,7 @@ function WalletRequests() {
     pendingRequests: 0,
     approvedRequests: 0,
     totalAmount: 0,
+    totalReject:0
   });
 
   // ==================== FETCH DATA ====================
@@ -75,6 +76,7 @@ function WalletRequests() {
   const calculateStats = (requestsList) => {
     const pending = requestsList.filter((r) => r.status === 'pending').length;
     const approved = requestsList.filter((r) => r.status === 'approved').length;
+    const reject = requestsList.filter((r) => r.status === 'rejected').length;
     const totalAmount = requestsList.reduce((sum, r) => sum + (r.amount || 0), 0);
 
     setStats({
@@ -82,6 +84,7 @@ function WalletRequests() {
       pendingRequests: pending,
       approvedRequests: approved,
       totalAmount: totalAmount,
+      totalReject:reject
     });
   };
 
@@ -580,7 +583,7 @@ function WalletRequests() {
 
         {/* Stats Cards */}
         <Row gutter={[THEME_CONSTANTS.spacing.lg, THEME_CONSTANTS.spacing.lg]} style={{ marginBottom: THEME_CONSTANTS.spacing.xxl }}>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={5}>
             <StatCard
               icon={WalletOutlined}
               title="Total Requests"
@@ -589,7 +592,7 @@ function WalletRequests() {
               bgColor={THEME_CONSTANTS.colors.bgLight}
             />
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={5}>
             <StatCard
               icon={ClockCircleOutlined}
               title="Pending"
@@ -598,7 +601,7 @@ function WalletRequests() {
               bgColor="#FFFBE6"
             />
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={5}>
             <StatCard
               icon={CheckCircleOutlined}
               title="Approved"
@@ -607,7 +610,17 @@ function WalletRequests() {
               bgColor="#F6FFED"
             />
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={5}>
+            <StatCard
+              icon={CloseOutlined}
+              title="Total Rejectd"
+              value={stats.totalReject}
+             
+              color={THEME_CONSTANTS.colors.danger}
+              bgColor="#FFF0F6"
+            />
+          </Col>
+          <Col xs={24} sm={12} md={4}>
             <StatCard
               icon={DollarOutlined}
               title="Total Amount"
