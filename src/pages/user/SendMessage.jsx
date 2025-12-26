@@ -1136,29 +1136,86 @@ function SendMessage() {
 
   return (
     <>
-      <Layout style={{ minHeight: 'calc(100vh - 80px)', background: THEME_CONSTANTS.colors.background }}>
-        <Layout.Content style={{ padding: THEME_CONSTANTS.spacing.xxxl }}>
-          <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-            {/* Header */}
-            <Card
-              style={{
-                background: THEME_CONSTANTS.colors.surface,
-                border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                borderRadius: THEME_CONSTANTS.radius.lg,
-                marginBottom: THEME_CONSTANTS.spacing.xxxl,
-              }}
-              bodyStyle={{ padding: THEME_CONSTANTS.spacing.xxxl }}
-            >
-              <Row gutter={[24, 24]} align="middle">
-                <Col xs={24} sm={16}>
-                  <h1 style={{ fontSize: '28px', fontWeight: 700, margin: 0, color: THEME_CONSTANTS.colors.text }}>
-                    Bulk Message Campaign
-                  </h1>
-                  <p style={{ fontSize: '14px', color: THEME_CONSTANTS.colors.textSecondary, margin: '8px 0 0 0' }}>
-                    Create and manage bulk messaging campaigns
-                  </p>
-                </Col>
-                <Col xs={24} sm={8}>
+      <div style={{ background: THEME_CONSTANTS.colors.background, minHeight: '100vh' }}>
+        <div style={{ 
+          maxWidth: THEME_CONSTANTS.layout.maxContentWidth, 
+          margin: '0 auto',
+          padding: THEME_CONSTANTS.spacing.xl
+        }}>
+          {/* Enhanced Header Section */}
+          <div style={{
+            marginBottom: THEME_CONSTANTS.spacing.xxxl,
+            paddingBottom: THEME_CONSTANTS.spacing.xl,
+            borderBottom: `2px solid ${THEME_CONSTANTS.colors.primaryLight}`
+          }}>
+            <Breadcrumb style={{
+              marginBottom: THEME_CONSTANTS.spacing.md,
+              fontSize: THEME_CONSTANTS.typography.caption.size
+            }}>
+              <Breadcrumb.Item>
+                <HomeOutlined style={{ marginRight: '6px' }} />
+                <span style={{ color: THEME_CONSTANTS.colors.textMuted }}>Home</span>
+              </Breadcrumb.Item>
+              <Breadcrumb.Item>
+                <span style={{ 
+                  color: THEME_CONSTANTS.colors.primary,
+                  fontWeight: THEME_CONSTANTS.typography.h6.weight
+                }}>
+                  Bulk Message Campaign
+                </span>
+              </Breadcrumb.Item>
+            </Breadcrumb>
+
+            <Row gutter={[16, 16]} align="middle" justify="space-between">
+              <Col xs={24} lg={18}>
+                <Row gutter={[16, 16]} align="middle">
+                  <Col xs={24} sm={4} md={3} lg={3}>
+                    <div style={{
+                      width: '64px',
+                      height: '64px',
+                      background: THEME_CONSTANTS.colors.primaryLight,
+                      borderRadius: THEME_CONSTANTS.radius.xl,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: THEME_CONSTANTS.shadow.md,
+                      margin: '0 auto'
+                    }}>
+                      <SendOutlined style={{
+                        color: THEME_CONSTANTS.colors.primary,
+                        fontSize: '32px'
+                      }} />
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={20} md={21} lg={21}>
+                    <div style={{ textAlign: { xs: 'center', sm: 'left' } }}>
+                      <h1 style={{
+                        fontSize: THEME_CONSTANTS.typography.h1.size,
+                        fontWeight: THEME_CONSTANTS.typography.h1.weight,
+                        color: THEME_CONSTANTS.colors.text,
+                        marginBottom: THEME_CONSTANTS.spacing.sm,
+                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight,
+                        '@media (max-width: 768px)': {
+                          fontSize: THEME_CONSTANTS.typography.h2.size,
+                        }
+                      }}>
+                        Bulk Message Campaign 📨
+                      </h1>
+                      <p style={{
+                        color: THEME_CONSTANTS.colors.textSecondary,
+                        fontSize: THEME_CONSTANTS.typography.body.size,
+                        fontWeight: 500,
+                        lineHeight: THEME_CONSTANTS.typography.body.lineHeight,
+                        margin: 0
+                      }}>
+                        Create and manage bulk messaging campaigns with real-time delivery tracking.
+                      </p>
+                    </div>
+                  </Col>
+                </Row>
+              </Col>
+              <Col xs={24} lg={6}>
+                <div style={{ textAlign: { xs: 'center', lg: 'right' } }}>
                   <Row gutter={16}>
                     <Col xs={12}>
                       <Statistic
@@ -1177,9 +1234,10 @@ function SendMessage() {
                       />
                     </Col>
                   </Row>
-                </Col>
-              </Row>
-            </Card>
+                </div>
+              </Col>
+            </Row>
+          </div>
 
             {/* Steps */}
             <Card
@@ -2358,9 +2416,8 @@ function SendMessage() {
                 </Space>
               </Card>
             )}
-          </div>
-        </Layout.Content>
-      </Layout>
+        </div>
+      </div>
 
       {/* Add Money Modal */}
       <Modal

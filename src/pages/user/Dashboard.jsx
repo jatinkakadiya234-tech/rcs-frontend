@@ -266,67 +266,102 @@ export default function Dashboard() {
 
   return (
     <>
-      <div
-        style={{
-          padding: screens.md ? '24px' : '16px',
-          background: THEME_CONSTANTS.colors.background,
-          minHeight: '100vh',
-        }}
-      >
-        {/* Breadcrumb */}
-        <Breadcrumb
-          style={{
-            marginBottom: '24px',
-            fontSize: '13px',
-          }}
-        >
-          <Breadcrumb.Item>
-            <HomeOutlined style={{ marginRight: '6px' }} />
-            <span style={{ color: THEME_CONSTANTS.colors.textSecondary }}>Home</span>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <span style={{ color: THEME_CONSTANTS.colors.primary, fontWeight: 600 }}>
-              Dashboard
-            </span>
-          </Breadcrumb.Item>
-        </Breadcrumb>
+      <div style={{ background: THEME_CONSTANTS.colors.background, minHeight: '100vh' }}>
+        <div style={{ 
+          maxWidth: THEME_CONSTANTS.layout.maxContentWidth, 
+          margin: '0 auto',
+          padding: THEME_CONSTANTS.spacing.xl
+        }}>
+          {/* Enhanced Header Section */}
+          <div style={{
+            marginBottom: THEME_CONSTANTS.spacing.xxxl,
+            paddingBottom: THEME_CONSTANTS.spacing.xl,
+            borderBottom: `2px solid ${THEME_CONSTANTS.colors.primaryLight}`
+          }}>
+            <Breadcrumb style={{
+              marginBottom: THEME_CONSTANTS.spacing.md,
+              fontSize: THEME_CONSTANTS.typography.caption.size
+            }}>
+              <Breadcrumb.Item>
+                <HomeOutlined style={{ marginRight: '6px' }} />
+                <span style={{ color: THEME_CONSTANTS.colors.textMuted }}>Home</span>
+              </Breadcrumb.Item>
+              <Breadcrumb.Item>
+                <span style={{ 
+                  color: THEME_CONSTANTS.colors.primary,
+                  fontWeight: THEME_CONSTANTS.typography.h6.weight
+                }}>
+                  Dashboard
+                </span>
+              </Breadcrumb.Item>
+            </Breadcrumb>
 
-        {/* Header Section */}
-        <div style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-            <div>
-              <div
-                style={{
-                  fontSize: '28px',
-                  fontWeight: 700,
-                  color: THEME_CONSTANTS.colors.textPrimary,
-                  marginBottom: '8px',
-                }}
-              >
-                Welcome back, {user?.companyname || 'User'}
-              </div>
-              <div
-                style={{
-                  fontSize: '14px',
-                  color: THEME_CONSTANTS.colors.textSecondary,
-                }}
-              >
-                Manage your campaigns, templates, and track your message delivery metrics all in one place.
-              </div>
-            </div>
-            <Space>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={async () => {
-                  setRefreshing(true);
-                  await refreshUser();
-                  setRefreshing(false);
-                }}
-                loading={refreshing}
-              >
-                Refresh
-              </Button>
-            </Space>
+            <Row gutter={[16, 16]} align="middle" justify="space-between">
+              <Col xs={24} lg={18}>
+                <Row gutter={[16, 16]} align="middle">
+                  <Col xs={24} sm={4} md={3} lg={3}>
+                    <div style={{
+                      width: '64px',
+                      height: '64px',
+                      background: THEME_CONSTANTS.colors.primaryLight,
+                      borderRadius: THEME_CONSTANTS.radius.xl,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: THEME_CONSTANTS.shadow.md,
+                      margin: '0 auto'
+                    }}>
+                      <BarChartOutlined style={{
+                        color: THEME_CONSTANTS.colors.primary,
+                        fontSize: '32px'
+                      }} />
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={20} md={21} lg={21}>
+                    <div style={{ textAlign: { xs: 'center', sm: 'left' } }}>
+                      <h1 style={{
+                        fontSize: THEME_CONSTANTS.typography.h1.size,
+                        fontWeight: THEME_CONSTANTS.typography.h1.weight,
+                        color: THEME_CONSTANTS.colors.text,
+                        marginBottom: THEME_CONSTANTS.spacing.sm,
+                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight,
+                        '@media (max-width: 768px)': {
+                          fontSize: THEME_CONSTANTS.typography.h2.size,
+                        }
+                      }}>
+                        Welcome back, {user?.companyname || 'User'} 👋
+                      </h1>
+                      <p style={{
+                        color: THEME_CONSTANTS.colors.textSecondary,
+                        fontSize: THEME_CONSTANTS.typography.body.size,
+                        fontWeight: 500,
+                        lineHeight: THEME_CONSTANTS.typography.body.lineHeight,
+                        margin: 0
+                      }}>
+                        Manage your campaigns, templates, and track your message delivery metrics all in one place.
+                      </p>
+                    </div>
+                  </Col>
+                </Row>
+              </Col>
+              <Col xs={24} lg={6}>
+                <div style={{ textAlign: { xs: 'center', lg: 'right' } }}>
+                  <Space>
+                    <Button
+                      icon={<ReloadOutlined />}
+                      onClick={async () => {
+                        setRefreshing(true);
+                        await refreshUser();
+                        setRefreshing(false);
+                      }}
+                      loading={refreshing}
+                    >
+                      Refresh
+                    </Button>
+                  </Space>
+                </div>
+              </Col>
+            </Row>
           </div>
 
           {/* Wallet Card */}

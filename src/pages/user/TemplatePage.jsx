@@ -1018,77 +1018,91 @@ export default function CreateTemplatePage() {
 
   return (
     <>
-      <Layout style={{ minHeight: '100vh', background: '#fafafa' }}>
-        <Layout.Content style={{ padding: screens.md ? '24px' : '16px' }}>
-          <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
-            {/* Breadcrumb Navigation */}
-            <Breadcrumb style={{ marginBottom: '24px', fontSize: '13px' }}>
+      <div style={{ background: THEME_CONSTANTS.colors.background, minHeight: '100vh' }}>
+        <div style={{ 
+          maxWidth: THEME_CONSTANTS.layout.maxContentWidth, 
+          margin: '0 auto',
+          padding: THEME_CONSTANTS.spacing.xl
+        }}>
+          {/* Enhanced Header Section */}
+          <div style={{
+            marginBottom: THEME_CONSTANTS.spacing.xxxl,
+            paddingBottom: THEME_CONSTANTS.spacing.xl,
+            borderBottom: `2px solid ${THEME_CONSTANTS.colors.primaryLight}`
+          }}>
+            <Breadcrumb style={{
+              marginBottom: THEME_CONSTANTS.spacing.md,
+              fontSize: THEME_CONSTANTS.typography.caption.size
+            }}>
               <Breadcrumb.Item>
                 <HomeOutlined style={{ marginRight: '6px' }} />
-                Home
+                <span style={{ color: THEME_CONSTANTS.colors.textMuted }}>Home</span>
               </Breadcrumb.Item>
               <Breadcrumb.Item>
-                <span style={{ color: '#1890ff', fontWeight: 600 }}>
+                <span style={{ 
+                  color: THEME_CONSTANTS.colors.primary,
+                  fontWeight: THEME_CONSTANTS.typography.h6.weight
+                }}>
                   {editingTemplate ? 'Edit Template' : 'Create Template'}
                 </span>
               </Breadcrumb.Item>
             </Breadcrumb>
 
-            {/* Page Header */}
-            <div style={{
-              marginBottom: '32px',
-              paddingBottom: '24px',
-              borderBottom: '2px solid #e8e8e8',
-            }}>
-              <Row gutter={[16, 16]} align="middle">
-                <Col xs={24} sm={4} md={3} lg={2}>
-                  <div
-                    style={{
+            <Row gutter={[16, 16]} align="middle" justify="space-between">
+              <Col xs={24} lg={18}>
+                <Row gutter={[16, 16]} align="middle">
+                  <Col xs={24} sm={4} md={3} lg={3}>
+                    <div style={{
                       width: '64px',
                       height: '64px',
-                      background: '#e8f4fd',
-                      borderRadius: '16px',
+                      background: THEME_CONSTANTS.colors.primaryLight,
+                      borderRadius: THEME_CONSTANTS.radius.xl,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                      margin: '0 auto',
-                    }}
-                  >
-                    <FormOutlined
-                      style={{
-                        color: '#1890ff',
-                        fontSize: '32px',
-                      }}
-                    />
-                  </div>
-                </Col>
-                <Col xs={24} sm={20} md={21} lg={22}>
-                  <div>
-                    <h1
-                      style={{
-                        fontSize: screens.md ? '32px' : '24px',
-                        fontWeight: 700,
-                        color: '#000',
-                        marginBottom: '8px',
-                      }}
-                    >
-                      {editingTemplate ? 'Edit Template 📝' : 'Create New Template 🎨'}
-                    </h1>
-                    <p
-                      style={{
-                        color: '#666',
-                        fontSize: '14px',
+                      boxShadow: THEME_CONSTANTS.shadow.md,
+                      margin: '0 auto'
+                    }}>
+                      <FormOutlined style={{
+                        color: THEME_CONSTANTS.colors.primary,
+                        fontSize: '32px'
+                      }} />
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={20} md={21} lg={21}>
+                    <div style={{ textAlign: { xs: 'center', sm: 'left' } }}>
+                      <h1 style={{
+                        fontSize: THEME_CONSTANTS.typography.h1.size,
+                        fontWeight: THEME_CONSTANTS.typography.h1.weight,
+                        color: THEME_CONSTANTS.colors.text,
+                        marginBottom: THEME_CONSTANTS.spacing.sm,
+                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight,
+                        '@media (max-width: 768px)': {
+                          fontSize: THEME_CONSTANTS.typography.h2.size,
+                        }
+                      }}>
+                        {editingTemplate ? 'Edit Template 📝' : 'Create New Template 🎨'}
+                      </h1>
+                      <p style={{
+                        color: THEME_CONSTANTS.colors.textSecondary,
+                        fontSize: THEME_CONSTANTS.typography.body.size,
                         fontWeight: 500,
-                        margin: 0,
-                      }}
-                    >
-                      Design and customize message templates with real-time mobile preview
-                    </p>
-                  </div>
-                </Col>
-              </Row>
-            </div>
+                        lineHeight: THEME_CONSTANTS.typography.body.lineHeight,
+                        margin: 0
+                      }}>
+                        Design and customize message templates with real-time mobile preview
+                      </p>
+                    </div>
+                  </Col>
+                </Row>
+              </Col>
+              <Col xs={24} lg={6}>
+                <div style={{ textAlign: { xs: 'center', lg: 'right' } }}>
+                  {/* Template actions can go here if needed */}
+                </div>
+              </Col>
+            </Row>
+          </div>
 
             {/* Main Form & Preview Layout */}
             <Row gutter={[24, 24]} style={{ marginBottom: '32px' }}>
@@ -1627,9 +1641,8 @@ export default function CreateTemplatePage() {
                 />
               )}
             </Card>
-          </div>
-        </Layout.Content>
-      </Layout>
+        </div>
+      </div>
 
       {/* Full-Screen Preview Modal */}
       {previewOpen && previewData && (
