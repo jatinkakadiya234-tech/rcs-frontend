@@ -462,7 +462,7 @@ export default function UserLayout() {
               </div>
 
               {/* Search */}
-              {!isMobile && (
+              {/* {!isMobile && (
                 <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto', marginRight: THEME_CONSTANTS.spacing.xl }}>
                   <Input
                     placeholder="Search campaigns, templates, contacts..."
@@ -479,7 +479,7 @@ export default function UserLayout() {
                     className="hover:bg-white focus:bg-white"
                   />
                 </div>
-              )}
+              )} */}
             </div>
 
             <Space size={isMobile ? 'middle' : 'large'} style={{ display: 'flex', alignItems: 'center' }}>

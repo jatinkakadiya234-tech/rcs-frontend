@@ -20,6 +20,7 @@ import AdminProfile from './pages/admin/AdminProfile.jsx'
 import RoleBasedRoute from './components/RoleBasedRoute.jsx'
 import { Toaster } from 'react-hot-toast'
 import AdminReports from './pages/admin/AdminReports.jsx'
+import CreateTemplatePage from './pages/user/CreateTempalte.jsx'
 
 function App() {
   return (
@@ -39,7 +40,8 @@ function App() {
         }>
           <Route index element={<Dashboard />} />
           <Route path="newCampaign" element={<SendMessage />} />
-          <Route path="templates" element={<TemplatePage />} />
+          <Route path="templates" element={<TemplatePage />} /> 
+          <Route path="create-template" element={<CreateTemplatePage />} />
           <Route path="reports" element={<Orders />} />
           <Route path="profile" element={<Profile />} />
         </Route>

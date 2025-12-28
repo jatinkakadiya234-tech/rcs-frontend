@@ -46,7 +46,7 @@ function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   
-const APIURL = `http://localhost:9999`
+const APIURL = "https://rcssender.com";
 
   // Create User Modal States
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
@@ -336,8 +336,7 @@ const APIURL = `http://localhost:9999`
       title: 'User',
       dataIndex: 'name',
       key: 'user',
-      responsive: ['sm'],
-      width: '28%',
+      width: '35%',
       render: (text, record) => (
         <Space>
           <Avatar
@@ -367,7 +366,6 @@ const APIURL = `http://localhost:9999`
       title: 'Wallet',
       dataIndex: 'Wallet',
       key: 'wallet',
-      responsive: ['sm'],
       width: '15%',
       render: (wallet) => (
         <span style={{ fontWeight: 600, color: THEME_CONSTANTS.colors.success }}>
@@ -375,27 +373,11 @@ const APIURL = `http://localhost:9999`
         </span>
       ),
     },
-    // {
-    //   title: 'Role',
-    //   dataIndex: 'role',
-    //   key: 'role',
-    //   responsive: ['md'],
-    //   width: '12%',
-    //   render: (role) => (
-    //     <Tag
-    //       color={role === 'admin' ? 'purple' : 'blue'}
-    //       style={{ borderRadius: THEME_CONSTANTS.radius.sm }}
-    //     >
-    //       {role?.toUpperCase()}
-    //     </Tag>
-    //   ),
-    // },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      responsive: ['sm'],
-      width: '12%',
+      width: '15%',
       render: (status) => (
         <Tag
           icon={status === 'active' ? <CheckOutlined /> : <CloseOutlined />}
@@ -415,8 +397,7 @@ const APIURL = `http://localhost:9999`
     {
       title: 'Actions',
       key: 'actions',
-      responsive: ['sm'],
-      width: '18%',
+      width: '20%',
       render: (_, record) => (
         <Space size="small" wrap>
           <Tooltip title="Edit">
@@ -537,7 +518,7 @@ const APIURL = `http://localhost:9999`
             <Row gutter={[16, 16]} align="middle" justify="space-between">
               <Col xs={24} lg={18}>
                 <Row gutter={[16, 16]} align="middle">
-                  <Col xs={24} sm={4} md={3} lg={3}>
+                  <Col xs={24} sm={6} md={4} lg={3}>
                     <div style={{
                       width: '64px',
                       height: '64px',
@@ -555,23 +536,20 @@ const APIURL = `http://localhost:9999`
                       }} />
                     </div>
                   </Col>
-                  <Col xs={24} sm={20} md={21} lg={21}>
-                    <div style={{ textAlign: { xs: 'center', sm: 'left' } }}>
+                  <Col xs={24} sm={18} md={20} lg={21}>
+                    <div style={{ textAlign: window.innerWidth <= 576 ? 'center' : 'left' }}>
                       <h1 style={{
-                        fontSize: THEME_CONSTANTS.typography.h1.size,
+                        fontSize: 'clamp(24px, 4vw, 32px)',
                         fontWeight: THEME_CONSTANTS.typography.h1.weight,
                         color: THEME_CONSTANTS.colors.text,
                         marginBottom: THEME_CONSTANTS.spacing.sm,
-                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight,
-                        '@media (max-width: 768px)': {
-                          fontSize: THEME_CONSTANTS.typography.h2.size,
-                        }
+                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight
                       }}>
                         User Management
                       </h1>
                       <p style={{
                         color: THEME_CONSTANTS.colors.textSecondary,
-                        fontSize: THEME_CONSTANTS.typography.body.size,
+                        fontSize: 'clamp(13px, 2.5vw, 14px)',
                         fontWeight: 500,
                         lineHeight: THEME_CONSTANTS.typography.body.lineHeight,
                         margin: 0
@@ -582,8 +560,8 @@ const APIURL = `http://localhost:9999`
                   </Col>
                 </Row>
               </Col>
-              <Col xs={24} lg={6} style={{placeItems:"end"}}>
-                <div style={{ textAlign: { xs: 'center', lg: 'right' } }}>
+              <Col xs={24} lg={6}>
+                <div style={{ textAlign: window.innerWidth <= 992 ? 'center' : 'right', marginTop: window.innerWidth <= 992 ? '16px' : '0' }}>
                   <Button
                     type="primary"
                     size="large"
@@ -594,6 +572,7 @@ const APIURL = `http://localhost:9999`
                       fontWeight: 600,
                       height: 44,
                     }}
+                    block={window.innerWidth <= 576}
                   >
                     Create User
                   </Button>
@@ -602,8 +581,8 @@ const APIURL = `http://localhost:9999`
             </Row>
             </div>
 
-        <Row gutter={[THEME_CONSTANTS.spacing.lg, THEME_CONSTANTS.spacing.lg]} style={{ marginBottom: THEME_CONSTANTS.spacing.xxl }}>
-          <Col xs={24} sm={12} md={8}>
+        <Row gutter={[16, 16]} style={{ marginBottom: THEME_CONSTANTS.spacing.xxl }}>
+          <Col xs={24} sm={12} lg={8}>
             <StatCard
               icon={UserOutlined}
               title="Total Users"
@@ -612,7 +591,7 @@ const APIURL = `http://localhost:9999`
               bgColor={`${THEME_CONSTANTS.colors.primary}15`}
             />
           </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} lg={8}>
             <StatCard
               icon={CheckOutlined}
               title="Active Users"
@@ -621,7 +600,7 @@ const APIURL = `http://localhost:9999`
               bgColor={`${THEME_CONSTANTS.colors.success}15`}
             />
           </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={24} lg={8}>
             <StatCard
               icon={DollarOutlined}
               title="Total Wallet"
@@ -634,7 +613,7 @@ const APIURL = `http://localhost:9999`
 
         <Card
           title={
-            <div style={{ fontSize: 16, fontWeight: 600 }}>
+            <div style={{ fontSize: 'clamp(14px, 2.5vw, 16px)', fontWeight: 600 }}>
               <UserOutlined
                 style={{
                   marginRight: 8,
@@ -654,8 +633,9 @@ const APIURL = `http://localhost:9999`
               icon={<ReloadOutlined />}
               onClick={fetchUsers}
               loading={loading}
+              size={window.innerWidth <= 768 ? 'small' : 'default'}
             >
-              Refresh
+              {window.innerWidth <= 576 ? '' : 'Refresh'}
             </Button>
           }
         >
@@ -663,9 +643,16 @@ const APIURL = `http://localhost:9999`
             dataSource={users}
             columns={userColumns}
             rowKey="_id"
-            pagination={{ pageSize: 10 }}
+            pagination={{ 
+              pageSize: 10,
+              showSizeChanger: window.innerWidth > 768,
+              showQuickJumper: window.innerWidth > 768,
+              size: window.innerWidth <= 768 ? 'small' : 'default'
+            }}
             locale={{ emptyText: <Empty /> }}
             style={{ fontSize: 14 }}
+            scroll={{ x: 800 }}
+            size={window.innerWidth <= 768 ? 'small' : 'default'}
           />
         </Card>
           </Spin>
@@ -690,7 +677,7 @@ const APIURL = `http://localhost:9999`
         }}
         onOk={handleCreateUser}
         confirmLoading={createLoading}
-        width={800}
+        width={window.innerWidth <= 768 ? '95vw' : 800}
         okText="Create User"
       >
         <Form layout="vertical" style={{ marginTop: 24 }}>
@@ -809,7 +796,7 @@ const APIURL = `http://localhost:9999`
         onCancel={() => setIsEditModalVisible(false)}
         onOk={handleEditUser}
         confirmLoading={editLoading}
-        width={600}
+        width={window.innerWidth <= 768 ? '95vw' : 600}
       >
         <Form layout="vertical" style={{ marginTop: 24 }}>
           <Form.Item label="Name">
@@ -881,7 +868,7 @@ const APIURL = `http://localhost:9999`
         onCancel={() => setIsWalletModalVisible(false)}
         onOk={handleAddWallet}
         confirmLoading={walletLoading}
-        width={500}
+        width={window.innerWidth <= 768 ? '95vw' : 500}
       >
         <Form layout="vertical" style={{ marginTop: 24 }}>
           <Form.Item label="User">
@@ -918,7 +905,7 @@ const APIURL = `http://localhost:9999`
         onCancel={() => setIsPasswordModalVisible(false)}
         onOk={handleResetPassword}
         confirmLoading={passwordLoading}
-        width={500}
+        width={window.innerWidth <= 768 ? '95vw' : 500}
       >
         <Form layout="vertical" style={{ marginTop: 24 }}>
           <Form.Item label="User">
@@ -953,7 +940,7 @@ const APIURL = `http://localhost:9999`
         title={`Transaction History - ${selectedUserForTransaction?.name}`}
         open={isTransactionModalVisible}
         onCancel={() => setIsTransactionModalVisible(false)}
-        width={800}
+        width={window.innerWidth <= 768 ? '95vw' : 800}
         footer={null}
       >
         <Spin spinning={transactionLoading}>
@@ -965,7 +952,7 @@ const APIURL = `http://localhost:9999`
                     <div style={{ fontSize: 12, color: '#666' }}>Current Balance</div>
                     <div
                       style={{
-                        fontSize: 24,
+                        fontSize: 'clamp(18px, 4vw, 24px)',
                         fontWeight: 700,
                         color: THEME_CONSTANTS.colors.primary,
                         marginTop: 8,
@@ -980,7 +967,7 @@ const APIURL = `http://localhost:9999`
                     <div style={{ fontSize: 12, color: '#666' }}>Total Credit</div>
                     <div
                       style={{
-                        fontSize: 24,
+                        fontSize: 'clamp(18px, 4vw, 24px)',
                         fontWeight: 700,
                         color: THEME_CONSTANTS.colors.success,
                         marginTop: 8,
@@ -995,7 +982,7 @@ const APIURL = `http://localhost:9999`
                     <div style={{ fontSize: 12, color: '#666' }}>Total Debit</div>
                     <div
                       style={{
-                        fontSize: 24,
+                        fontSize: 'clamp(18px, 4vw, 24px)',
                         fontWeight: 700,
                         color: THEME_CONSTANTS.colors.danger,
                         marginTop: 8,
@@ -1010,7 +997,7 @@ const APIURL = `http://localhost:9999`
                     <div style={{ fontSize: 12, color: '#666' }}>Net Amount</div>
                     <div
                       style={{
-                        fontSize: 24,
+                        fontSize: 'clamp(18px, 4vw, 24px)',
                         fontWeight: 700,
                         color: THEME_CONSTANTS.colors.warning,
                         marginTop: 8,
@@ -1029,6 +1016,8 @@ const APIURL = `http://localhost:9999`
                 dataSource={transactionSummary.recentTransactions || []}
                 rowKey={(_, index) => index}
                 pagination={false}
+                scroll={{ x: 600 }}
+                size={window.innerWidth <= 768 ? 'small' : 'default'}
                 columns={[
                   {
                     title: 'Type',

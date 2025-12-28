@@ -67,6 +67,7 @@ dayjs.extend(relativeTime);
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import RCSMessagePreview from '../../components/RCSMesagePreview';
 import { THEME_CONSTANTS } from '../../theme';
 
 // Add CSS for animations
@@ -106,7 +107,7 @@ const MESSAGE_TYPES = {
 const BUTTON_TYPES = ['URL Button', 'Call Button', 'Quick Reply Button'];
 
 // Virtual scrolling component for large contact lists
-const VirtualizedContactList = ({ contacts, deleteContact, loading }) => {
+  const VirtualizedContactList = ({ contacts, deleteContact, loading }) => {
   const [scrollTop, setScrollTop] = useState(0);
   const itemHeight = 50;
   const containerHeight = 384;
@@ -931,7 +932,7 @@ function SendMessage() {
     setCarouselCards(carouselCards.filter((c) => c.id !== id));
   };
 
-  // Render Template Preview with Android Messages UI
+  // Render Template Preview with RCSMessagePreview Component
   const renderTemplatePreview = (template = selectedTemplate) => {
     if (!template) {
       return (
@@ -942,248 +943,13 @@ function SendMessage() {
       );
     }
 
-    const phoneStyle = {
-      width: window.innerWidth <= 768 ? '280px' : '320px',
-      height: window.innerWidth <= 768 ? '500px' : '600px',
-      background: '#000',
-      borderRadius: '24px',
-      padding: '8px',
-      margin: '0 auto',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-    };
-
-    const screenStyle = {
-      width: '100%',
-      height: '100%',
-      background: '#ffffff',
-      borderRadius: '16px',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-    };
-
-    const headerStyle = {
-      background: '#ffffff',
-      padding: '12px 16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      borderBottom: '1px solid #e0e0e0',
-    };
-
-    const chatAreaStyle = {
-      flex: 1,
-      padding: '16px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-      overflowY: 'auto',
-      background: '#f5f5f5',
-    };
-
-    const messageBubbleStyle = {
-      minWidth: window.innerWidth <= 768 ? '200px' : '240px',
-      maxWidth: '95%',
-      alignSelf: 'flex-end',
-      background: '#e3f2fd',
-      borderRadius: '18px 18px 4px 18px',
-      overflow: 'hidden',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-    };
-
-    const renderRcsMessage = () => {
-      const richCard = template.richCard;
-      if (!richCard) return null;
-
-      return (
-        <div style={messageBubbleStyle}>
-          {richCard.imageUrl && (
-            <img
-              src={richCard.imageUrl}
-              alt="RCS Media"
-              style={{ width: '100%', height: '160px', objectFit: 'cover' }}
-            />
-          )}
-          <div style={{ padding: '12px' }}>
-            {richCard.title && (
-              <h4 style={{ color: '#000', fontSize: '14px', fontWeight: 600, margin: '0 0 4px 0' }}>
-                {richCard.title}
-              </h4>
-            )}
-            {richCard.subtitle && (
-              <p style={{ color: '#333', fontSize: '12px', margin: '0 0 12px 0', lineHeight: 1.4 }}>
-                {richCard.subtitle}
-              </p>
-            )}
-            {richCard.actions && richCard.actions.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {richCard.actions.slice(0, 2).map((action, idx) => (
-                  <button
-                    key={idx}
-                    style={{
-                      background: 'transparent',
-                      border: '1px solid #666',
-                      borderRadius: '16px',
-                      color: '#1976d2',
-                      padding: '8px 16px',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    {action.title}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    };
-
-    const renderTextMessage = () => {
-      if (!template.text) return null;
-
-      return (
-        <div style={{
-          ...messageBubbleStyle,
-          background: '#e3f2fd',
-          padding: '12px 16px',
-        }}>
-          <p style={{ color: '#000', fontSize: '14px', margin: 0, lineHeight: 1.4 }}>
-            {template.text}
-          </p>
-        </div>
-      );
-    };
-
-    const renderTextWithActionMessage = () => {
-      if (!template.text && !template.actions) return null;
-
-      return (
-        <div style={messageBubbleStyle}>
-          <div style={{ padding: '12px 16px' }}>
-            {template.text && (
-              <p style={{ color: '#000', fontSize: '14px', margin: '0 0 12px 0', lineHeight: 1.4 }}>
-                {template.text}
-              </p>
-            )}
-            {template.actions && template.actions.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {template.actions.slice(0, 3).map((action, idx) => (
-                  <button
-                    key={idx}
-                    style={{
-                      background: 'transparent',
-                      border: '1px solid #666',
-                      borderRadius: '16px',
-                      color: '#1976d2',
-                      padding: '8px 16px',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    {action.title}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    };
-
-    const renderCarouselMessage = () => {
-      if (!template.carouselItems || template.carouselItems.length === 0) return null;
-
-      return (
-        <div style={{ ...messageBubbleStyle, background: 'transparent', boxShadow: 'none' }}>
-          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '0 4px' }}>
-            {template.carouselItems.slice(0, 3).map((item, idx) => (
-              <div
-                key={idx}
-                style={{
-                  minWidth: '180px',
-                  background: '#e3f2fd',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                }}
-              >
-                {item.imageUrl && (
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    style={{ width: '100%', height: '100px', objectFit: 'cover' }}
-                  />
-                )}
-                <div style={{ padding: '10px' }}>
-                  <h5 style={{ color: '#000', fontSize: '12px', fontWeight: 600, margin: '0 0 4px 0' }}>
-                    {item.title}
-                  </h5>
-                  {item.subtitle && (
-                    <p style={{ color: '#333', fontSize: '10px', margin: '0 0 8px 0' }}>
-                      {item.subtitle}
-                    </p>
-                  )}
-                  {item.actions && item.actions.length > 0 && (
-                    <button
-                      style={{
-                        background: 'transparent',
-                        border: '1px solid #666',
-                        borderRadius: '12px',
-                        color: '#1976d2',
-                        padding: '6px 12px',
-                        fontSize: '10px',
-                        width: '100%',
-                      }}
-                    >
-                      {item.actions[0].title}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    };
-
     return (
-      <div style={{ padding: '20px', background: '#f5f7fa', borderRadius: '12px' }}>
-        <div style={phoneStyle}>
-          <div style={screenStyle}>
-            {/* Header */}
-            <div style={headerStyle}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#4caf50', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ color: 'white', fontSize: '12px', fontWeight: 600 }}>B</span>
-              </div>
-              <div style={{ flex: 1 }}>
-                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Business</h4>
-                <p style={{ margin: 0, fontSize: '11px', color: '#666' }}>RCS • Online</p>
-              </div>
-              <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#e0e0e0' }} />
-            </div>
-
-            {/* Chat Area */}
-            <div style={chatAreaStyle}>
-              {template.messageType === 'rcs' && renderRcsMessage()}
-              {template.messageType === 'text' && renderTextMessage()}
-              {template.messageType === 'text-with-action' && renderTextWithActionMessage()}
-              {template.messageType === 'carousel' && renderCarouselMessage()}
-
-              {/* Delivery Status */}
-              <div style={{ alignSelf: 'flex-end', marginTop: '4px' }}>
-                <span style={{ fontSize: '10px', color: '#666', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                  <FaCheckDouble /> Delivered
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div style={{ 
+        width: '100%',
+        maxWidth: '400px',
+        margin: '0 auto'
+      }}>
+        <RCSMessagePreview data={template} />
       </div>
     );
   };
@@ -1760,10 +1526,13 @@ function SendMessage() {
                       display: 'flex',
                       justifyContent: 'center',
                       alignItems: 'center',
-                      minHeight: 'clamp(300px, 50vh, 500px)'
+                      minHeight: 'clamp(300px, 50vh, 500px)',
+                      overflow: 'hidden'
                     }}
                   >
-                    {renderTemplatePreview()}
+                    <div style={{ width: '100%', maxWidth: '100%' }}>
+                      {renderTemplatePreview()}
+                    </div>
                   </div>
                 </Col>
               </Row>
@@ -1776,7 +1545,7 @@ function SendMessage() {
                   <Card
                     title={
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div c>
+                        <div>
                           <span>Manage Recipients</span>
                           <div style={{ fontSize: '12px', fontWeight: 400, color: THEME_CONSTANTS.colors.textSecondary, marginTop: '4px' }}>
                             {recipients.length} contacts added • {recipients.filter(r => r.capable === true).length} RCS capable

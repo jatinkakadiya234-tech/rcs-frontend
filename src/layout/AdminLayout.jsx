@@ -437,7 +437,7 @@ export default function AdminLayout() {
             )}
 
             {/* Search */}
-            {!isMobile && (
+            {/* {!isMobile && (
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <Input
                   placeholder="Search users, requests, reports..."
@@ -454,7 +454,7 @@ export default function AdminLayout() {
                   className="hover:bg-white focus:bg-white"
                 />
               </div>
-            )}
+            )} */}
           </div>
 
           <Space size={isMobile ? 'middle' : 'large'} style={{ display: 'flex', alignItems: 'center' }}>

@@ -18,7 +18,8 @@ import {
   Layout,
   Typography,
   InputNumber,
-  Progress
+  Progress,
+  Grid
 } from 'antd';
 import {
   UserOutlined,
@@ -44,12 +45,12 @@ import { useAuth } from '../context/AuthContext';
 import { THEME_CONSTANTS } from '../theme';
 import apiService from '../services/api';
 
-
 const { Title, Text } = Typography;
-
+const { useBreakpoint } = Grid;
 
 const Profile = () => {
   const { user, refreshUser } = useAuth();
+  const screens = useBreakpoint();
   const [form] = Form.useForm();
   const [walletBalance, setWalletBalance] = useState(0);
   const [addAmount, setAddAmount] = useState('');
@@ -77,6 +78,76 @@ const Profile = () => {
     fetchUserStats();
   }, [user]);
 
+   const styles = {
+    card: {
+      borderRadius: '16px',
+      border: 'none',
+      boxShadow: THEME_CONSTANTS.shadow.base,
+      background: THEME_CONSTANTS.colors.surface,
+      overflow: 'hidden',
+      position: 'relative',
+    },
+    headerBg: {
+      height: '120px',
+      background: `linear-gradient(135deg, ${THEME_CONSTANTS.colors.primaryLight} 0%, ${THEME_CONSTANTS.colors.primary} 100%)`,
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 0,
+    },
+    content: {
+      position: 'relative',
+      zIndex: 1,
+      padding: '0 32px 32px 32px',
+      marginTop: '60px',
+    },
+    avatarContainer: {
+      padding: '4px',
+      background: THEME_CONSTANTS.colors.surface,
+      borderRadius: '50%',
+      display: 'inline-block',
+      boxShadow: THEME_CONSTANTS.shadow.md,
+    },
+    avatar: {
+      backgroundColor: THEME_CONSTANTS.colors.primaryLight,
+      color: THEME_CONSTANTS.colors.primary,
+      border: `1px solid ${THEME_CONSTANTS.colors.primary}20`,
+    },
+    infoItem: {
+      background: THEME_CONSTANTS.colors.background,
+      borderRadius: THEME_CONSTANTS.radius.lg,
+      padding: THEME_CONSTANTS.spacing.lg,
+      border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+      transition: 'all 0.3s ease',
+      height: '100%',
+    },
+    iconWrapper: {
+      width: '40px',
+      height: '40px',
+      borderRadius: THEME_CONSTANTS.radius.md,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '18px',
+      marginBottom: THEME_CONSTANTS.spacing.md,
+    },
+    label: {
+      fontSize: THEME_CONSTANTS.typography.caption.size,
+      textTransform: 'uppercase',
+      color: THEME_CONSTANTS.colors.textMuted,
+      fontWeight: THEME_CONSTANTS.typography.label.weight,
+      letterSpacing: '0.5px',
+      marginBottom: '4px',
+      display: 'block',
+    },
+    value: {
+      fontSize: THEME_CONSTANTS.typography.body.size,
+      fontWeight: THEME_CONSTANTS.typography.h6.weight,
+      color: THEME_CONSTANTS.colors.text,
+      wordBreak: 'break-all',
+    }
+  };
 
   const fetchUserStats = async () => {
     if (user?._id) {
@@ -232,317 +303,313 @@ const Profile = () => {
 
 
   return (
-    <Layout style={{ background: '#f8f9fa', minHeight: '100vh', padding: '32px 0' }}>
-      <div style={{ 
-        width: '100%',
-        maxWidth: '1200px',
+    <div style={{ background: THEME_CONSTANTS.colors.background, minHeight: '100vh' }}>
+      <div style={{
+        maxWidth: THEME_CONSTANTS.layout.maxContentWidth,
         margin: '0 auto',
-        padding: '0 24px',
+        padding: THEME_CONSTANTS.spacing.xl
       }}>
-        {/* ============ HEADER ============ */}
-        <div style={{ marginBottom: '48px' }}>
-          <Breadcrumb style={{ marginBottom: '24px', fontSize: '13px' }}>
+        {/* Enhanced Header Section */}
+        <div style={{
+          marginBottom: THEME_CONSTANTS.spacing.xxxl,
+          paddingBottom: THEME_CONSTANTS.spacing.xl,
+          borderBottom: `2px solid ${THEME_CONSTANTS.colors.primaryLight}`
+        }}>
+          <Breadcrumb style={{
+            marginBottom: THEME_CONSTANTS.spacing.md,
+            fontSize: THEME_CONSTANTS.typography.caption.size
+          }}>
             <Breadcrumb.Item>
-              <HomeOutlined style={{ marginRight: '6px', fontSize: '12px' }} />
-              <span style={{ color: '#999' }}>Dashboard</span>
+              <HomeOutlined style={{ marginRight: '6px' }} />
+              <span style={{ color: THEME_CONSTANTS.colors.textMuted }}>Home</span>
             </Breadcrumb.Item>
             <Breadcrumb.Item>
-              <span style={{ 
-                color: '#1890ff',
-                fontWeight: 600,
-                fontSize: '13px'
+              <span style={{
+                color: THEME_CONSTANTS.colors.primary,
+                fontWeight: THEME_CONSTANTS.typography.h6.weight
               }}>
                 Profile
               </span>
             </Breadcrumb.Item>
           </Breadcrumb>
 
-          <Row gutter={[24, 16]} align="middle" justify="space-between">
+          <Row gutter={[16, 16]} align="middle" justify="space-between">
             <Col xs={24} lg={18}>
-              <div>
-                <Title level={1} style={{ 
-                  margin: '0 0 12px 0',
-                  fontSize: '32px',
-                  fontWeight: 700,
-                  color: '#1a1a1a',
-                  letterSpacing: '-0.5px'
-                }}>
-                  User Profile
-                </Title>
-                <Text style={{ 
-                  color: '#666',
-                  fontSize: '15px',
-                  fontWeight: 500
-                }}>
-                  Manage your account settings and view transaction history
-                </Text>
-              </div>
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} sm={4} md={3} lg={3}>
+                  <div style={{
+                    width: '64px',
+                    height: '64px',
+                    background: THEME_CONSTANTS.colors.primaryLight,
+                    borderRadius: THEME_CONSTANTS.radius.xl,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: THEME_CONSTANTS.shadow.md,
+                    margin: '0 auto'
+                  }}>
+                    <UserOutlined style={{
+                      color: THEME_CONSTANTS.colors.primary,
+                      fontSize: '32px'
+                    }} />
+                  </div>
+                </Col>
+                <Col xs={24} sm={20} md={21} lg={21}>
+                  <div>
+                    <h1 style={{
+                      fontSize: THEME_CONSTANTS.typography.h1.size,
+                      fontWeight: THEME_CONSTANTS.typography.h1.weight,
+                      color: THEME_CONSTANTS.colors.text,
+                      marginBottom: THEME_CONSTANTS.spacing.sm,
+                      lineHeight: THEME_CONSTANTS.typography.h1.lineHeight,
+                    }}>
+                      User Profile 👤
+                    </h1>
+                    <p style={{
+                      color: THEME_CONSTANTS.colors.textSecondary,
+                      fontSize: THEME_CONSTANTS.typography.body.size,
+                      fontWeight: 500,
+                      lineHeight: THEME_CONSTANTS.typography.body.lineHeight,
+                      margin: 0
+                    }}>
+                      Manage your account settings and view transaction history.
+                    </p>
+                  </div>
+                </Col>
+              </Row>
             </Col>
             <Col xs={24} lg={6}>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={async () => {
-                  setRefreshing(true);
-                  await refreshUser();
-                  await fetchUserStats();
-                  setRefreshing(false);
-                }}
-                loading={refreshing}
-                block
-                style={{
-                  borderRadius: '8px',
-                  height: '44px',
-                  fontWeight: 600,
-                  border: '1px solid #e6e6e6',
-                  color: '#1a1a1a'
-                }}
-              >
-                Refresh Data
-              </Button>
+              <div style={{ textAlign: screens.lg ? 'right' : 'left' }}>
+                <Space>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={async () => {
+                      setRefreshing(true);
+                      await refreshUser();
+                      await fetchUserStats();
+                      setRefreshing(false);
+                    }}
+                    loading={refreshing}
+                    style={{
+                      fontWeight: THEME_CONSTANTS.typography.label.weight,
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                    }}
+                  >
+                    Refresh
+                  </Button>
+                </Space>
+              </div>
             </Col>
           </Row>
         </div>
 
 
         {/* ============ PROFILE CARD ============ */}
-        <Card
-          style={{
-            borderRadius: '12px',
-            border: 'none',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-            marginBottom: '32px'
-          }}
-          bodyStyle={{ padding: '32px' }}
-        >
-          <Row gutter={[32, 32]} align="middle">
-            {/* Avatar Section */}
-            <Col xs={24} sm={6} md={5} style={{ textAlign: 'center' }}>
+        <Card style={styles.card} bodyStyle={{ padding: 0 }}>
+      {/* Decorative Header Background */}
+      <div style={styles.headerBg} />
+
+      <div style={styles.content}>
+        <Row gutter={[32, 24]} align="middle">
+          
+          {/* Left Column: Avatar & Main Info */}
+          <Col xs={24} md={8} lg={6} style={{ textAlign: 'center' }}>
+            <div style={styles.avatarContainer}>
               <Avatar
-                size={100}
+                size={140}
+                src={user?.avatar}
                 icon={<UserOutlined />}
-                style={{
-                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                  border: '4px solid #e0f2ff',
-                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)',
-                  display: 'block'
-                }}
+                style={styles.avatar}
               />
-            </Col>
-
-            {/* Profile Info Section */}
-            <Col xs={24} sm={12} md={13}>
-              <div>
-                <Title level={2} style={{ 
-                  margin: '0 0 16px 0',
-                  color: '#1a1a1a',
-                  fontSize: '26px',
-                  fontWeight: 700,
-                  textAlign: 'center'
-                }}>
-                  {user?.name || 'User Name'}
-                </Title>
-
-                <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '12px',
-                    padding: '10px 0'
-                  }}>
-                    <MailOutlined style={{ color: '#1890ff', fontSize: '16px', minWidth: '20px' }} />
-                    <div>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#999', fontWeight: 600, textTransform: 'uppercase' }}>
-                        Email
-                      </p>
-                      <Text style={{ 
-                        color: '#1a1a1a',
-                        fontSize: '15px',
-                        fontWeight: 500,
-                        wordBreak: 'break-all'
-                      }}>
-                        {user?.email || 'user@example.com'}
-                      </Text>
-                    </div>
-                  </div>
-
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '12px',
-                    padding: '10px 0'
-                  }}>
-                    <PhoneOutlined style={{ color: '#22c55e', fontSize: '16px', minWidth: '20px' }} />
-                    <div>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#999', fontWeight: 600, textTransform: 'uppercase' }}>
-                        Phone
-                      </p>
-                      <Text style={{ 
-                        color: '#1a1a1a',
-                        fontSize: '15px',
-                        fontWeight: 500
-                      }}>
-                        {user?.phone || '+91xxxxxxxxxx'}
-                      </Text>
-                    </div>
-                  </div>
-
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '12px',
-                    padding: '10px 0'
-                  }}>
-                    <BankOutlined style={{ color: '#f59e0b', fontSize: '16px', minWidth: '20px' }} />
-                    <div>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#999', fontWeight: 600, textTransform: 'uppercase' }}>
-                        Company
-                      </p>
-                      <Text style={{ 
-                        color: '#1a1a1a',
-                        fontSize: '15px',
-                        fontWeight: 500
-                      }}>
-                        {user?.companyname || 'Company not set'}
-                      </Text>
-                    </div>
-                  </div>
-                </Space>
-              </div>
-            </Col>
-
-            {/* Action Buttons */}
-            <Col xs={24} sm={6} md={6} style={{ textAlign: 'center' }}>
-              {!isEditing ? (
-                <Button
-                  type="primary"
-                  icon={<EditOutlined />}
-                  onClick={handleEditProfile}
-                  block
-                  style={{
-                    background: '#2563eb',
-                    borderColor: '#2563eb',
-                    borderRadius: '8px',
-                    height: '44px',
-                    fontWeight: 600,
-                    fontSize: '15px'
-                  }}
-                >
-                  Edit Profile
-                </Button>
-              ) : (
-                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+            </div>
+            
+            <div style={{ marginTop: '16px' }}>
+              <Title level={3} style={{ marginBottom: '4px', color: '#1f1f1f' }}>
+                {user?.name || 'User Name'}
+              </Title>
+              <Tag 
+                style={{
+                  borderRadius: THEME_CONSTANTS.radius.lg,
+                  padding: '4px 12px',
+                  margin: 0,
+                  background: THEME_CONSTANTS.colors.primaryLight,
+                  color: THEME_CONSTANTS.colors.primary,
+                  border: `1px solid ${THEME_CONSTANTS.colors.primary}`,
+                  fontWeight: THEME_CONSTANTS.typography.label.weight
+                }}
+              >
+                {user?.role || 'Admin User'}
+              </Tag>
+            </div>
+            
+            <div style={{ marginTop: '24px' }}>
+               {!isEditing ? (
                   <Button
-                    icon={<CloseOutlined />}
-                    onClick={handleCancelEdit}
-                    style={{ 
-                      borderRadius: '8px',
-                      height: '44px',
-                      fontWeight: 600,
-                      border: '1px solid #e6e6e6'
-                    }}
+                    type="primary"
+                    icon={<EditOutlined />}
+                    onClick={handleEditProfile}
                     block
+                    size="large"
+                    style={{
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                      height: '48px',
+                      background: THEME_CONSTANTS.colors.primary,
+                      borderColor: THEME_CONSTANTS.colors.primary,
+                      boxShadow: THEME_CONSTANTS.shadow.md,
+                      fontWeight: THEME_CONSTANTS.typography.label.weight
+                    }}
                   >
-                    Cancel
+                    Edit Profile
                   </Button>
+              ) : (
+                <Space direction="vertical" style={{ width: '100%' }}>
                   <Button
                     type="primary"
                     icon={<SaveOutlined />}
                     onClick={handleUpdateProfile}
                     loading={updating}
-                    style={{
-                      background: '#22c55e',
-                      borderColor: '#22c55e',
-                      borderRadius: '8px',
-                      height: '44px',
-                      fontWeight: 600,
-                      fontSize: '15px'
-                    }}
                     block
+                    size="large"
+                    style={{
+                      background: THEME_CONSTANTS.colors.success,
+                      borderColor: THEME_CONSTANTS.colors.success,
+                      borderRadius: THEME_CONSTANTS.radius.md,
+                      height: '48px',
+                      fontWeight: THEME_CONSTANTS.typography.label.weight
+                    }}
                   >
                     Save Changes
                   </Button>
+                  <Button
+                    icon={<CloseOutlined />}
+                    onClick={handleCancelEdit}
+                    block
+                    size="large"
+                    style={{ 
+                      borderRadius: THEME_CONSTANTS.radius.md, 
+                      height: '48px',
+                      fontWeight: THEME_CONSTANTS.typography.label.weight
+                    }}
+                  >
+                    Cancel
+                  </Button>
                 </Space>
               )}
-            </Col>
-          </Row>
+            </div>
+          </Col>
 
-          {/* Edit Form */}
-          {isEditing && (
-            <>
-              <Divider style={{ margin: '32px 0' }} />
-              <Form layout="vertical">
-                <Row gutter={[24, 0]}>
-                  <Col xs={24} sm={12}>
-                    <Form.Item label={<span style={{ fontWeight: 600, color: '#1a1a1a' }}>Full Name</span>}>
-                      <Input
-                        value={editData.name}
-                        onChange={(e) => setEditData({...editData, name: e.target.value})}
-                        style={{ 
-                          borderRadius: '8px',
-                          height: '40px',
-                          borderColor: '#e6e6e6'
-                        }}
-                        placeholder="Enter your full name"
-                        size="large"
-                      />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Form.Item label={<span style={{ fontWeight: 600, color: '#1a1a1a' }}>Email Address</span>}>
-                      <Input
-                        type="email"
-                        value={editData.email}
-                        onChange={(e) => setEditData({...editData, email: e.target.value})}
-                        style={{ 
-                          borderRadius: '8px',
-                          height: '40px',
-                          borderColor: '#e6e6e6'
-                        }}
-                        placeholder="Enter your email"
-                        size="large"
-                      />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Form.Item label={<span style={{ fontWeight: 600, color: '#1a1a1a' }}>Phone Number</span>}>
-                      <Input
-                        value={editData.phone}
-                        onChange={(e) => setEditData({...editData, phone: e.target.value})}
-                        style={{ 
-                          borderRadius: '8px',
-                          height: '40px',
-                          borderColor: '#e6e6e6'
-                        }}
-                        placeholder="Enter your phone number"
-                        size="large"
-                      />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Form.Item label={<span style={{ fontWeight: 600, color: '#1a1a1a' }}>Company Name</span>}>
-                      <Input
-                        value={editData.companyname}
-                        onChange={(e) => setEditData({...editData, companyname: e.target.value})}
-                        style={{ 
-                          borderRadius: '8px',
-                          height: '40px',
-                          borderColor: '#e6e6e6'
-                        }}
-                        placeholder="Enter your company name"
-                        size="large"
-                      />
-                    </Form.Item>
-                  </Col>
-                </Row>
-              </Form>
-            </>
-          )}
-        </Card>
+          {/* Right Column: Details Grid */}
+          <Col xs={24} md={16} lg={18}>
+            {!isEditing ? (
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12}>
+                  <div style={styles.infoItem}>
+                    <div style={{ ...styles.iconWrapper, background: THEME_CONSTANTS.colors.primaryLight, color: THEME_CONSTANTS.colors.primary }}>
+                      <MailOutlined />
+                    </div>
+                    <span style={styles.label}>Email Address</span>
+                    <Text style={styles.value}>{user?.email || 'Not set'}</Text>
+                  </div>
+                </Col>
+                
+                <Col xs={24} sm={12}>
+                  <div style={styles.infoItem}>
+                    <div style={{ ...styles.iconWrapper, background: THEME_CONSTANTS.colors.successLight, color: THEME_CONSTANTS.colors.success }}>
+                      <PhoneOutlined />
+                    </div>
+                    <span style={styles.label}>Phone Number</span>
+                    <Text style={styles.value}>{user?.phone || 'Not set'}</Text>
+                  </div>
+                </Col>
+
+                <Col xs={24}>
+                  <div style={styles.infoItem}>
+                    <div style={{ ...styles.iconWrapper, background: THEME_CONSTANTS.colors.warningLight, color: THEME_CONSTANTS.colors.warning }}>
+                      <BankOutlined />
+                    </div>
+                    <span style={styles.label}>Company Information</span>
+                    <Text style={styles.value}>{user?.companyname || 'Company Name Not Set'}</Text>
+                    <div style={{ marginTop: '8px', fontSize: '13px', color: THEME_CONSTANTS.colors.textMuted }}>
+                      Account ID: <Text code>{user?._id || user?.id || '...'}</Text>
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            ) : (
+              <div style={{ 
+                background: THEME_CONSTANTS.colors.background, 
+                padding: THEME_CONSTANTS.spacing.xl, 
+                borderRadius: THEME_CONSTANTS.radius.lg,
+                border: `1px solid ${THEME_CONSTANTS.colors.border}`
+              }}>
+                <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <EditOutlined style={{ color: '#1890ff' }} />
+                  <Text strong style={{ fontSize: '16px' }}>Edit Profile Information</Text>
+                </div>
+                
+                <Form layout="vertical">
+                  <Row gutter={[24, 0]}>
+                    <Col xs={24} md={12}>
+                      <Form.Item label="Full Name">
+                        <Input
+                          size="large"
+                          value={editData.name}
+                          onChange={(e) => setEditData({...editData, name: e.target.value})}
+                          prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
+                          style={{ borderRadius: '8px' }}
+                        />
+                      </Form.Item>
+                    </Col>
+                    
+                    <Col xs={24} md={12}>
+                      <Form.Item label="Email Address">
+                        <Input
+                          size="large"
+                          value={editData.email}
+                          onChange={(e) => setEditData({...editData, email: e.target.value})}
+                          prefix={<MailOutlined style={{ color: '#bfbfbf' }} />}
+                          style={{ borderRadius: '8px' }}
+                        />
+                      </Form.Item>
+                    </Col>
+
+                    <Col xs={24} md={12}>
+                      <Form.Item label="Phone Number">
+                        <Input
+                          size="large"
+                          value={editData.phone}
+                          onChange={(e) => setEditData({...editData, phone: e.target.value})}
+                          prefix={<PhoneOutlined style={{ color: '#bfbfbf' }} />}
+                          style={{ borderRadius: '8px' }}
+                        />
+                      </Form.Item>
+                    </Col>
+
+                    <Col xs={24} md={12}>
+                      <Form.Item label="Company Name">
+                        <Input
+                          size="large"
+                          value={editData.companyname}
+                          onChange={(e) => setEditData({...editData, companyname: e.target.value})}
+                          prefix={<BankOutlined style={{ color: '#bfbfbf' }} />}
+                          style={{ borderRadius: '8px' }}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Form>
+              </div>
+            )}
+          </Col>
+        </Row>
+      </div>
+    </Card>
 
 
         {/* ============ WALLET CARD (UNCHANGED) ============ */}
         <Card
           style={{
+            marginTop: '32px',
             marginBottom: '32px',
             borderRadius: '12px',
             border: 'none',
@@ -1079,7 +1146,7 @@ const Profile = () => {
           </div>
         </Modal>
       </div>
-    </Layout>
+    </div>
   );
 };
 

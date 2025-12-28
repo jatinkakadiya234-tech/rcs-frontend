@@ -115,7 +115,7 @@ const AdminProfile = () => {
           <div>
             <div
               style={{
-                fontSize: THEME_CONSTANTS.typography.caption.size,
+                fontSize: 'clamp(11px, 2vw, 12px)',
                 color: THEME_CONSTANTS.colors.textSecondary,
                 fontWeight: 500,
                 textTransform: 'uppercase',
@@ -126,7 +126,7 @@ const AdminProfile = () => {
             </div>
             <div
               style={{
-                fontSize: THEME_CONSTANTS.typography.body.size,
+                fontSize: 'clamp(13px, 2.5vw, 14px)',
                 fontWeight: 600,
                 color: THEME_CONSTANTS.colors.text,
                 marginTop: THEME_CONSTANTS.spacing.xs,
@@ -174,7 +174,7 @@ const AdminProfile = () => {
             <Row gutter={[16, 16]} align="middle" justify="space-between">
               <Col xs={24} lg={18}>
                 <Row gutter={[16, 16]} align="middle">
-                  <Col xs={24} sm={4} md={3} lg={3}>
+                  <Col xs={24} sm={6} md={4} lg={3}>
                     <div style={{
                       width: '64px',
                       height: '64px',
@@ -192,23 +192,20 @@ const AdminProfile = () => {
                       }} />
                     </div>
                   </Col>
-                  <Col xs={24} sm={20} md={21} lg={21}>
-                    <div style={{ textAlign: { xs: 'center', sm: 'left' } }}>
+                  <Col xs={24} sm={18} md={20} lg={21}>
+                    <div style={{ textAlign: window.innerWidth <= 576 ? 'center' : 'left' }}>
                       <h1 style={{
-                        fontSize: THEME_CONSTANTS.typography.h1.size,
+                        fontSize: 'clamp(24px, 4vw, 32px)',
                         fontWeight: THEME_CONSTANTS.typography.h1.weight,
                         color: THEME_CONSTANTS.colors.text,
                         marginBottom: THEME_CONSTANTS.spacing.sm,
-                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight,
-                        '@media (max-width: 768px)': {
-                          fontSize: THEME_CONSTANTS.typography.h2.size,
-                        }
+                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight
                       }}>
                         Admin Profile 👤
                       </h1>
                       <p style={{
                         color: THEME_CONSTANTS.colors.textSecondary,
-                        fontSize: THEME_CONSTANTS.typography.body.size,
+                        fontSize: 'clamp(13px, 2.5vw, 14px)',
                         fontWeight: 500,
                         lineHeight: THEME_CONSTANTS.typography.body.lineHeight,
                         margin: 0
@@ -219,7 +216,6 @@ const AdminProfile = () => {
                   </Col>
                 </Row>
               </Col>
-        
             </Row>
           </div>
 
@@ -235,10 +231,10 @@ const AdminProfile = () => {
             <Row gutter={[THEME_CONSTANTS.spacing.xl, THEME_CONSTANTS.spacing.xl]} align="middle">
               <Col xs={24} md={8} style={{ textAlign: 'center' }}>
                 <Avatar
-                  size={screens.xs ? 80 : 120}
+                  size={window.innerWidth <= 576 ? 80 : 120}
                   style={{
                     background: `linear-gradient(135deg, ${THEME_CONSTANTS.colors.primary}, ${THEME_CONSTANTS.colors.primaryDark})`,
-                    fontSize: screens.xs ? '32px' : '48px',
+                    fontSize: window.innerWidth <= 576 ? '32px' : '48px',
                     fontWeight: 700,
                     boxShadow: THEME_CONSTANTS.shadow.lg,
                     marginBottom: THEME_CONSTANTS.spacing.lg,
@@ -248,7 +244,7 @@ const AdminProfile = () => {
                 </Avatar>
                 <div style={{ textAlign: 'center' }}>
                   <h2 style={{
-                    fontSize: THEME_CONSTANTS.typography.h3.size,
+                    fontSize: 'clamp(18px, 3vw, 24px)',
                     fontWeight: THEME_CONSTANTS.typography.h3.weight,
                     color: THEME_CONSTANTS.colors.text,
                     margin: 0,
@@ -265,7 +261,7 @@ const AdminProfile = () => {
                       fontWeight: 600,
                       padding: '4px 16px',
                       borderRadius: THEME_CONSTANTS.radius.lg,
-                      fontSize: THEME_CONSTANTS.typography.bodySmall.size,
+                      fontSize: 'clamp(11px, 2vw, 12px)',
                     }}
                   >
                     {user?.role?.toUpperCase() || 'ADMINISTRATOR'}
@@ -273,7 +269,7 @@ const AdminProfile = () => {
                 </div>
               </Col>
               <Col xs={24} md={16}>
-                <Row gutter={[THEME_CONSTANTS.spacing.lg, THEME_CONSTANTS.spacing.lg]}>
+                <Row gutter={[16, 16]}>
                   <Col xs={24} sm={12}>
                     <InfoCard
                       icon={MailOutlined}

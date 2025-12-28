@@ -266,7 +266,7 @@ function WalletRequests() {
           </div>
         </Space>
       ),
-      width: screens.md ? '25%' : '40%',
+      width: '35%',
     },
     {
       title: 'Amount',
@@ -277,8 +277,7 @@ function WalletRequests() {
           {formatCurrency(amount)}
         </div>
       ),
-      width: screens.md ? '15%' : '0%',
-      responsive: ['md'],
+      width: '15%',
     },
     {
       title: 'Status',
@@ -322,8 +321,7 @@ function WalletRequests() {
           </Tag>
         );
       },
-      width: screens.md ? '12%' : '0%',
-      responsive: ['md'],
+      width: '15%',
     },
     {
       title: 'Requested',
@@ -336,8 +334,7 @@ function WalletRequests() {
           </span>
         </Tooltip>
       ),
-      width: screens.md ? '16%' : '0%',
-      responsive: ['md'],
+      width: '15%',
     },
     {
       title: 'Actions',
@@ -355,7 +352,6 @@ function WalletRequests() {
                   style={{
                     backgroundColor: THEME_CONSTANTS.colors.success,
                     borderColor: THEME_CONSTANTS.colors.success,
-                    display: screens.md ? 'inline-flex' : 'none',
                   }}
                 />
               </Tooltip>
@@ -365,9 +361,6 @@ function WalletRequests() {
                   size="small"
                   icon={<CloseOutlined />}
                   onClick={() => showRejectModal(record)}
-                  style={{
-                    display: screens.md ? 'inline-flex' : 'none',
-                  }}
                 />
               </Tooltip>
             </>
@@ -387,13 +380,13 @@ function WalletRequests() {
                 danger
                 size="small"
                 icon={<DeleteOutlined />}
-                type={screens.md ? 'text' : 'primary'}
+                type="text"
               />
             </Tooltip>
           </Popconfirm>
         </Space>
       ),
-      width: screens.md ? '20%' : '20%',
+      width: '20%',
       align: 'center',
     },
   ];
@@ -528,7 +521,7 @@ function WalletRequests() {
             <Row gutter={[16, 16]} align="middle" justify="space-between">
               <Col xs={24} lg={18}>
                 <Row gutter={[16, 16]} align="middle">
-                  <Col xs={24} sm={4} md={3} lg={3}>
+                  <Col xs={24} sm={6} md={4} lg={3}>
                     <div style={{
                       width: '64px',
                       height: '64px',
@@ -546,23 +539,20 @@ function WalletRequests() {
                       }} />
                     </div>
                   </Col>
-                  <Col xs={24} sm={20} md={21} lg={21}>
-                    <div style={{ textAlign: { xs: 'center', sm: 'left' } }}>
+                  <Col xs={24} sm={18} md={20} lg={21}>
+                    <div style={{ textAlign: window.innerWidth <= 576 ? 'center' : 'left' }}>
                       <h1 style={{
-                        fontSize: THEME_CONSTANTS.typography.h1.size,
+                        fontSize: 'clamp(24px, 4vw, 32px)',
                         fontWeight: THEME_CONSTANTS.typography.h1.weight,
                         color: THEME_CONSTANTS.colors.text,
                         marginBottom: THEME_CONSTANTS.spacing.sm,
-                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight,
-                        '@media (max-width: 768px)': {
-                          fontSize: THEME_CONSTANTS.typography.h2.size,
-                        }
+                        lineHeight: THEME_CONSTANTS.typography.h1.lineHeight
                       }}>
                         Wallet Requests 💳
                       </h1>
                       <p style={{
                         color: THEME_CONSTANTS.colors.textSecondary,
-                        fontSize: THEME_CONSTANTS.typography.body.size,
+                        fontSize: 'clamp(13px, 2.5vw, 14px)',
                         fontWeight: 500,
                         lineHeight: THEME_CONSTANTS.typography.body.lineHeight,
                         margin: 0
@@ -574,7 +564,7 @@ function WalletRequests() {
                 </Row>
               </Col>
               <Col xs={24} lg={6}>
-                <div style={{ textAlign: { xs: 'center', lg: 'right' } }}>
+                <div style={{ textAlign: window.innerWidth <= 992 ? 'center' : 'right', marginTop: window.innerWidth <= 992 ? '16px' : '0' }}>
                   {/* Wallet actions can go here if needed */}
                 </div>
               </Col>
@@ -582,8 +572,8 @@ function WalletRequests() {
           </div>
 
         {/* Stats Cards */}
-        <Row gutter={[THEME_CONSTANTS.spacing.lg, THEME_CONSTANTS.spacing.lg]} style={{ marginBottom: THEME_CONSTANTS.spacing.xxl }}>
-          <Col xs={24} sm={12} md={5}>
+        <Row gutter={[16, 16]} style={{ marginBottom: THEME_CONSTANTS.spacing.xxl }}>
+          <Col xs={24} sm={12} lg={5}>
             <StatCard
               icon={WalletOutlined}
               title="Total Requests"
@@ -592,7 +582,7 @@ function WalletRequests() {
               bgColor={THEME_CONSTANTS.colors.bgLight}
             />
           </Col>
-          <Col xs={24} sm={12} md={5}>
+          <Col xs={24} sm={12} lg={5}>
             <StatCard
               icon={ClockCircleOutlined}
               title="Pending"
@@ -601,7 +591,7 @@ function WalletRequests() {
               bgColor="#FFFBE6"
             />
           </Col>
-          <Col xs={24} sm={12} md={5}>
+          <Col xs={24} sm={12} lg={5}>
             <StatCard
               icon={CheckCircleOutlined}
               title="Approved"
@@ -610,17 +600,16 @@ function WalletRequests() {
               bgColor="#F6FFED"
             />
           </Col>
-          <Col xs={24} sm={12} md={5}>
+          <Col xs={24} sm={12} lg={5}>
             <StatCard
               icon={CloseOutlined}
               title="Total Rejectd"
               value={stats.totalReject}
-             
               color={THEME_CONSTANTS.colors.danger}
               bgColor="#FFF0F6"
             />
           </Col>
-          <Col xs={24} sm={12} md={4}>
+          <Col xs={24} sm={24} lg={4}>
             <StatCard
               icon={DollarOutlined}
               title="Total Amount"
@@ -655,19 +644,14 @@ function WalletRequests() {
               pagination={{
                 pageSize: 10,
                 total: requests.length,
-                showSizeChanger: true,
+                showSizeChanger: window.innerWidth > 768,
+                showQuickJumper: window.innerWidth > 768,
                 pageSizeOptions: ['5', '10', '20', '50'],
                 style: { padding: '16px' },
+                size: window.innerWidth <= 768 ? 'small' : 'default'
               }}
-              expandable={
-                !screens.md
-                  ? {
-                      expandedRowRender,
-                      expandRowByClick: true,
-                    }
-                  : undefined
-              }
-              scroll={{ x: screens.md ? 0 : 500 }}
+              scroll={{ x: 800 }}
+              size={window.innerWidth <= 768 ? 'small' : 'default'}
               style={{
                 borderCollapse: 'collapse',
               }}
@@ -697,7 +681,7 @@ function WalletRequests() {
           form.resetFields();
           setSelectedRequest(null);
         }}
-        width={500}
+        width={window.innerWidth <= 768 ? '95vw' : 500}
         okText="Reject Request"
         cancelText="Cancel"
         okButtonProps={{
