@@ -1,0 +1,86 @@
+import axios from "axios";
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
+const apiClient = axios.create({
+    baseURL: BASE_URL + '/v1/',
+    withCredentials: true,
+    headers: {
+        "Content-Type": "application/json",
+    },
+});
+
+// Request interceptor to handle FormData uploads and add auth token
+apiClient.interceptors.request.use(
+    (config) => {
+        // Token will be injected by Redux middleware or manually
+        // For now, we'll handle it in individual requests
+        
+        // If data is FormData, remove Content-Type header to let axios set it automatically with boundary
+        if (config.data instanceof FormData) {
+            // Delete Content-Type from headers to allow axios to set it with proper boundary
+            if (config.headers) {
+                delete config.headers['Content-Type'];
+            }
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Response interceptor to handle token expiration
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            const currentPath = window.location.pathname;
+            // Only redirect if not already on auth pages and if it's a token expiration
+            if (!currentPath.includes('/login') && 
+                !currentPath.includes('/register') && 
+                !currentPath.includes('/join') && 
+                !currentPath.includes('/reset-password') &&
+                error.response?.data?.message?.includes('expired')) {
+                // Clear any stored auth data
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
+// Helper function to add token to config
+const addTokenToConfig = (config, token) => {
+    if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+};
+
+// eslint-disable-next-line no-unused-vars
+const _get = (url, data = {}, config = {}, token = null) => {
+    return apiClient.get(url, addTokenToConfig(config, token));
+};
+
+// eslint-disable-next-line no-unused-vars
+const _delete = (url, data = {}, config = {}, token = null) => {
+    return apiClient.delete(url, addTokenToConfig(config, token));
+};
+
+const _patch = (url, data = {}, config = {}, token = null) => {
+    return apiClient.patch(url, data, addTokenToConfig(config, token));
+};
+
+const _post = (url, data = {}, config = {}, token = null) => {
+    return apiClient.post(url, data, addTokenToConfig(config, token));
+};
+
+const _put = (url, data = {}, config = {}, token = null) => {
+    return apiClient.put(url, data, addTokenToConfig(config, token));
+};
+
+export { _delete, _get, _post, _patch, _put };

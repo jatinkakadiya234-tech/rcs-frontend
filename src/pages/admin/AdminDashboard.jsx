@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Card,
   Row,
@@ -28,7 +29,7 @@ import {
   DashboardOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import apiService from '../../services/api';
+import { _get } from '../../helper/apiClient.jsx';
 import { THEME_CONSTANTS } from '../../theme';
 
 const { useBreakpoint } = Grid;
@@ -36,6 +37,7 @@ const { useBreakpoint } = Grid;
 function AdminDashboard() {
   const screens = useBreakpoint();
   const [loading, setLoading] = useState(true);
+  const { token } = useSelector(state => state.auth);
 
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -49,17 +51,19 @@ function AdminDashboard() {
   const [recentTransactions, setRecentTransactions] = useState([]);
 
   useEffect(() => {
-    fetchDashboard();
-  }, []);
+    if (token) {
+      fetchDashboard();
+    }
+  }, [token]);
 
   const fetchDashboard = async () => {
     try {
-      const res = await apiService.getDashboard();
-      if (res.success) {
-        setStats(res.dashboard.stats);
-        setRecentUsers(res.dashboard.recentUsers || []);
-        setRecentRequests(res.dashboard.recentWalletRequests || []);
-        setRecentTransactions(res.dashboard.recentTransactions || []);
+      const res = await _get('admin/dashboard', {}, {}, token);
+      if (res.data.success) {
+        setStats(res.data.dashboard.stats);
+        setRecentUsers(res.data.dashboard.recentUsers || []);
+        setRecentRequests(res.data.dashboard.recentWalletRequests || []);
+        setRecentTransactions(res.data.dashboard.recentTransactions || []);
       }
     } catch (err) {
       console.error('Dashboard error:', err);

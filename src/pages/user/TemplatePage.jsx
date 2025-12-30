@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import {
   Card,
   Button,
@@ -24,17 +25,16 @@ import {
   EyeOutlined,
 } from '@ant-design/icons';
 import { THEME_CONSTANTS } from '../../theme';
-import ApiService from '../../services/api';
 import { getMessageTypeLabel } from '../../utils/messageTypes';
-import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import RCSMessagePreview from '../../components/RCSMesagePreview';
+import { _get, _delete } from '../../helper/apiClient.jsx';
 
 const { useBreakpoint } = Grid;
 
 export default function TemplatePage() {
-  const { user } = useAuth();
+  const { user, token } = useSelector(state => state.auth);
   const screens = useBreakpoint();
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
@@ -44,17 +44,20 @@ export default function TemplatePage() {
   const [previewTemplate, setPreviewTemplate] = useState(null);
 
   useEffect(() => {
-    if (user?._id) {
+    if (user?._id && token) {
       fetchTemplates();
     }
-  }, [user]);
+  }, [user, token]);
 
   const fetchTemplates = async () => {
     try {
       setTableLoading(true);
-      const response = await ApiService.getUserTemplates(user?._id);
-      setTemplates(response.data || []);
-      toast.success('Templates fetched successfully');
+      const response = await _get('templates', {}, {}, token);
+      if (response.data.success) {
+        // Update local state with fetched templates
+        setTemplates(response.data.data || []);
+        toast.success('Templates fetched successfully');
+      }
     } catch (err) {
       toast.error('Failed to fetch templates');
       console.error(err);
@@ -62,6 +65,8 @@ export default function TemplatePage() {
       setTableLoading(false);
     }
   };
+
+
 
   const handleEdit = (template) => {
     navigate('/create-template', { state: { editingTemplate: template } });
@@ -74,18 +79,20 @@ export default function TemplatePage() {
 
   const handleDelete = async (id) => {
     try {
-      await ApiService.deleteTemplate(id);
-      toast.success('Template deleted successfully');
-      fetchTemplates();
+      const response = await _delete(`templates/${id}`, {}, {}, token);
+      if (response.data.success) {
+        toast.success('Template deleted successfully');
+        fetchTemplates();
+      }
     } catch (err) {
       toast.error('Failed to delete template');
     }
   };
 
   const typeColors = {
-    text: THEME_CONSTANTS.colors.success,
-    'text-with-action': '#faad14',
-    rcs: THEME_CONSTANTS.colors.primary,
+    plainText: THEME_CONSTANTS.colors.success,
+    textWithAction: '#faad14',
+    richCard: THEME_CONSTANTS.colors.primary,
     carousel: '#13c2c2',
   };
 
@@ -123,7 +130,7 @@ export default function TemplatePage() {
     },
     {
       title: 'Type',
-      dataIndex: 'messageType',
+      dataIndex: 'templateType',
       key: 'type',
       render: (type) => (
         <Tag

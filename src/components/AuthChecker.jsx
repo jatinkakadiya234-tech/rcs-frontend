@@ -1,14 +1,15 @@
 import { useEffect } from 'react'
-import { useAuth } from '../context/AuthContext'
-import { isTokenExpired } from '../utils/cookieUtils'
+import { useSelector, useDispatch } from 'react-redux'
+import { logout } from '../redux/slices/authSlice.js'
 
 const AuthChecker = () => {
-  const { logout, isAuthenticated } = useAuth()
+  const dispatch = useDispatch()
+  const { token, isAuthenticated } = useSelector(state => state.auth)
 
   useEffect(() => {
     const checkAuth = () => {
-      if (isAuthenticated() && isTokenExpired()) {
-        logout()
+      if (!token || !isAuthenticated) {
+        dispatch(logout())
       }
     }
 
@@ -19,7 +20,7 @@ const AuthChecker = () => {
     const interval = setInterval(checkAuth, 5 * 60 * 1000)
 
     return () => clearInterval(interval)
-  }, [logout, isAuthenticated])
+  }, [dispatch, token, isAuthenticated])
 
   return null
 }

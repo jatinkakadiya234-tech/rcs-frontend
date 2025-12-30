@@ -1,24 +1,28 @@
 import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Card, Form, Input, Button, Typography, Checkbox, Alert, Row, Col, Grid } from 'antd';
 import { UserOutlined, LockOutlined, EyeInvisibleOutlined, EyeTwoTone, MailOutlined, CheckCircleOutlined, MessageOutlined, BarChartOutlined, SendOutlined } from '@ant-design/icons';
-import ApiService from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { THEME_CONSTANTS } from '../theme';
+import { loginUser } from '../redux/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
 
 export default function Login() {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const screens = useBreakpoint();
+  
+  const { loading } = useSelector(state => state.auth);
 
   const onFinish = async (values) => {
     try {
-      setLoading(true);
       setError('');
       
       const credentials = {
@@ -26,25 +30,23 @@ export default function Login() {
         password: values.password
       };
       
-      const response = await ApiService.loginUser(credentials);
+      const result = await dispatch(loginUser(credentials)).unwrap();
       
-      if (response.message === 'Login successful') {
+      if (result.success) {
         toast.success('Login successful!');
-        login(response.user, response.jio_token);
+        login(result.user, result.jio_token);
         setTimeout(() => {
-          if (response.user.role === 'admin') {
-            window.location.href = '/admin';
+          if (result.user.role === 'admin') {
+            navigate('/admin');
           } else {
-            window.location.href = '/';
+            navigate('/');
           }
         }, 500);
       }
     } catch (error) {
-      const errorMsg = error.response?.data?.message || 'Login failed';
+      const errorMsg = error || 'Login failed';
       toast.error(errorMsg);
       setError(errorMsg);
-    } finally {
-      setLoading(false);
     }
   };
 

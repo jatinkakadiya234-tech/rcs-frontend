@@ -756,7 +756,7 @@ export default function Orders() {
             </div>
           ) : error ? (
             <Empty
-              description={error}
+              description={error?.message || error?.response?.data?.message || 'Failed to load campaigns'}
               style={{ padding: '60px 20px' }}
             />
           ) : filteredOrders.length === 0 ? (

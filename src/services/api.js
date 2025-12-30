@@ -1,8 +1,6 @@
 import axios from "axios";
-import { getCookie } from "../utils/cookieUtils";
 
-const API_BASE_URL = "https://rcssender.com/api";
-// const API_BASE_URL = "http://localhost:9999/api";
+const API_BASE_URL = "http://localhost:3000/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -14,10 +12,7 @@ const api = axios.create({
 
 // Add token to requests
 api.interceptors.request.use((config) => {
-  const token = getCookie("jio_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  // Token will be handled by Redux components
   return config;
 });
 

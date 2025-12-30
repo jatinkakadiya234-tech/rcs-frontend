@@ -10,7 +10,7 @@ import { THEME_CONSTANTS } from '../theme';
 /**
  * RCSMessagePreview Component
  * Displays a preview of message templates in a realistic mobile UI
- * Supports: Text, Image, Rich Card, and Carousel message types
+ * Compatible with backend template structure
  */
 export default function RCSMessagePreview({ data }) {
   if (!data) {
@@ -22,7 +22,9 @@ export default function RCSMessagePreview({ data }) {
     );
   }
 
-  const messageType = data?.messageType || 'text';
+  const templateType = data?.templateType || 'plainText';
+  const content = data?.content || {};
+
   const phoneStyle = {
     width: 'min(280px, 90vw)',
     height: 'clamp(350px, 60vh, 500px)',
@@ -78,7 +80,7 @@ export default function RCSMessagePreview({ data }) {
 
   // Render text message
   const renderTextMessage = () => {
-    const text = data?.text || '';
+    const text = content?.body || '';
     if (!text) return null;
 
     return (
@@ -100,16 +102,75 @@ export default function RCSMessagePreview({ data }) {
     );
   };
 
-  // Render rich card
-  const renderRichCard = () => {
-    const card = data?.richCard;
-    if (!card || !card.title) return null;
+  // Render text with action buttons
+  const renderTextWithAction = () => {
+    const text = content?.text || '';
+    const buttons = content?.buttons || [];
 
     return (
       <div style={messageBubbleStyle}>
-        {card.imageUrl && (
+        <div style={{ padding: '12px 16px' }}>
+          <p
+            style={{
+              color: '#000',
+              fontSize: '14px',
+              margin: 0,
+              lineHeight: '1.4',
+              whiteSpace: 'pre-wrap',
+            }}
+          >
+            {text}
+          </p>
+        </div>
+        {buttons.length > 0 && (
+          <div style={{ padding: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {buttons
+                .filter((b) => b.label && b.label.trim())
+                .slice(0, 3)
+                .map((button, idx) => (
+                  <button
+                    key={idx}
+                    style={{
+                      background: '#fff',
+                      border: '1px solid #dadce0',
+                      borderRadius: '20px',
+                      color: '#1a73e8',
+                      padding: '8px 16px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {button.actionType === 'dialPhone' && <PhoneOutlined />}
+                    {button.actionType === 'openUri' && <LinkOutlined />}
+                    {button.actionType === 'postback' && <MessageOutlined />}
+                    <span>{button.label}</span>
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render rich card
+  const renderRichCard = () => {
+    const { title, subtitle, imageUrl, actions = [] } = content;
+    if (!title) return null;
+
+    return (
+      <div style={messageBubbleStyle}>
+        {imageUrl && (
           <img
-            src={card.imageUrl}
+            src={imageUrl}
             alt="RCS Card"
             style={{
               width: '100%',
@@ -130,9 +191,9 @@ export default function RCSMessagePreview({ data }) {
               margin: '0 0 4px 0',
             }}
           >
-            {card.title}
+            {title}
           </h4>
-          {card.subtitle && (
+          {subtitle && (
             <p
               style={{
                 color: '#333',
@@ -141,13 +202,13 @@ export default function RCSMessagePreview({ data }) {
                 lineHeight: '1.4',
               }}
             >
-              {card.subtitle}
+              {subtitle}
             </p>
           )}
-          {card.actions && card.actions.length > 0 && (
+          {actions.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {card.actions
-                .filter((a) => a.title && a.title.trim())
+              {actions
+                .filter((a) => a.label && a.label.trim())
                 .slice(0, 2)
                 .map((action, idx) => (
                   <button
@@ -169,10 +230,10 @@ export default function RCSMessagePreview({ data }) {
                       justifyContent: 'center',
                     }}
                   >
-                    {action.type === 'call' && <PhoneOutlined />}
-                    {action.type === 'url' && <LinkOutlined />}
-                    {action.type === 'reply' && <MessageOutlined />}
-                    <span>{action.title}</span>
+                    {action.actionType === 'dialPhone' && <PhoneOutlined />}
+                    {action.actionType === 'openUri' && <LinkOutlined />}
+                    {action.actionType === 'postback' && <MessageOutlined />}
+                    <span>{action.label}</span>
                   </button>
                 ))}
             </div>
@@ -184,8 +245,8 @@ export default function RCSMessagePreview({ data }) {
 
   // Render carousel
   const renderCarousel = () => {
-    const items = data?.carouselItems;
-    if (!items || items.length === 0) return null;
+    const cards = content?.cards || [];
+    if (!cards || cards.length === 0) return null;
 
     return (
       <div
@@ -203,7 +264,7 @@ export default function RCSMessagePreview({ data }) {
             padding: '0 4px',
           }}
         >
-          {items.slice(0, 3).map((item, idx) => (
+          {cards.slice(0, 3).map((card, idx) => (
             <div
               key={idx}
               style={{
@@ -215,10 +276,10 @@ export default function RCSMessagePreview({ data }) {
                 boxSizing: 'border-box'
               }}
             >
-              {item.imageUrl && (
+              {card.imageUrl && (
                 <img
-                  src={item.imageUrl}
-                  alt={item.title}
+                  src={card.imageUrl}
+                  alt={card.title}
                   style={{
                     width: '100%',
                     height: '100px',
@@ -238,9 +299,9 @@ export default function RCSMessagePreview({ data }) {
                     margin: '0 0 4px 0',
                   }}
                 >
-                  {item.title}
+                  {card.title}
                 </h5>
-                {item.subtitle && (
+                {card.subtitle && (
                   <p
                     style={{
                       color: '#333',
@@ -248,13 +309,13 @@ export default function RCSMessagePreview({ data }) {
                       margin: '0 0 8px 0',
                     }}
                   >
-                    {item.subtitle}
+                    {card.subtitle}
                   </p>
                 )}
-                {item.actions && item.actions.length > 0 && (
+                {card.actions && card.actions.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {item.actions
-                      .filter((a) => a.title && a.title.trim())
+                    {card.actions
+                      .filter((a) => a.label && a.label.trim())
                       .slice(0, 2)
                       .map((action, actionIdx) => (
                         <button
@@ -275,10 +336,10 @@ export default function RCSMessagePreview({ data }) {
                             justifyContent: 'center',
                           }}
                         >
-                          {action.type === 'call' && <PhoneOutlined />}
-                          {action.type === 'url' && <LinkOutlined />}
-                          {action.type === 'reply' && <MessageOutlined />}
-                          <span>{action.title}</span>
+                          {action.actionType === 'dialPhone' && <PhoneOutlined />}
+                          {action.actionType === 'openUri' && <LinkOutlined />}
+                          {action.actionType === 'postback' && <MessageOutlined />}
+                          <span>{action.label}</span>
                         </button>
                       ))}
                   </div>
@@ -286,58 +347,6 @@ export default function RCSMessagePreview({ data }) {
               </div>
             </div>
           ))}
-        </div>
-      </div>
-    );
-  };
-
-  // Render quick reply buttons
-  const renderQuickReplies = () => {
-    const actions = data?.actions;
-    if (!actions || actions.length === 0) return null;
-
-    return (
-      <div
-        style={{
-          alignSelf: 'flex-end',
-          maxWidth: '95%',
-          marginTop: '8px',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '6px',
-          }}
-        >
-          {actions
-            .filter((a) => a.title && a.title.trim())
-            .slice(0, 3)
-            .map((action, idx) => (
-              <button
-                key={idx}
-                style={{
-                  background: '#fff',
-                  border: '1px solid #dadce0',
-                  color: '#1a73e8',
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                {action.type === 'call' && <PhoneOutlined />}
-                {action.type === 'url' && <LinkOutlined />}
-                {action.type === 'reply' && <MessageOutlined />}
-                <span>{action.title}</span>
-              </button>
-            ))}
         </div>
       </div>
     );
@@ -392,65 +401,11 @@ export default function RCSMessagePreview({ data }) {
 
           {/* Chat Area */}
           <div style={chatAreaStyle}>
-            {/* Render based on message type */}
-            {messageType === 'text' && renderTextMessage()}
-            {messageType === 'text-with-action' && (
-              <div style={messageBubbleStyle}>
-                <div style={{ padding: '12px 16px' }}>
-                  <p
-                    style={{
-                      color: '#000',
-                      fontSize: '14px',
-                      margin: 0,
-                      lineHeight: '1.4',
-                      whiteSpace: 'pre-wrap',
-                    }}
-                  >
-                    {data?.text || ''}
-                  </p>
-                </div>
-                {data?.actions && data.actions.length > 0 && (
-                  <div style={{ padding: '12px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {data.actions
-                        .filter((a) => a.title && a.title.trim())
-                        .slice(0, 3)
-                        .map((action, idx) => (
-                          <button
-                            key={idx}
-                            style={{
-                              background: '#fff',
-                              border: '1px solid #dadce0',
-                              borderRadius: '20px',
-                              color: '#1a73e8',
-                              padding: '8px 16px',
-                              fontSize: '12px',
-                              fontWeight: '500',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            {action.type === 'call' && <PhoneOutlined />}
-                            {action.type === 'url' && <LinkOutlined />}
-                            {action.type === 'reply' && <MessageOutlined />}
-                            <span>{action.title}</span>
-                          </button>
-                        ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            {messageType === 'rcs' && renderRichCard()}
-            {messageType === 'carousel' && renderCarousel()}
-
-            {/* Quick replies for text only */}
-            {messageType === 'text' && renderQuickReplies()}
+            {/* Render based on template type */}
+            {templateType === 'plainText' && renderTextMessage()}
+            {templateType === 'textWithAction' && renderTextWithAction()}
+            {templateType === 'richCard' && renderRichCard()}
+            {templateType === 'carousel' && renderCarousel()}
 
             {/* Delivery status */}
             <div style={{ alignSelf: 'flex-end', marginTop: '8px' }}>

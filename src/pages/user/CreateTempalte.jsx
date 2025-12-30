@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Layout,
   Form,
@@ -57,23 +57,27 @@ import {
 } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { THEME_CONSTANTS } from '../../theme';
-import ApiService from '../../services/api';
 import { getMessageTypeLabel } from '../../utils/messageTypes';
-import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import RCSMessagePreview from '../../components/RCSMesagePreview';
 import ImageCropper from '../../components/ImageCropper';
+import { createTemplate, updateTemplate } from '../../redux/slices/templateSlice';
+import { _post, _put } from '../../helper/apiClient.jsx';
 
 const { useBreakpoint } = Grid;
 
 export default function CreateTemplatePage() {
-  const { user } = useAuth();
+  const { user, token } = useSelector(state => state.auth);
   const screens = useBreakpoint();
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
   const [form] = Form.useForm();
   const previewRef = useRef(null);
   const carouselContainerRef = useRef(null);
+
+  // Redux state
+  const { loading: templateLoading, error: templateError } = useSelector(state => state.templates);
 
   // Get editing template from location state if coming from edit
   const editingTemplateFromState = location.state?.editingTemplate;
@@ -109,7 +113,6 @@ export default function CreateTemplatePage() {
   );
   const [error, setError] = useState('');
   const [previewMode, setPreviewMode] = useState('desktop');
-  const [loading, setLoading] = useState(false);
 
   // Upload states
   const [uploadingIndexes, setUploadingIndexes] = useState(new Set());
@@ -147,16 +150,18 @@ export default function CreateTemplatePage() {
         const { type, index } = cropperTarget;
         
         if (type === 'main') {
-          setFormData({ ...formData, imageUrl: url });
+          setFormData(prev => ({ ...prev, imageUrl: url }));
         } else if (type === 'rich_card') {
-          setRichCard({ ...richCard, imageUrl: url });
+          setRichCard(prev => ({ ...prev, imageUrl: url }));
         } else if (type === 'carousel' && index !== null) {
-          const updated = [...carouselItems];
-          updated[index].imageUrl = url;
-          setCarouselItems(updated);
+          setCarouselItems(prev => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], imageUrl: url };
+            return updated;
+          });
         }
         
-        toast.success('Image cropped and uploaded successfully');
+        toast.success('Image uploaded successfully');
         setCropperOpen(false);
         setCropperImageUrl(null);
         if (cropperImageUrl) {
@@ -164,7 +169,7 @@ export default function CreateTemplatePage() {
         }
       }
     } catch (error) {
-      toast.error('Failed to upload cropped image: ' + error.message);
+      toast.error('Failed to upload image: ' + error.message);
     } finally {
       setCropperLoading(false);
     }
@@ -181,10 +186,29 @@ export default function CreateTemplatePage() {
 
   const uploadFile = async (file) => {
     try {
-      const result = await ApiService.uploadFile(file);
-      return result.url;
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await _post('uploads/uploadFile', formData, {}, token);
+      
+      // Extract data from axios response
+      const result = response.data;
+      
+      if (result.success && result.data?.url) {
+        return result.data.url;
+      } else {
+        throw new Error('Upload failed - no URL returned');
+      }
     } catch (error) {
-      toast.error('File upload failed: ' + error.message);
+      console.error('Upload error:', error);
+      
+      // Check if it's an authentication error
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please login again.');
+        return null;
+      }
+      
+      toast.error('File upload failed: ' + (error.response?.data?.message || error.message));
       return null;
     }
   };
@@ -234,25 +258,67 @@ export default function CreateTemplatePage() {
       }
 
       const templateData = {
-        userId: user._id,
         name: formData.name,
-        messageType,
-        text: formData.text,
-        imageUrl: formData.imageUrl,
-        actions: validActions,
-        richCard: validRichCard,
-        carouselItems: validCarouselItems.length > 0 ? validCarouselItems : null,
-        carouselSuggestions: messageType === 'carousel' ? carouselSuggestions : null,
+        description: formData.text || richCard.subtitle || '',
+        templateType: messageType === 'text' ? 'plainText' : 
+                     messageType === 'text-with-action' ? 'textWithAction' :
+                     messageType === 'rcs' ? 'richCard' : 'carousel',
+        content: {
+          // Text content
+          ...(messageType === 'text' && {
+            body: formData.text
+          }),
+          
+          // Text with action content
+          ...(messageType === 'text-with-action' && {
+            text: formData.text,
+            buttons: validActions.map(a => ({
+              label: a.title,
+              value: a.payload,
+              actionType: a.type === 'url' ? 'openUri' : a.type === 'call' ? 'dialPhone' : 'postback'
+            }))
+          }),
+          
+          // Rich card content
+          ...(messageType === 'rcs' && {
+            title: richCard.title,
+            subtitle: richCard.subtitle,
+            description: richCard.subtitle,
+            imageUrl: richCard.imageUrl,
+            actions: validRichCard?.actions?.map(a => ({
+              label: a.title,
+              uri: a.payload,
+              actionType: a.type === 'url' ? 'openUri' : a.type === 'call' ? 'dialPhone' : 'postback'
+            })) || []
+          }),
+          
+          // Carousel content
+          ...(messageType === 'carousel' && {
+            cards: validCarouselItems.map(item => ({
+              title: item.title,
+              subtitle: item.subtitle,
+              description: item.subtitle,
+              imageUrl: item.imageUrl,
+              actions: item.actions.map(a => ({
+                label: a.title,
+                uri: a.payload,
+                actionType: a.type === 'url' ? 'openUri' : a.type === 'call' ? 'dialPhone' : 'postback'
+              }))
+            }))
+          })
+        },
+        variables: [],
       };
 
-      setLoading(true);
-      let response;
-
+      let result;
       if (editingTemplate) {
-        response = await ApiService.updateTemplate(editingTemplate._id, templateData);
+        result = await dispatch(updateTemplate({ 
+          id: editingTemplate._id, 
+          ...templateData 
+        })).unwrap();
         toast.success('Template updated successfully');
       } else {
-        response = await ApiService.createTemplate(templateData);
+        result = await dispatch(createTemplate(templateData)).unwrap();
         toast.success('Template created successfully');
       }
 
@@ -270,10 +336,8 @@ export default function CreateTemplatePage() {
         navigate('/templates');
       }, 1500);
     } catch (error) {
-      toast.error('Failed to save template: ' + error.message);
+      toast.error('Failed to save template: ' + error);
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1003,7 +1067,7 @@ export default function CreateTemplatePage() {
               <Button
                 type="primary"
                 size="large"
-                loading={loading}
+                loading={templateLoading}
                 onClick={handleSaveTemplate}
                 style={{
                   background: THEME_CONSTANTS.colors.primary,

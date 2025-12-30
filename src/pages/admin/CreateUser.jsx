@@ -169,6 +169,7 @@
 
 
 import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Card,
   Form,
@@ -195,33 +196,29 @@ import {
   SaveOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-// import MainLayout from '../../layouts/MainLayout';
-import apiService from '../../services/api';
 import { THEME_CONSTANTS } from '../../theme';
+import { createUser } from '../../redux/slices/authSlice';
 
 const { useBreakpoint } = Grid;
 
 function CreateUser() {
   const screens = useBreakpoint();
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const dispatch = useDispatch();
+  
+  const { loading, error } = useSelector(state => state.auth);
 
   const handleSubmit = async (values) => {
-    setLoading(true);
     try {
-      const data = await apiService.createUser(values);
-      if (data.success) {
+      const result = await dispatch(createUser(values)).unwrap();
+      if (result.success) {
         message.success('User created successfully!');
         form.resetFields();
-      } else {
-        message.error(data.message || 'Failed to create user');
       }
     } catch (error) {
       console.error('Error creating user:', error);
-      message.error('Error creating user');
-    } finally {
-      setLoading(false);
+      message.error(error || 'Error creating user');
     }
   };
 

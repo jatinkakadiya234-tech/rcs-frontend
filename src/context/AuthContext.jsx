@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import { setCookie, getCookie, deleteCookie, isTokenExpired } from '../utils/cookieUtils'
+import React, { createContext, useContext } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { logout as logoutAction, getProfile } from '../redux/slices/authSlice.js'
 import toast from 'react-hot-toast'
 
 const AuthContext = createContext()
@@ -13,37 +14,15 @@ export const useAuth = () => {
 }
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    checkAuthStatus()
-  }, [])
-
-  const checkAuthStatus = () => {
-    const token = getCookie('jio_token')
-    const userData = getCookie('user_data')
-    
-    if (token && userData && !isTokenExpired()) {
-      setUser(JSON.parse(userData))
-    } else if (token) {
-      logout()
-    }
-    setLoading(false)
-  }
+  const dispatch = useDispatch()
+  const { user, token, isAuthenticated, loading } = useSelector(state => state.auth)
 
   const login = (userData, token) => {
-    setCookie('jio_token', token, 1)
-    setCookie('user_data', JSON.stringify(userData), 1)
-    setCookie('login_time', new Date().getTime().toString(), 1)
-    setUser(userData)
+    // Login is handled by Redux thunks
   }
 
   const logout = () => {
-    deleteCookie('jio_token')
-    deleteCookie('user_data')
-    deleteCookie('login_time')
-    setUser(null)
+    dispatch(logoutAction())
     toast.success('Logged out successfully')
     setTimeout(() => {
       window.location.href = '/login'
@@ -52,23 +31,12 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUser = async () => {
     if (user?._id) {
-      try {
-        const response = await fetch(`https://rcssender.com/api/profile/${user._id}`)
-        const data = await response.json()
-        if (data.success) {
-          const updatedUser = data.user
-          setCookie('user_data', JSON.stringify(updatedUser), 1)
-          setUser(updatedUser)
-        }
-      } catch (error) {
-        console.error('Error refreshing user:', error)
-      }
+      dispatch(getProfile())
     }
   }
 
-  const isAuthenticated = () => {
-    const token = getCookie('jio_token')
-    return !!user && !!token && !isTokenExpired()
+  const isAuthenticatedCheck = () => {
+    return isAuthenticated
   }
 
   return (
@@ -77,7 +45,7 @@ export const AuthProvider = ({ children }) => {
       login,
       logout,
       refreshUser,
-      isAuthenticated,
+      isAuthenticated: isAuthenticatedCheck,
       loading
     }}>
       {children}

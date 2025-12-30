@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Card,
   Form,
@@ -64,11 +65,13 @@ import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 dayjs.extend(relativeTime);
-import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import RCSMessagePreview from '../../components/RCSMesagePreview';
 import { THEME_CONSTANTS } from '../../theme';
+import { fetchUserTemplates } from '../../redux/slices/templateSlice';
+import { sendBulkMessage, checkCapability } from '../../redux/slices/campaignSlice';
+import { _get, _post } from '../../helper/apiClient.jsx';
 
 // Add CSS for animations
 const styles = `
@@ -200,14 +203,18 @@ const BUTTON_TYPES = ['URL Button', 'Call Button', 'Quick Reply Button'];
   );
 };
 
-function SendMessage() {
-  const { user, refreshUser } = useAuth();
+function CreateCampaign() {
+  const { user, token } = useSelector(state => state.auth);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [form] = Form.useForm();
+
+  // Redux state
+  const { templates, loading: templatesLoading, error: templatesError } = useSelector(state => state.templates);
+  const { sendingMessage, messageError } = useSelector(state => state.campaigns);
 
   // State Management
   const [currentStep, setCurrentStep] = useState(0);
-  const [templates, setTemplates] = useState([]);
   const [filteredTemplates, setFilteredTemplates] = useState([]);
   const [templateSearch, setTemplateSearch] = useState('');
   const [templateFilter, setTemplateFilter] = useState('all');
@@ -228,46 +235,23 @@ function SendMessage() {
   const [manualContactForm] = Form.useForm();
 
   const [checkingCapability, setCheckingCapability] = useState(false);
-  const [sendingInProgress, setSendingInProgress] = useState(false);
   const [campaignSummary, setCampaignSummary] = useState(null);
   const [previewDrawer, setPreviewDrawer] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [showAddMoney, setShowAddMoney] = useState(false);
   const [addAmount, setAddAmount] = useState('');
 
   // Load templates on mount
   useEffect(() => {
     if (user?._id) {
-      loadTemplates();
+      dispatch(fetchUserTemplates({ userId: user._id, limit: 50 }));
     }
-  }, [user]);
+  }, [user, dispatch]);
 
-  // Load Templates from Backend
-  const loadTemplates = async () => {
-    try {
-      setRefreshing(true);
-      const response = await api.getUserTemplates(user?._id);
-      const templatesData = response.data || [];
-
-      // Sort templates by creation date (newest first)
-      const sortedTemplates = templatesData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-      setTemplates(sortedTemplates);
-      setFilteredTemplates(sortedTemplates);
-
-      if (sortedTemplates.length === 0) {
-        message.info('No templates found. Create your first template to get started!');
-      } else {
-        message.success(`${sortedTemplates.length} templates loaded successfully`);
-      }
-    } catch (error) {
-      console.error('Error loading templates:', error);
-      message.error('Failed to load templates: ' + (error.response?.data?.message || error.message));
-      setTemplates([]);
-      setFilteredTemplates([]);
-    } finally {
-      setRefreshing(false);
+  // Load Templates from Redux
+  const loadTemplates = () => {
+    if (user?._id) {
+      dispatch(fetchUserTemplates({ userId: user._id, limit: 50 }));
     }
   };
 
@@ -356,14 +340,17 @@ function SendMessage() {
     }
   };
 
-  // Check RCS Capability
+  // Check RCS Capability for batch of numbers
   const checkRcsCapability = async (numbers) => {
     try {
-      const response = await api.chackcapebalNumber(numbers, user._id);
-      return response;
+      const response = await _post('checkAvablityNumber', {
+        phoneNumbers: numbers,
+        userId: user._id
+      }, {}, token);
+      return response.data;
     } catch (error) {
       console.error('Error checking capability:', error);
-      return null;
+      throw error;
     }
   };
 
@@ -464,13 +451,13 @@ function SendMessage() {
           // Check RCS capability
           const response = await checkRcsCapability(newNumbers);
           console.log('RCS Capability Response:', response);
-          const rcsMessaging = response?.data?.rcsMessaging || response?.rcsMessaging;
 
           let capableNumbers = [];
-          if (rcsMessaging && rcsMessaging.reachableUsers) {
-            // Check each number against reachableUsers array
+          if (response && response.data) {
+            // Map response data to contacts with capability status
             capableNumbers = newNumbers.map((num) => {
-              const isCapable = rcsMessaging.reachableUsers.includes(num);
+              const capabilityResult = response.data.find(r => r.phoneNumber === num);
+              const isCapable = capabilityResult ? capabilityResult.isCapable : false;
               console.log(`Number ${num} capability:`, isCapable);
               return {
                 id: Date.now() + Math.random(),
@@ -480,7 +467,7 @@ function SendMessage() {
               };
             });
           } else {
-            // Default to false if no RCS data
+            // Default to false if no response
             capableNumbers = newNumbers.map((num) => ({
               id: Date.now() + Math.random(),
               number: num,
@@ -566,12 +553,12 @@ function SendMessage() {
 
       // Check capability for all numbers
       const response = await checkRcsCapability(validNumbers);
-      const rcsMessaging = response?.data?.rcsMessaging || response?.rcsMessaging;
       
       const newContacts = validNumbers.map(phone => {
         let isCapable = false;
-        if (rcsMessaging && rcsMessaging.reachableUsers) {
-          isCapable = rcsMessaging.reachableUsers.includes(phone);
+        if (response && response.data) {
+          const capabilityResult = response.data.find(r => r.phoneNumber === phone);
+          isCapable = capabilityResult ? capabilityResult.isCapable : false;
         }
         
         return {
@@ -630,9 +617,8 @@ function SendMessage() {
     }
   };
 
-  // Send Campaign
+  // Send Campaign using Redux
   const handleSendCampaign = async () => {
-    console.log('handleSendCampaign called');
     try {
       // Validation
       if (!selectedTemplate) {
@@ -645,7 +631,7 @@ function SendMessage() {
         return;
       }
 
-      // Filter only valid contacts
+      // Filter only RCS capable contacts for billing calculation
       const validRecipients = recipients.filter(r => r.capable === true);
       
       if (validRecipients.length === 0) {
@@ -653,225 +639,42 @@ function SendMessage() {
         return;
       }
 
-      // Check wallet
-      const totalCost = validRecipients.length * 1; // ₹1 per contact
+      // Check wallet - ONLY charge for RCS capable numbers
+      const totalCost = validRecipients.length * 1;
       if (user.Wallet < totalCost) {
         message.error(`Insufficient credits! Required: ₹${totalCost}, Available: ₹${user.Wallet}`);
         setShowAddMoney(true);
         return;
       }
 
-      console.log('Starting campaign send...');
-      setSendingInProgress(true);
-
-      // Build payload based on message type
-      let payload = {
-        phoneNumbers: validRecipients.map((c) => c.number),
+      // Build payload - include ALL recipients but only charge for RCS capable
+      const payload = {
+        name: campaignName.trim(),
+        description: `Bulk campaign with ${recipients.length} total recipients (${validRecipients.length} RCS capable) using template: ${selectedTemplate.name}`,
         templateId: selectedTemplate._id,
-        type: messageType,
-        userId: user._id,
-        campaignName: campaignName.trim(),
+        recipients: recipients.map(r => ({
+          phoneNumber: r.number.replace('+91', ''), // Remove +91 prefix for backend
+          variables: r.variables || {},
+          isRcsCapable: r.capable === true // Flag for billing
+        })),
+        batchSize: Math.min(100, recipients.length),
+        autoStart: true,
+        estimatedCost: totalCost // Only for RCS capable numbers
       };
 
-      if (messageType === 'carousel') {
-        if (carouselCards.length < 2) {
-          message.error('Carousel requires minimum 2 cards');
-          setSendingInProgress(false);
-          return;
-        }
-
-        const validCards = carouselCards.filter((c) => c.title && c.description && c.imageUrl);
-        if (validCards.length < 2) {
-          message.error('At least 2 cards must have title, description, and image');
-          setSendingInProgress(false);
-          return;
-        }
-
-        payload.content = {
-          richCardDetails: {
-            carousel: {
-              cardWidth: 'MEDIUM_WIDTH',
-              contents: validCards.map((card) => ({
-                cardTitle: card.title,
-                cardDescription: card.description,
-                cardMedia: {
-                  contentInfo: { fileUrl: card.imageUrl },
-                  mediaHeight: 'MEDIUM',
-                },
-                suggestions: card.buttons
-                  ?.filter((btn) => btn.title && btn.value)
-                  ?.map((btn) => ({
-                    action: {
-                      plainText: btn.title,
-                      postBack: { data: 'carousel_action' },
-                      openUrl: { url: btn.value },
-                    },
-                  })),
-              })),
-            },
-          },
-        };
-      } else if (messageType === 'rcs') {
-        if (!mediaUrl) {
-          message.error('Please upload media for RCS message');
-          setSendingInProgress(false);
-          return;
-        }
-
-        if (buttons.length === 0) {
-          message.error('Please add at least one button for RCS message');
-          setSendingInProgress(false);
-          return;
-        }
-
-        const validButtons = buttons.filter((btn) => {
-          if (!btn.title || !btn.value) return false;
-          if (btn.type === 'URL Button') return btn.value.startsWith('http');
-          if (btn.type === 'Call Button') return btn.value.startsWith('+');
-          return true;
-        });
-
-        if (validButtons.length === 0) {
-          message.error('Please add at least one valid button');
-          setSendingInProgress(false);
-          return;
-        }
-
-        payload.content = {
-          richCardDetails: {
-            standalone: {
-              cardOrientation: 'VERTICAL',
-              content: {
-                cardTitle: messageText,
-                cardDescription: cardDescription,
-                cardMedia: {
-                  mediaHeight: 'TALL',
-                  contentInfo: { fileUrl: mediaUrl },
-                },
-                suggestions: validButtons.map((btn) => {
-                  if (btn.type === 'Call Button') {
-                    return {
-                      action: {
-                        plainText: btn.title,
-                        postBack: { data: 'call_action' },
-                        dialerAction: { phoneNumber: btn.value },
-                      },
-                    };
-                  }
-                  return {
-                    action: {
-                      plainText: btn.title,
-                      postBack: { data: 'rcs_action' },
-                      openUrl: { url: btn.value },
-                    },
-                  };
-                }),
-              },
-            },
-          },
-        };
-      } else if (messageType === 'text-with-action') {
-        if (buttons.length === 0) {
-          message.error('Please add at least one button');
-          setSendingInProgress(false);
-          return;
-        }
-
-        const validButtons = buttons.filter((btn) => btn.title && btn.value);
-        if (validButtons.length === 0) {
-          message.error('Please add at least one valid button');
-          setSendingInProgress(false);
-          return;
-        }
-
-        payload.content = {
-          plainText: messageText,
-          suggestions: validButtons.map((btn) => {
-            if (btn.type === 'Call Button') {
-              return {
-                action: {
-                  plainText: btn.title,
-                  postBack: { data: 'call_action' },
-                  dialerAction: { phoneNumber: btn.value },
-                },
-              };
-            }
-            if (btn.type === 'URL Button') {
-              return {
-                action: {
-                  plainText: btn.title,
-                  postBack: { data: 'url_action' },
-                  openUrl: { url: btn.value },
-                },
-              };
-            }
-            return {
-              reply: {
-                plainText: btn.title,
-                postBack: { data: btn.value },
-              },
-            };
-          }),
-        };
-      } else if (messageType === 'webview') {
-        payload.content = {
-          plainText: messageText,
-          suggestions: buttons.map((btn) => ({
-            action: {
-              plainText: btn.title,
-              postBack: { data: btn.value || 'webview_action' },
-              openUrl: {
-                url: btn.value,
-                application: 'WEBVIEW',
-                webviewViewMode: 'TALL',
-              },
-            },
-          })),
-        };
-      } else if (messageType === 'dialer-action') {
-        payload.content = {
-          plainText: messageText,
-          suggestions: buttons.map((btn) => ({
-            action: {
-              plainText: btn.title,
-              postBack: { data: 'dialer_action' },
-              dialerAction: { phoneNumber: btn.value },
-            },
-          })),
-        };
-      } else {
-        // Plain text
-        payload.content = { plainText: messageText };
-      }
-
-      // Send to backend
-      const response = await api.sendMessage(payload);
-      console.log('Campaign response:', response);
-      console.log('Response data:', response.data);
-      console.log('Response success:', response.data.success);
-
-      if (response.data.success) {
-        console.log('helllo=========');
-        message.success('Campaign sent successfully!');
-        console.log('About to refresh user...');
-        await refreshUser();
-        console.log('User refreshed, about to navigate...');
-        console.log('Navigate function:', navigate);
+      // Dispatch Redux action to create and start campaign
+      const result = await dispatch(sendBulkMessage(payload)).unwrap();
+      
+      if (result.success) {
+        message.success(`Campaign created! Sending to ${validRecipients.length} RCS capable numbers.`);
+        // Refresh user data if needed
         navigate('/reports');
-        console.log('Navigate called');
-      } else {
-        console.log('Response success is false or undefined');
-        message.error('Campaign failed to send');
       }
     } catch (error) {
-      if (error.response?.data?.message === 'Insufficient balance') {
-        message.error(`Insufficient credits! Required: ₹${error.response.data.required}, Available: ₹${error.response.data.available}`);
+      if (error.includes('Insufficient balance')) {
         setShowAddMoney(true);
-      } else {
-        message.error(error?.response?.data?.message || 'Failed to send campaign');
       }
-    } finally {
-      setSendingInProgress(false);
+      message.error(error || 'Failed to send campaign');
     }
   };
 
@@ -1279,7 +1082,7 @@ function SendMessage() {
                           <Button
                             onClick={loadTemplates}
                             icon={<ReloadOutlined />}
-                            loading={refreshing}
+                            loading={templatesLoading}
                             size="small"
                             style={{ 
                               borderColor: THEME_CONSTANTS.colors.border,
@@ -1311,7 +1114,7 @@ function SendMessage() {
                     }}
                     bodyStyle={{ padding: 'clamp(16px, 3vw, 24px)' }}
                   >
-                    {refreshing ? (
+                    {templatesLoading ? (
                       <div style={{ textAlign: 'center', padding: `${THEME_CONSTANTS.spacing.xxxl} ${THEME_CONSTANTS.spacing.lg}` }}>
                         <Spin size="large" />
                         <p style={{ 
@@ -1994,7 +1797,7 @@ function SendMessage() {
                         <Button
                           type="primary"
                           size="large"
-                          loading={sendingInProgress}
+                          loading={sendingMessage}
                           onClick={handleSendCampaign}
                           icon={<SendOutlined />}
                           disabled={!campaignName.trim() || user?.Wallet < recipients.filter(r => r.capable === true).length * 1}
@@ -2004,7 +1807,7 @@ function SendMessage() {
                             minWidth: window.innerWidth <= 768 ? 'auto' : '180px'
                           }}
                         >
-                          {sendingInProgress ? 'Sending...' : 'Send Campaign'}
+                          {sendingMessage ? 'Sending...' : 'Send Campaign'}
                         </Button>
                       </div>
                     </Card>
@@ -2207,4 +2010,4 @@ Or comma separated: 9876543210, 9876543211, 9876543212`}
   );
 }
 
-export default SendMessage;
+export default CreateCampaign;
