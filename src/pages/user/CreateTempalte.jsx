@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Layout,
@@ -61,23 +61,21 @@ import { getMessageTypeLabel } from '../../utils/messageTypes';
 import toast from 'react-hot-toast';
 import RCSMessagePreview from '../../components/RCSMesagePreview';
 import ImageCropper from '../../components/ImageCropper';
-import { createTemplate, updateTemplate } from '../../redux/slices/templateSlice';
-import { _post, _put } from '../../helper/apiClient.jsx';
+import { createTemplate, updateTemplate, fetchUserTemplates } from '../../redux/slices/templateSlice';
+import { uploadFile } from '../../redux/slices/uploadSlice';
 
 const { useBreakpoint } = Grid;
 
 export default function CreateTemplatePage() {
-  const { user, token } = useSelector(state => state.auth);
   const screens = useBreakpoint();
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
   const [form] = Form.useForm();
-  const previewRef = useRef(null);
-  const carouselContainerRef = useRef(null);
 
   // Redux state
   const { loading: templateLoading, error: templateError } = useSelector(state => state.templates);
+  const { loading: uploadLoading, currentUpload } = useSelector(state => state.upload);
 
   // Get editing template from location state if coming from edit
   const editingTemplateFromState = location.state?.editingTemplate;
@@ -144,7 +142,7 @@ export default function CreateTemplatePage() {
     
     setCropperLoading(true);
     try {
-      const url = await uploadFile(croppedFile);
+      const url = await uploadFileToServer(croppedFile);
       
       if (url) {
         const { type, index } = cropperTarget;
@@ -184,15 +182,12 @@ export default function CreateTemplatePage() {
     }
   };
 
-  const uploadFile = async (file) => {
+  const uploadFileToServer = async (file) => {
     try {
       const formData = new FormData();
       formData.append('file', file);
       
-      const response = await _post('uploads/uploadFile', formData, {}, token);
-      
-      // Extract data from axios response
-      const result = response.data;
+      const result = await dispatch(uploadFile(formData)).unwrap();
       
       if (result.success && result.data?.url) {
         return result.data.url;
@@ -202,19 +197,26 @@ export default function CreateTemplatePage() {
     } catch (error) {
       console.error('Upload error:', error);
       
-      // Check if it's an authentication error
-      if (error.response?.status === 401) {
+      if (error.includes('Session expired')) {
         toast.error('Session expired. Please login again.');
         return null;
       }
       
-      toast.error('File upload failed: ' + (error.response?.data?.message || error.message));
+      toast.error('File upload failed: ' + error);
       return null;
     }
   };
 
   const handleSaveTemplate = async () => {
     try {
+      // Check authentication first
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Session expired. Please login again.');
+        navigate('/login');
+        return;
+      }
+
       if (!formData.name.trim()) {
         toast.error('Please enter template name');
         return;
@@ -257,68 +259,70 @@ export default function CreateTemplatePage() {
         };
       }
 
+      // Build content object based on template type
+      let content = {};
+      
+      if (messageType === 'text') {
+        content = { body: formData.text };
+      } else if (messageType === 'text-with-action') {
+        content = {
+          text: formData.text,
+          buttons: validActions.map(a => ({
+            label: a.title,
+            value: a.payload,
+            actionType: a.type === 'url' ? 'openUri' : a.type === 'call' ? 'dialPhone' : 'postback'
+          }))
+        };
+      } else if (messageType === 'rcs') {
+        content = {
+          title: richCard.title,
+          subtitle: richCard.subtitle,
+          description: richCard.subtitle,
+          imageUrl: richCard.imageUrl,
+          actions: validRichCard?.actions?.map(a => ({
+            label: a.title,
+            uri: a.payload,
+            actionType: a.type === 'url' ? 'openUri' : a.type === 'call' ? 'dialPhone' : 'postback'
+          })) || []
+        };
+      } else if (messageType === 'carousel') {
+        content = {
+          cards: validCarouselItems.map(item => ({
+            title: item.title,
+            subtitle: item.subtitle,
+            description: item.subtitle,
+            imageUrl: item.imageUrl,
+            actions: item.actions.map(a => ({
+              label: a.title,
+              uri: a.payload,
+              actionType: a.type === 'url' ? 'openUri' : a.type === 'call' ? 'dialPhone' : 'postback'
+            }))
+          }))
+        };
+      }
+
       const templateData = {
         name: formData.name,
         description: formData.text || richCard.subtitle || '',
         templateType: messageType === 'text' ? 'plainText' : 
                      messageType === 'text-with-action' ? 'textWithAction' :
                      messageType === 'rcs' ? 'richCard' : 'carousel',
-        content: {
-          // Text content
-          ...(messageType === 'text' && {
-            body: formData.text
-          }),
-          
-          // Text with action content
-          ...(messageType === 'text-with-action' && {
-            text: formData.text,
-            buttons: validActions.map(a => ({
-              label: a.title,
-              value: a.payload,
-              actionType: a.type === 'url' ? 'openUri' : a.type === 'call' ? 'dialPhone' : 'postback'
-            }))
-          }),
-          
-          // Rich card content
-          ...(messageType === 'rcs' && {
-            title: richCard.title,
-            subtitle: richCard.subtitle,
-            description: richCard.subtitle,
-            imageUrl: richCard.imageUrl,
-            actions: validRichCard?.actions?.map(a => ({
-              label: a.title,
-              uri: a.payload,
-              actionType: a.type === 'url' ? 'openUri' : a.type === 'call' ? 'dialPhone' : 'postback'
-            })) || []
-          }),
-          
-          // Carousel content
-          ...(messageType === 'carousel' && {
-            cards: validCarouselItems.map(item => ({
-              title: item.title,
-              subtitle: item.subtitle,
-              description: item.subtitle,
-              imageUrl: item.imageUrl,
-              actions: item.actions.map(a => ({
-                label: a.title,
-                uri: a.payload,
-                actionType: a.type === 'url' ? 'openUri' : a.type === 'call' ? 'dialPhone' : 'postback'
-              }))
-            }))
-          })
-        },
-        variables: [],
+        content
       };
 
       let result;
       if (editingTemplate) {
+        console.log('Updating template with data:', templateData);
         result = await dispatch(updateTemplate({ 
           id: editingTemplate._id, 
           ...templateData 
         })).unwrap();
+        console.log('Update result:', result);
         toast.success('Template updated successfully');
       } else {
+        console.log('Creating template with data:', templateData);
         result = await dispatch(createTemplate(templateData)).unwrap();
+        console.log('Create result:', result);
         toast.success('Template created successfully');
       }
 
@@ -336,8 +340,8 @@ export default function CreateTemplatePage() {
         navigate('/templates');
       }, 1500);
     } catch (error) {
-      toast.error('Failed to save template: ' + error);
-      console.error(error);
+      console.error('Template save error:', error);
+      toast.error('Failed to save template: ' + (error?.message || error));
     }
   };
 

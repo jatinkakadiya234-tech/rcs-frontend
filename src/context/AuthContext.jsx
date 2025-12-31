@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { logout as logoutAction, getProfile } from '../redux/slices/authSlice.js'
+import { logout as logoutAction, fetchProfile } from '../redux/slices/authSlice.js'
 import toast from 'react-hot-toast'
 
 const AuthContext = createContext()
@@ -31,21 +31,18 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUser = async () => {
     if (user?._id) {
-      dispatch(getProfile())
+      dispatch(fetchProfile())
     }
-  }
-
-  const isAuthenticatedCheck = () => {
-    return isAuthenticated
   }
 
   return (
     <AuthContext.Provider value={{
       user,
+      token,
       login,
       logout,
       refreshUser,
-      isAuthenticated: isAuthenticatedCheck,
+      isAuthenticated,
       loading
     }}>
       {children}

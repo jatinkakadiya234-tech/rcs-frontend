@@ -1,57 +1,77 @@
-import { createSlice } from '@reduxjs/toolkit';
+  import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunkHandler } from '../../helper/createAsyncThunkHandler.jsx';
 import { _get, _post, _put } from '../../helper/apiClient.jsx';
+import { buildUrlWithParams } from '../../helper/helperFunction.js';
 
 // Auth thunks
 export const loginUser = createAsyncThunkHandler(
-  'user/login',
+  'auth/login',
   _post,
-  'user/login'
+  'auth/login'
 );
 
 export const registerUser = createAsyncThunkHandler(
-  'user/register',
+  'auth/register',
   _post,
-  'user/register'
+  'auth/register'
 );
 
-export const getProfile = createAsyncThunkHandler(
-  'user/getProfile',
+export const refreshToken = createAsyncThunkHandler(
+  'auth/refreshToken',
+  _post,
+  'auth/refresh-token'
+);
+
+export const fetchProfile = createAsyncThunkHandler(
+  'auth/fetchProfile',
   _get,
-  'user/profile'
+  'auth/profile'
 );
 
 export const updateProfile = createAsyncThunkHandler(
-  'user/updateProfile',
+  'auth/updateProfile',
   _put,
-  'user/profile'
+  'auth/profile'
+);
+
+export const updateJioConfig = createAsyncThunkHandler(
+  'auth/updateJioConfig',
+  _put,
+  'auth/jio-config'
+);
+
+export const fetchJioConfig = createAsyncThunkHandler(
+  'auth/fetchJioConfig',
+  _get,
+  'auth/jio-config'
 );
 
 // Admin thunks
 export const createUser = createAsyncThunkHandler(
-  'user/createUser',
+  'auth/createUser',
   _post,
-  'user/admin/create-user'
+  'auth/admin/create-user'
 );
 
-export const getAllUsers = createAsyncThunkHandler(
-  'user/getAllUsers',
+export const fetchAllUsers = createAsyncThunkHandler(
+  'auth/fetchAllUsers',
   _get,
-  (payload) => `user/admin/users?page=${payload?.page || 1}&limit=${payload?.limit || 10}&role=${payload?.role || ''}&search=${payload?.search || ''}`
+  (payload) => buildUrlWithParams('auth/admin/users', payload)
 );
 
-export const updateWallet = createAsyncThunkHandler(
-  'user/updateWallet',
+export const updateUserWallet = createAsyncThunkHandler(
+  'auth/updateUserWallet',
   _put,
-  (payload) => `user/admin/wallet/${payload.userId}`
+  (payload) => `auth/admin/wallet/${payload.userId}`
 );
 
 const initialState = {
-  user: null,
-  token: null,
-  isAuthenticated: false,
+  user: JSON.parse(localStorage.getItem('user')) || null,
+  token: localStorage.getItem('token'),
+  isAuthenticated: !!localStorage.getItem('token') && !!localStorage.getItem('user'),
   loading: false,
   error: null,
+  jioConfig: null,
   users: [],
   usersLoading: false,
   usersError: null,
@@ -90,6 +110,8 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.loading = false;
       state.error = null;
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     },
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload };
@@ -102,6 +124,9 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
       state.usersError = null;
+    },
+    resetLoading: (state) => {
+      state.loading = false;
     },
   },
   extraReducers: (builder) => {
@@ -116,6 +141,8 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.user = action.payload.user;
         state.token = action.payload.jio_token;
+        localStorage.setItem('token', action.payload.jio_token);
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -136,15 +163,24 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.user = action.payload.user;
         state.token = action.payload.jio_token;
+        localStorage.setItem('token', action.payload.jio_token);
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
+    // Refresh Token
+    builder
+      .addCase(refreshToken.fulfilled, (state, action) => {
+        state.token = action.payload.data.token;
+        localStorage.setItem('token', action.payload.data.token);
+      })
+
     // Get Profile
     builder
-      .addCase(getProfile.fulfilled, (state, action) => {
+      .addCase(fetchProfile.fulfilled, (state, action) => {
         state.user = action.payload.data;
       })
 
@@ -152,6 +188,15 @@ const authSlice = createSlice({
     builder
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.user = action.payload.data;
+      })
+
+    // Jio Config
+    builder
+      .addCase(updateJioConfig.fulfilled, (state, action) => {
+        state.jioConfig = action.payload.data;
+      })
+      .addCase(fetchJioConfig.fulfilled, (state, action) => {
+        state.jioConfig = action.payload.data;
       })
 
     // Create User (Admin)
@@ -171,29 +216,28 @@ const authSlice = createSlice({
 
     // Get All Users (Admin)
     builder
-      .addCase(getAllUsers.pending, (state) => {
+      .addCase(fetchAllUsers.pending, (state) => {
         state.usersLoading = true;
         state.usersError = null;
       })
-      .addCase(getAllUsers.fulfilled, (state, action) => {
+      .addCase(fetchAllUsers.fulfilled, (state, action) => {
         state.usersLoading = false;
         state.users = action.payload.data;
         state.pagination = action.payload.pagination;
       })
-      .addCase(getAllUsers.rejected, (state, action) => {
+      .addCase(fetchAllUsers.rejected, (state, action) => {
         state.usersLoading = false;
         state.usersError = action.payload;
       })
 
     // Update Wallet (Admin)
     builder
-      .addCase(updateWallet.fulfilled, (state, action) => {
+      .addCase(updateUserWallet.fulfilled, (state, action) => {
         const userId = action.payload.data.userId;
         const userIndex = state.users.findIndex(u => u._id === userId);
         if (userIndex !== -1) {
           state.users[userIndex].wallet.balance = action.payload.data.newBalance;
         }
-        // Update current user if it's their wallet
         if (state.user?._id === userId) {
           state.user.wallet.balance = action.payload.data.newBalance;
         }
@@ -201,5 +245,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { loginStart, loginSuccess, loginFailure, logout, updateUser, updateWalletBalance, clearError } = authSlice.actions;
+export const { loginStart, loginSuccess, loginFailure, logout, updateUser, updateWalletBalance, clearError, resetLoading } = authSlice.actions;
 export default authSlice.reducer;

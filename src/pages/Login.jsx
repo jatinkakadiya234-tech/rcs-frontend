@@ -5,7 +5,7 @@ import { UserOutlined, LockOutlined, EyeInvisibleOutlined, EyeTwoTone, MailOutli
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { THEME_CONSTANTS } from '../theme';
-import { loginUser } from '../redux/slices/authSlice';
+import { loginUser, clearError, resetLoading } from '../redux/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
@@ -21,9 +21,15 @@ export default function Login() {
   
   const { loading } = useSelector(state => state.auth);
 
+  // Reset loading state on component mount
+  React.useEffect(() => {
+    dispatch(resetLoading());
+  }, [dispatch]);
+
   const onFinish = async (values) => {
     try {
       setError('');
+      dispatch(clearError()); // Clear any previous errors
       
       const credentials = {
         emailorphone: values.email,
@@ -34,7 +40,6 @@ export default function Login() {
       
       if (result.success) {
         toast.success('Login successful!');
-        login(result.user, result.jio_token);
         setTimeout(() => {
           if (result.user.role === 'admin') {
             navigate('/admin');
@@ -127,12 +132,12 @@ export default function Login() {
             </Form.Item>
           </Form>
 
-          <div style={{ textAlign: 'center', marginTop: THEME_CONSTANTS.spacing.md }}>
+          {/* <div style={{ textAlign: 'center', marginTop: THEME_CONSTANTS.spacing.md }}>
             <Text style={{ color: THEME_CONSTANTS.colors.textSecondary, fontSize: '14px' }}>
               Don't have an account?{' '}
               <a href="/register" style={{ color: THEME_CONSTANTS.colors.primary, textDecoration: 'none', fontWeight: 600 }}>Sign Up</a>
             </Text>
-          </div>
+          </div> */}
         </Card>
       </div>
     );
@@ -397,14 +402,14 @@ export default function Login() {
               </Form.Item>
             </Form>
 
-            <div style={{ textAlign: 'center', marginTop: THEME_CONSTANTS.spacing.xl }}>
+            {/* <div style={{ textAlign: 'center', marginTop: THEME_CONSTANTS.spacing.xl }}>
               <Text style={{ color: THEME_CONSTANTS.colors.textSecondary, fontSize: '15px' }}>
                 Don't have an account?{' '}
                 <a href="/register" style={{ color: THEME_CONSTANTS.colors.primary, textDecoration: 'none', fontWeight: 600 }}>
                   Sign Up
                 </a>
               </Text>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

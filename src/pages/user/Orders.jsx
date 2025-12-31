@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Card,
   Row,
@@ -18,6 +19,8 @@ import {
   Grid,
   Statistic,
   DatePicker,
+  Badge,
+  Timeline,
 } from 'antd';
 import {
   DownloadOutlined,
@@ -32,36 +35,57 @@ import {
   ReloadOutlined,
   PhoneOutlined,
   ClockCircleOutlined,
+  SendOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { THEME_CONSTANTS } from '../../theme';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
-import { useOrders, useOrderDetails, useDeleteOrder } from '../../hooks/useOrders';
+import {
+  fetchUserCampaignReports,
+  fetchCampaignMessages,
+  generateCampaignReport,
+  setCurrentReport,
+  clearCurrentReport
+} from '../../redux/slices/campaignReportSlice';
+import {
+  fetchRealTimeCampaignStats,
+  fetchUserStats,
+  updateCampaignStats,
+  addMessageToFeed
+} from '../../redux/slices/realtimeSlice';
 import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
+import { io } from 'socket.io-client';
 
 const { RangePicker } = DatePicker;
 const { useBreakpoint } = Grid;
 
 export default function Orders() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const dispatch = useDispatch();
   const screens = useBreakpoint();
+  
+  // Redux state
+  const {
+    reports: orders,
+    pagination,
+    currentReport: selectedOrder,
+    campaignMessages,
+    messagesPagination,
+    loading,
+    error
+  } = useSelector(state => state.campaignReports);
+  
+  const {
+    campaignStats: realTimeStats,
+    messageFeed: liveEvents
+  } = useSelector(state => state.realtime);
+  
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [modalCurrentPage, setModalCurrentPage] = useState(1);
-
-  // React Query hooks
-  const { data: ordersData, isLoading, error, refetch } = useOrders(user?._id, currentPage, 10);
-  const deleteOrderMutation = useDeleteOrder();
-
-  const orders = ordersData?.data || [];
-  const pagination = ordersData?.pagination || {
-    page: 1,
-    limit: 10,
-    total: 0,
-    pages: 0,
-  };
+  const [socket, setSocket] = useState(null);
 
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -69,91 +93,114 @@ export default function Orders() {
   const [campaignFilter, setCampaignFilter] = useState('all');
   const [dateRange, setDateRange] = useState([null, null]);
   const [sortOrder, setSortOrder] = useState('newest');
-  const [filteredOrders, setFilteredOrders] = useState([]);
+
+  // Fetch orders on component mount and page change
+  useEffect(() => {
+    if (user?._id) {
+      dispatch(fetchUserCampaignReports({ userId: user._id, page: currentPage, limit: 10 }));
+    }
+  }, [dispatch, user?._id, currentPage]);
 
   useEffect(() => {
-    if (orders.length > 0) {
-      filterAndSortOrders();
+    if (Array.isArray(orders) && orders.length > 0) {
+      // Fetch real-time stats for all campaigns
+      fetchAllCampaignStats();
     }
-  }, [orders, searchText, statusFilter, typeFilter, campaignFilter, dateRange, sortOrder]);
+  }, [orders]);
 
-  const filterAndSortOrders = () => {
-    let filtered = [...orders];
+  // Socket.IO setup for real-time updates
+  useEffect(() => {
+    if (!token) return;
 
-    // Search filter
-    if (searchText) {
-      filtered = filtered?.filter(
-        (order) =>
-          order?.type?.toLowerCase().includes(searchText.toLowerCase()) ||
-          order?.CampaignName?.toLowerCase().includes(searchText.toLowerCase()) ||
-          order?._id?.toLowerCase().includes(searchText.toLowerCase())
-      );
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered?.filter((order) => {
-        const successCount = order?.successCount || 0;
-        const failedCount = order?.failedCount || 0;
-        
-        if (statusFilter === 'success') {
-          return successCount > failedCount;
-        } else if (statusFilter === 'failed') {
-          return failedCount > 0;
-        } else if (statusFilter === 'pending') {
-          return successCount === 0 && failedCount === 0;
-        }
-        return true;
+    try {
+      const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000', {
+        auth: { token },
+        timeout: 5000,
+        forceNew: true,
+        transports: ['websocket', 'polling']
       });
-    }
 
-    // Type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter((order) => order.type === typeFilter);
-    }
+      newSocket.on('connect', () => {
+        console.log('Connected to real-time updates');
+      });
 
-    // Campaign filter
-    if (campaignFilter !== 'all') {
-      filtered = filtered?.filter((order) => order?.CampaignName === campaignFilter);
-    }
+      newSocket.on('connect_error', (error) => {
+        console.warn('Socket connection failed:', error.message);
+        // Don't show error to user, just log it
+      });
 
-    // Date range filter
-    if (dateRange[0] && dateRange[1]) {
-      filtered = filtered?.filter(
-        (order) =>
-          dayjs(order.createdAt).isAfter(dateRange[0]) &&
-          dayjs(order.createdAt).isBefore(dateRange[1])
-      );
-    }
+      newSocket.on('message_status_update', (data) => {
+        // Update real-time stats
+        dispatch(fetchRealTimeCampaignStats({ campaignId: data.campaignId }));
+        
+        // Add to live events
+        dispatch(addMessageToFeed({
+          id: Date.now(),
+          campaignId: data.campaignId,
+          messageId: data.messageId,
+          phoneNumber: data.phoneNumber,
+          status: data.status,
+          timestamp: data.timestamp,
+          eventType: data.eventType
+        }));
+      });
 
-    // Sort by date
-    if (sortOrder === 'newest') {
-      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    } else if (sortOrder === 'oldest') {
-      filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    }
+      newSocket.on('user_interaction', (data) => {
+        dispatch(addMessageToFeed({
+          id: Date.now(),
+          campaignId: data.campaignId,
+          messageId: data.messageId,
+          phoneNumber: data.phoneNumber,
+          status: 'interaction',
+          interactionType: data.interactionType,
+          text: data.text,
+          timestamp: data.timestamp
+        }));
+      });
 
-    setFilteredOrders(filtered);
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.disconnect();
+      };
+    } catch (error) {
+      console.warn('Failed to initialize socket connection:', error);
+    }
+  }, [token]);
+
+  const fetchAllCampaignStats = async () => {
+    for (const order of orders) {
+      if (order._id) {
+        dispatch(fetchRealTimeCampaignStats({ campaignId: order._id }));
+      }
+    }
   };
 
   const getUniqueTypes = () => {
-    return [...new Set(orders?.map((order) => order.type).filter(Boolean))];
+    if (!Array.isArray(orders)) return [];
+    return [...new Set(orders.map((order) => order.type).filter(Boolean))];
   };
 
   const getUniqueCampaigns = () => {
+    if (!Array.isArray(orders)) return [];
     return [...new Set(orders.map((order) => order.CampaignName).filter(Boolean))];
   };
 
   const getStatusBadge = (order) => {
-    const successCount = order?.successCount || 0;
-    const failedCount = order?.failedCount || 0;
-    const totalMessages = successCount + failedCount;
+    const campaignId = order._id;
+    const liveStats = realTimeStats[campaignId];
+    
+    // Use real-time stats if available, fallback to order data
+    const successCount = liveStats?.delivered || order?.successCount || 0;
+    const failedCount = liveStats?.failed || order?.failedCount || 0;
+    const sentCount = liveStats?.sent || order?.successCount || 0;
+    const totalMessages = liveStats?.total || order?.cost || 0;
 
-    // Calculate success rate based on actual messages sent
-    const successRate = totalMessages > 0 ? (successCount / totalMessages) * 100 : 0;
+    // Calculate success rate based on delivered messages
+    const successRate = sentCount > 0 ? (successCount / sentCount) * 100 : 0;
 
     // If no messages sent yet, show pending
-    if (totalMessages === 0) {
+    if (sentCount === 0) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
           <Progress
@@ -165,19 +212,21 @@ export default function Orders() {
             strokeWidth={6}
             showInfo={false}
           />
-          <Tag
-            color="#fffbe6"
-            style={{
-              color: '#faad14',
-              border: '1px solid #faad14',
-              fontWeight: 600,
-              padding: '4px 8px',
-              borderRadius: THEME_CONSTANTS.radius.sm,
-              fontSize: '11px'
-            }}
-          >
-            Pending
-          </Tag>
+          <div>
+            <Tag
+              color="#fffbe6"
+              style={{
+                color: '#faad14',
+                border: '1px solid #faad14',
+                fontWeight: 600,
+                padding: '4px 8px',
+                borderRadius: THEME_CONSTANTS.radius.sm,
+                fontSize: '11px'
+              }}
+            >
+              Pending
+            </Tag>
+          </div>
         </div>
       );
     }
@@ -215,40 +264,49 @@ export default function Orders() {
             </span>
           )}
         />
-        <Tag
-          color={successRate >= 80 ? "#f6ffed" : successRate > 0 ? "#fff7e6" : "#fff1f0"}
-          style={{
-            color: getProgressColor(),
-            border: `1px solid ${getProgressColor()}`,
-            fontWeight: 600,
-            padding: '4px 8px',
-            borderRadius: THEME_CONSTANTS.radius.sm,
-            fontSize: '11px'
-          }}
-        >
-          {getStatusText()}
-        </Tag>
+        <div>
+          <Tag
+            color={successRate >= 80 ? "#f6ffed" : successRate > 0 ? "#fff7e6" : "#fff1f0"}
+            style={{
+              color: getProgressColor(),
+              border: `1px solid ${getProgressColor()}`,
+              fontWeight: 600,
+              padding: '4px 8px',
+              borderRadius: THEME_CONSTANTS.radius.sm,
+              fontSize: '11px'
+            }}
+          >
+            {getStatusText()}
+          </Tag>
+        </div>
       </div>
     );
   };
 
-  const { data: orderDetailsData, isLoading: detailsLoading } = useOrderDetails(
-    selectedOrder?._id,
-    modalCurrentPage,
-    10
-  );
-
-  const modalOrder = orderDetailsData?.data || selectedOrder;
+  const modalOrder = selectedOrder;
 
   const viewOrderDetails = (order) => {
-    setSelectedOrder(order);
+    dispatch(setCurrentReport(order));
     setModalCurrentPage(1);
     setShowModal(true);
+    // Fetch real-time stats and messages for the campaign
+    if (order._id) {
+      dispatch(fetchRealTimeCampaignStats({ campaignId: order._id }));
+      dispatch(fetchCampaignMessages({ campaignId: order._id, page: 1, limit: 20 }));
+      // Join campaign room for real-time updates
+      if (socket) {
+        socket.emit('join_campaign', order._id);
+      }
+    }
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setSelectedOrder(null);
+    // Leave campaign room
+    if (socket && selectedOrder?._id) {
+      socket.emit('leave_campaign', selectedOrder._id);
+    }
+    dispatch(clearCurrentReport());
   };
 
   const deleteOrder = async (orderId) => {
@@ -260,9 +318,8 @@ export default function Orders() {
       cancelText: 'Cancel',
       onOk: async () => {
         try {
-          await deleteOrderMutation.mutateAsync(orderId);
+          await dispatch(deleteOrder(orderId)).unwrap();
           toast.success('Campaign report deleted successfully');
-          refetch();
         } catch (err) {
           console.error('Error deleting order:', err);
           toast.error('Failed to delete campaign report');
@@ -273,12 +330,12 @@ export default function Orders() {
 
   const exportToExcel = () => {
     try {
-      if (!filteredOrders || filteredOrders?.length === 0) {
+      if (!orders || orders?.length === 0) {
         toast.error('No data to export');
         return;
       }
 
-      const exportData = filteredOrders?.map((order, idx) => {
+      const exportData = orders?.map((order, idx) => {
         const successCount = order?.successCount || 0;
         const failedCount = order?.failedCount || 0;
         const totalRecipients = order?.cost || 0;
@@ -367,12 +424,13 @@ export default function Orders() {
       ),
       width: '12%',
     },
-    {
-      title: 'Success / Failed',
+    {title: 'Success / Failed',
       key: 'results',
       render: (text, record) => {
-        const successCount = record?.successCount || 0;
-        const failedCount = record?.failedCount || 0;
+        const campaignId = record._id;
+        const liveStats = realTimeStats[campaignId];
+        const successCount = liveStats?.delivered || record?.successCount || 0;
+        const failedCount = liveStats?.failed || record?.failedCount || 0;
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontWeight: 600, color: THEME_CONSTANTS.colors.success, fontSize: '13px' }}>
@@ -528,8 +586,8 @@ export default function Orders() {
                     </Button>
                     <Button
                       icon={<ReloadOutlined />}
-                      onClick={() => refetch()}
-                      loading={isLoading}
+                      onClick={() => dispatch(fetchUserCampaignReports({ userId: user._id, page: currentPage, limit: 10 }))}
+                      loading={loading}
                     >
                       Refresh
                     </Button>
@@ -539,8 +597,56 @@ export default function Orders() {
             </Row>
           </div>
 
-        {/* Summary Stats */}
-        {orders.length > 0 && (
+        {/* Live Events Feed */}
+        {liveEvents.length > 0 && (
+          <Card
+            style={{
+              borderRadius: THEME_CONSTANTS.radius.lg,
+              border: `1px solid ${THEME_CONSTANTS.colors.borderLight}`,
+              boxShadow: THEME_CONSTANTS.shadow.sm,
+              marginBottom: '24px',
+            }}
+            bodyStyle={{ padding: '24px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>🔴 Live Activity Feed</h3>
+              <Badge status="processing" text="Real-time" />
+            </div>
+            <Timeline mode="left">
+              {liveEvents.slice(0, 5).map((event) => (
+                <Timeline.Item
+                  key={event.id}
+                  color={event.status === 'delivered' ? 'green' : event.status === 'failed' ? 'red' : 'blue'}
+                  dot={event.status === 'delivered' ? <CheckCircleOutlined /> : 
+                       event.status === 'failed' ? <CloseCircleOutlined /> : 
+                       event.status === 'interaction' ? <MessageOutlined /> : <SendOutlined />}
+                >
+                  <div>
+                    <strong>{event.phoneNumber}</strong>
+                    <Tag 
+                      color={event.status === 'delivered' ? 'green' : 
+                             event.status === 'failed' ? 'red' : 
+                             event.status === 'interaction' ? 'purple' : 'blue'} 
+                      style={{ marginLeft: '8px' }}
+                    >
+                      {event.status === 'interaction' ? event.interactionType : event.status}
+                    </Tag>
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                      {new Date(event.timestamp).toLocaleTimeString()}
+                      {event.text && (
+                        <div style={{ marginTop: '4px', fontStyle: 'italic' }}>
+                          "{event.text}"
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Timeline.Item>
+              ))}
+            </Timeline>
+          </Card>
+        )}
+        {/* Summary Stats with Real-time Data */}
+        {Array.isArray(orders) && orders.length > 0 && (
           <Row gutter={[16, 16]} style={{ marginBottom: '32px' }}>
             <Col xs={24} sm={12} md={6}>
               <Card
@@ -571,8 +677,9 @@ export default function Orders() {
                 bodyStyle={{ padding: '24px' }}
               >
                 <Statistic
-                  title="Successful"
-                  value={orders?.reduce((acc, order) => acc + (order?.successCount || 0), 0)}
+                  title="Total Delivered"
+                  value={Object.values(realTimeStats).reduce((acc, stats) => acc + (stats?.delivered || 0), 0) || 
+                         orders?.reduce((acc, order) => acc + (order?.successCount || 0), 0)}
                   prefix={<CheckCircleOutlined style={{ marginRight: '8px', color: THEME_CONSTANTS.colors.success }} />}
                   valueStyle={{ color: THEME_CONSTANTS.colors.success, fontSize: '28px', fontWeight: 700 }}
                   titleStyle={{ fontSize: '13px', fontWeight: 600, color: THEME_CONSTANTS.colors.textSecondary }}
@@ -590,8 +697,9 @@ export default function Orders() {
                 bodyStyle={{ padding: '24px' }}
               >
                 <Statistic
-                  title="Failed"
-                  value={orders?.reduce((acc, order) => acc + (order?.failedCount || 0), 0)}
+                  title="Total Failed"
+                  value={Object.values(realTimeStats).reduce((acc, stats) => acc + (stats?.failed || 0), 0) || 
+                         orders?.reduce((acc, order) => acc + (order?.failedCount || 0), 0)}
                   prefix={<CloseCircleOutlined style={{ marginRight: '8px', color: '#ff4d4f' }} />}
                   valueStyle={{ color: '#ff4d4f', fontSize: '28px', fontWeight: 700 }}
                   titleStyle={{ fontSize: '13px', fontWeight: 600, color: THEME_CONSTANTS.colors.textSecondary }}
@@ -611,13 +719,13 @@ export default function Orders() {
                 <Statistic
                   title="Success Rate"
                   value={
-                    orders?.length > 0
-                      ? (
-                          (orders?.reduce((acc, order) => acc + (order?.successCount || 0), 0) /
-                            (orders?.reduce((acc, order) => acc + ((order?.successCount || 0) + (order?.failedCount || 0)), 0) || 1)) *
-                          100
-                        ).toFixed(2)
-                      : 0
+                    (() => {
+                      const totalDelivered = Object.values(realTimeStats).reduce((acc, stats) => acc + (stats?.delivered || 0), 0) || 
+                                           orders?.reduce((acc, order) => acc + (order?.successCount || 0), 0);
+                      const totalSent = Object.values(realTimeStats).reduce((acc, stats) => acc + (stats?.sent || 0), 0) || 
+                                      orders?.reduce((acc, order) => acc + ((order?.successCount || 0) + (order?.failedCount || 0)), 0);
+                      return totalSent > 0 ? ((totalDelivered / totalSent) * 100).toFixed(2) : 0;
+                    })()
                   }
                   suffix="%"
                   valueStyle={{ color: THEME_CONSTANTS.colors.primary, fontSize: '28px', fontWeight: 700 }}
@@ -723,7 +831,7 @@ export default function Orders() {
           }}
           bodyStyle={{ padding: 0 }}
         >
-          {isLoading ? (
+          {loading ? (
             <div
               style={{
                 display: 'flex',
@@ -754,12 +862,12 @@ export default function Orders() {
                 Loading campaigns...
               </div>
             </div>
-          ) : error ? (
+          ) : error?.orders ? (
             <Empty
-              description={error?.message || error?.response?.data?.message || 'Failed to load campaigns'}
+              description={error?.orders || 'Failed to load campaigns'}
               style={{ padding: '60px 20px' }}
             />
-          ) : filteredOrders.length === 0 ? (
+          ) : Array.isArray(orders) && orders.length === 0 ? (
             <Empty
               description="No campaigns found"
               style={{ padding: '60px 20px' }}
@@ -768,14 +876,17 @@ export default function Orders() {
             <>
               <Table
                 columns={columns}
-                dataSource={filteredOrders}
+                dataSource={Array.isArray(orders) ? orders : []}
                 rowKey="_id"
                 pagination={{
                   current: currentPage,
                   pageSize: 10,
                   total: pagination.total,
-                  onChange: setCurrentPage,
+                  onChange: (page) => {
+                    setCurrentPage(page);
+                  },
                   showSizeChanger: false,
+                  showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} campaigns`,
                 }}
                 style={{ borderCollapse: 'collapse' }}
                 scroll={{ x: 800 }}
@@ -842,355 +953,313 @@ export default function Orders() {
 
             {/* Professional Stats Grid */}
             <div style={{ padding: '32px' }}>
-              <Row gutter={[16, 16]} style={{ marginBottom: '32px' }}>
-                <Col xs={12} sm={8} md={4}>
-                  <Card style={{
-                    background: '#ffffff',
-                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                    borderRadius: '8px',
-                    textAlign: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                    height: '100px'
-                  }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: THEME_CONSTANTS.colors.primary }}>
-                      {modalOrder?.cost || 0}
-                    </div>
-                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Total Recipients</div>
-                  </Card>
-                </Col>
+              {(() => {
+                const campaignId = selectedOrder?._id;
+                const liveStats = realTimeStats[campaignId] || {};
+                
+                return (
+                  <Row gutter={[16, 16]} style={{ marginBottom: '32px' }}>
+                    <Col xs={12} sm={8} md={4}>
+                      <Card style={{
+                        background: '#ffffff',
+                        border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                        height: '100px'
+                      }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: THEME_CONSTANTS.colors.primary }}>
+                          {liveStats.total || modalOrder?.cost || 0}
+                        </div>
+                        <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Total Recipients</div>
+                      </Card>
+                    </Col>
 
-                <Col xs={12} sm={8} md={4}>
-                  <Card style={{
-                    background: '#ffffff',
-                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                    borderRadius: '8px',
-                    textAlign: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                    height: '100px'
-                  }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: THEME_CONSTANTS.colors.success }}>
-                      {modalOrder?.successCount || 0}
-                    </div>
-                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Successfully Sent</div>
-                  </Card>
-                </Col>
+                    <Col xs={12} sm={8} md={4}>
+                      <Card style={{
+                        background: '#ffffff',
+                        border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                        height: '100px'
+                      }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: THEME_CONSTANTS.colors.success }}>
+                          {liveStats.sent || modalOrder?.successCount || 0}
+                        </div>
+                        <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Successfully Sent</div>
+                      </Card>
+                    </Col>
 
-                <Col xs={12} sm={8} md={4}>
-                  <Card style={{
-                    background: '#ffffff',
-                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                    borderRadius: '8px',
-                    textAlign: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                    height: '100px'
-                  }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: '#f59e0b' }}>
-                      {modalOrder?.totalDelivered || 0}
-                    </div>
-                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Delivered</div>
-                  </Card>
-                </Col>
+                    <Col xs={12} sm={8} md={4}>
+                      <Card style={{
+                        background: '#ffffff',
+                        border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                        height: '100px'
+                      }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: '#f59e0b' }}>
+                          {liveStats.delivered || modalOrder?.totalDelivered || 0}
+                        </div>
+                        <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Delivered</div>
+                      </Card>
+                    </Col>
 
-                <Col xs={12} sm={8} md={4}>
-                  <Card style={{
-                    background: '#ffffff',
-                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                    borderRadius: '8px',
-                    textAlign: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                    height: '100px'
-                  }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: '#8b5cf6' }}>
-                      {modalOrder?.totalRead || 0}
-                    </div>
-                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Read</div>
-                  </Card>
-                </Col>
+                    <Col xs={12} sm={8} md={4}>
+                      <Card style={{
+                        background: '#ffffff',
+                        border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                        height: '100px'
+                      }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: '#8b5cf6' }}>
+                          {liveStats.read || modalOrder?.totalRead || 0}
+                        </div>
+                        <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Read</div>
+                      </Card>
+                    </Col>
 
-                <Col xs={12} sm={8} md={4}>
-                  <Card style={{
-                    background: '#ffffff',
-                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                    borderRadius: '8px',
-                    textAlign: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                    height: '100px'
-                  }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: THEME_CONSTANTS.colors.error }}>
-                      {modalOrder?.failedCount || 0}
-                    </div>
-                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Failed</div>
-                  </Card>
-                </Col>
+                    <Col xs={12} sm={8} md={4}>
+                      <Card style={{
+                        background: '#ffffff',
+                        border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                        height: '100px'
+                      }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: THEME_CONSTANTS.colors.error }}>
+                          {liveStats.failed || modalOrder?.failedCount || 0}
+                        </div>
+                        <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Failed</div>
+                      </Card>
+                    </Col>
 
-                <Col xs={12} sm={8} md={4}>
-                  <Card style={{
-                    background: '#ffffff',
-                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                    borderRadius: '8px',
-                    textAlign: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                    height: '100px'
-                  }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: '#06b6d4' }}>
-                      {modalOrder?.userClickCount || 0}
-                    </div>
-                    <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Clicked</div>
-                  </Card>
-                </Col>
-              </Row>
-
-              {/* Performance Metrics */}
-              <Card style={{
-                background: '#ffffff',
-                border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                borderRadius: '8px',
-                marginBottom: '24px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-              }} bodyStyle={{ padding: '24px' }}>
-                <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', fontWeight: 600, color: THEME_CONSTANTS.colors.text }}>Performance Overview</h3>
-                <Row gutter={[32, 16]}>
-                  <Col xs={24} md={12}>
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 500, color: THEME_CONSTANTS.colors.text }}>Success Rate</span>
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: THEME_CONSTANTS.colors.success }}>
-                          {(() => {
-                            const successCount = modalOrder?.successCount || 0;
-                            const failedCount = modalOrder?.failedCount || 0;
-                            const totalSent = successCount + failedCount;
-                            return totalSent > 0 ? ((successCount / totalSent) * 100).toFixed(1) : 0;
-                          })()}%
-                        </span>
-                      </div>
-                      <Progress
-                        percent={(() => {
-                          const successCount = modalOrder?.successCount || 0;
-                          const failedCount = modalOrder?.failedCount || 0;
-                          const totalSent = successCount + failedCount;
-                          return totalSent > 0 ? ((successCount / totalSent) * 100) : 0;
-                        })()}
-                        strokeColor={THEME_CONSTANTS.colors.success}
-                        trailColor="#f0f0f0"
-                        strokeWidth={6}
-                        showInfo={false}
-                      />
-                    </div>
-                  </Col>
-                  <Col xs={24} md={12}>
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 500, color: THEME_CONSTANTS.colors.text }}>Read Rate</span>
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: THEME_CONSTANTS.colors.primary }}>
-                          {(() => {
-                            const totalDelivered = modalOrder?.totalDelivered || 0;
-                            const totalRead = modalOrder?.totalRead || 0;
-                            return totalDelivered > 0 ? ((totalRead / totalDelivered) * 100).toFixed(1) : 0;
-                          })()}%
-                        </span>
-                      </div>
-                      <Progress
-                        percent={(() => {
-                          const totalDelivered = modalOrder?.totalDelivered || 0;
-                          const totalRead = modalOrder?.totalRead || 0;
-                          return totalDelivered > 0 ? ((totalRead / totalDelivered) * 100) : 0;
-                        })()}
-                        strokeColor={THEME_CONSTANTS.colors.primary}
-                        trailColor="#f0f0f0"
-                        strokeWidth={6}
-                        showInfo={false}
-                      />
-                    </div>
-                  </Col>
-                </Row>
-              </Card>
+                    <Col xs={12} sm={8} md={4}>
+                      <Card style={{
+                        background: '#ffffff',
+                        border: `1px solid ${THEME_CONSTANTS.colors.border}`,
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                        height: '100px'
+                      }} bodyStyle={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', color: '#06b6d4' }}>
+                          {liveStats.interactions || modalOrder?.userClickCount || 0}
+                        </div>
+                        <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>Interactions</div>
+                      </Card>
+                    </Col>
+                  </Row>
+                );
+              })()}
 
               {/* Message Details Table */}
               <Card style={{
                 background: '#ffffff',
                 border: `1px solid ${THEME_CONSTANTS.colors.border}`,
                 borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                marginBottom: '24px'
               }} bodyStyle={{ padding: '24px' }}>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center', 
-                  marginBottom: '20px' 
-                }}>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: THEME_CONSTANTS.colors.text }}>Message Details</h3>
-                  <Tag style={{ 
-                    background: THEME_CONSTANTS.colors.primaryLight, 
-                    color: THEME_CONSTANTS.colors.primary,
-                    border: 'none',
-                    fontSize: '12px', 
-                    padding: '4px 12px',
-                    borderRadius: '6px'
-                  }}>
-                    {orderDetailsData?.data?.results?.length || 0} Records
-                  </Tag>
-                </div>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px', color: THEME_CONSTANTS.colors.text }}>
+                  📋 Message Details
+                </h3>
                 
                 <Table
+                  dataSource={Array.isArray(campaignMessages) ? campaignMessages : []}
+                  rowKey="_id"
+                  loading={loading}
+                  pagination={{
+                    current: modalCurrentPage,
+                    pageSize: 20,
+                    total: messagesPagination?.total || 0,
+                    onChange: (page) => {
+                      setModalCurrentPage(page);
+                      dispatch(fetchCampaignMessages({ campaignId: selectedOrder._id, page, limit: 20 }));
+                    },
+                    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} messages`,
+                    size: 'small'
+                  }}
+                  scroll={{ x: 800 }}
+                  size="small"
                   columns={[
                     {
                       title: 'Phone Number',
-                      dataIndex: 'phone',
-                      key: 'phone',
-                      width: '30%',
-                      render: (text, record) => (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <PhoneOutlined style={{ color: THEME_CONSTANTS.colors.textSecondary, fontSize: '12px' }} />
-                          <span style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 500, color: THEME_CONSTANTS.colors.text }}>
-                            {text || '-'}
-                          </span>
+                      dataIndex: 'phoneNumber',
+                      key: 'phoneNumber',
+                      width: 140,
+                      render: (phone) => (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <PhoneOutlined style={{ color: THEME_CONSTANTS.colors.primary, fontSize: '12px' }} />
+                          <span style={{ fontWeight: 600, fontSize: '13px' }}>{phone}</span>
                         </div>
-                      ),
+                      )
                     },
                     {
                       title: 'Status',
-                      dataIndex: 'messaestatus',
+                      dataIndex: 'status',
                       key: 'status',
-                      width: '25%',
-                      render: (status, record) => {
-                        const getStatusConfig = (status, record) => {
-                          // Check status code first
-                          if (record?.status === 201) {
-                            return { color: 'success', icon: <CheckCircleOutlined />, text: 'Success' };
-                          }
-                          
-                          switch(status) {
-                            case 'MESSAGE_DELIVERED':
-                              return { color: 'success', icon: <CheckCircleOutlined />, text: 'Delivered' };
-                            case 'SEND_MESSAGE_SUCCESS':
-                              return { color: 'processing', icon: <CheckCircleOutlined />, text: 'Sent' };
-                            case 'MESSAGE_READ':
-                              return { color: 'success', icon: <EyeOutlined />, text: 'Read' };
-                            case 'SEND_MESSAGE_FAILURE':
-                              return { color: 'error', icon: <CloseCircleOutlined />, text: 'Failed' };
-                            default:
-                              return { color: 'warning', icon: <ClockCircleOutlined />, text: 'Pending' };
-                          }
+                      width: 100,
+                      render: (status) => {
+                        const statusConfig = {
+                          sent: { color: '#1890ff', icon: <SendOutlined /> },
+                          delivered: { color: '#52c41a', icon: <CheckCircleOutlined /> },
+                          read: { color: '#722ed1', icon: <EyeOutlined /> },
+                          replied: { color: '#13c2c2', icon: <MessageOutlined /> },
+                          failed: { color: '#ff4d4f', icon: <CloseCircleOutlined /> },
+                          queued: { color: '#faad14', icon: <ClockCircleOutlined /> }
                         };
-                        
-                        const config = getStatusConfig(status, record);
+                        const config = statusConfig[status] || { color: '#8c8c8c', icon: null };
                         return (
-                          <Tag 
-                            color={config.color} 
-                            icon={config.icon}
-                            style={{ fontSize: '12px', padding: '4px 8px', fontWeight: 500 }}
-                          >
-                            {config.text}
+                          <Tag color={config.color} icon={config.icon} style={{ fontSize: '11px', fontWeight: 600 }}>
+                            {status?.toUpperCase()}
                           </Tag>
                         );
-                      },
+                      }
                     },
                     {
-                      title: 'Timestamp',
-                      dataIndex: 'timestamp',
-                      key: 'timestamp',
-                      width: '25%',
-                      render: (text) => (
-                        <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
-                          {text ? (
-                            <>
-                              <div>{new Date(text).toLocaleDateString()}</div>
-                              <div style={{ fontSize: '11px', opacity: 0.8 }}>
-                                {new Date(text).toLocaleTimeString()}
-                              </div>
-                            </>
-                          ) : '-'}
-                        </div>
-                      ),
+                      title: 'Template',
+                      dataIndex: 'templateType',
+                      key: 'templateType',
+                      width: 110,
+                      render: (type) => (
+                        <Tag style={{ fontSize: '11px', background: '#f0f5ff', color: '#1890ff', border: 'none' }}>
+                          {type}
+                        </Tag>
+                      )
                     },
+                    {
+                      title: 'Sent',
+                      dataIndex: 'sentAt',
+                      key: 'sentAt',
+                      width: 90,
+                      render: (date) => date ? (
+                        <Tooltip title={new Date(date).toLocaleString()}>
+                          <span style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
+                            {new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </Tooltip>
+                      ) : <span style={{ color: '#d9d9d9' }}>-</span>
+                    },
+                    {
+                      title: 'Delivered',
+                      dataIndex: 'deliveredAt',
+                      key: 'deliveredAt',
+                      width: 90,
+                      render: (date) => date ? (
+                        <Tooltip title={new Date(date).toLocaleString()}>
+                          <span style={{ fontSize: '12px', color: '#52c41a', fontWeight: 600 }}>
+                            {new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </Tooltip>
+                      ) : <span style={{ color: '#d9d9d9' }}>-</span>
+                    },
+                    {
+                      title: 'Read',
+                      dataIndex: 'readAt',
+                      key: 'readAt',
+                      width: 90,
+                      render: (date) => date ? (
+                        <Tooltip title={new Date(date).toLocaleString()}>
+                          <span style={{ fontSize: '12px', color: '#722ed1', fontWeight: 600 }}>
+                            {new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </Tooltip>
+                      ) : <span style={{ color: '#d9d9d9' }}>-</span>
+                    },
+                    {
+                      title: 'Interactions',
+                      key: 'engagement',
+                      width: 110,
+                      render: (_, record) => (
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          {record.interactions > 0 && (
+                            <Tag color="cyan" style={{ fontSize: '11px', margin: 0 }}>
+                              🖱️ {record.interactions}
+                            </Tag>
+                          )}
+                          {record.replies > 0 && (
+                            <Tag color="purple" style={{ fontSize: '11px', margin: 0 }}>
+                              💬 {record.replies}
+                            </Tag>
+                          )}
+                          {record.interactions === 0 && record.replies === 0 && (
+                            <span style={{ color: '#d9d9d9', fontSize: '12px' }}>-</span>
+                          )}
+                        </div>
+                      )
+                    },
+                    {
+                      title: 'User Response',
+                      key: 'response',
+                      width: 200,
+                      render: (_, record) => {
+                        if (record.userText) {
+                          return (
+                            <Tooltip title={record.userText}>
+                              <div style={{ 
+                                fontSize: '12px', 
+                                color: THEME_CONSTANTS.colors.text,
+                                maxWidth: '180px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                💬 "{record.userText}"
+                              </div>
+                            </Tooltip>
+                          );
+                        }
+                        if (record.clickedAction) {
+                          return (
+                            <div style={{ fontSize: '12px', color: '#1890ff' }}>
+                              🖱️ Clicked: {record.clickedAction}
+                            </div>
+                          );
+                        }
+                        if (record.suggestionResponse?.plainText) {
+                          return (
+                            <Tooltip title={record.suggestionResponse.plainText}>
+                              <div style={{ 
+                                fontSize: '12px', 
+                                color: '#722ed1',
+                                maxWidth: '180px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                ✅ {record.suggestionResponse.plainText}
+                              </div>
+                            </Tooltip>
+                          );
+                        }
+                        return <span style={{ color: '#d9d9d9', fontSize: '12px' }}>-</span>;
+                      }
+                    },
+                    {
+                      title: 'Error',
+                      dataIndex: 'errorMessage',
+                      key: 'errorMessage',
+                      width: 150,
+                      render: (error) => error ? (
+                        <Tooltip title={error}>
+                          <Tag color="red" style={{ fontSize: '11px', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            ⚠️ {error}
+                          </Tag>
+                        </Tooltip>
+                      ) : <span style={{ color: '#d9d9d9' }}>-</span>
+                    }
                   ]}
-                  dataSource={orderDetailsData?.data?.results || []}
-                  rowKey={(record, index) => index}
-                  pagination={{
-                    current: modalCurrentPage,
-                    pageSize: 10,
-                    total: orderDetailsData?.data?.resultsPagination?.total || 0,
-                    onChange: setModalCurrentPage,
-                    showSizeChanger: false,
-                    showQuickJumper: true,
-                    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} messages`
-                  }}
-                  loading={detailsLoading}
-                  size="small"
-                  scroll={{ y: 300 }}
-                  style={{
-                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                    borderRadius: '6px'
-                  }}
                 />
               </Card>
-            </div>
-
-            {/* Clean Footer Actions */}
-            <div style={{
-              padding: '20px 32px',
-              background: '#fafbfc',
-              borderTop: `1px solid ${THEME_CONSTANTS.colors.border}`,
-              borderRadius: '0 0 8px 8px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <div style={{ fontSize: '12px', color: THEME_CONSTANTS.colors.textSecondary }}>
-                Campaign ID: <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{selectedOrder?._id}</span>
-              </div>
-              <Space size="middle">
-                <Button 
-                  onClick={closeModal}
-                  style={{ 
-                    borderRadius: '6px',
-                    border: `1px solid ${THEME_CONSTANTS.colors.border}`,
-                    color: THEME_CONSTANTS.colors.text
-                  }}
-                >
-                  Close
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<DownloadOutlined />}
-                  onClick={() => {
-                    const exportData = modalOrder?.results?.map((result, idx) => ({
-                      'S.No': idx + 1,
-                      'Phone Number': result?.phone || 'N/A',
-                      'Status': result?.messaestatus || 'N/A',
-                      'Message Type': modalOrder?.type || 'N/A',
-                      'Campaign Name': modalOrder?.CampaignName || 'N/A',
-                      'Sent At': result?.timestamp ? new Date(result.timestamp).toLocaleString() : 'N/A',
-                      'Created Date': new Date(modalOrder?.createdAt).toLocaleDateString(),
-                    })) || [];
-
-                    const ws = XLSX.utils.json_to_sheet(exportData);
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, 'Campaign Details');
-                    XLSX.writeFile(wb, `campaign-${modalOrder?.CampaignName}-${new Date().toISOString().split('T')[0]}.xlsx`);
-                    toast.success('Detailed report exported successfully');
-                  }}
-                  style={{ 
-                    borderRadius: '6px',
-                    background: THEME_CONSTANTS.colors.primary,
-                    borderColor: THEME_CONSTANTS.colors.primary
-                  }}
-                >
-                  Export Report
-                </Button>
-              </Space>
             </div>
           </div>
         )}
       </Modal>
-
-      <style>{`
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
     </>
   );
 }

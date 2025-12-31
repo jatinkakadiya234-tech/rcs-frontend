@@ -12,7 +12,7 @@ export const getAllTemplates = createAsyncThunkHandler(
 export const fetchUserTemplates = createAsyncThunkHandler(
   'templates/fetchUserTemplates',
   _get,
-  (payload) => `templates?userId=${payload.userId}&limit=${payload.limit || 50}`
+  (payload) => `templates/user/${payload.userId}`
 );
 
 export const getTemplateById = createAsyncThunkHandler(
@@ -39,8 +39,22 @@ export const deleteTemplate = createAsyncThunkHandler(
   (payload) => `templates/${payload.id}`
 );
 
+export const fetchTemplatesByType = createAsyncThunkHandler(
+  'templates/fetchByType',
+  _get,
+  (payload) => `templates/type/${payload.type}`
+);
+
+export const approveTemplate = createAsyncThunkHandler(
+  'templates/approve',
+  _post,
+  (payload) => `templates/${payload.id}/approve`
+);
+
 const initialState = {
   templates: [],
+  userTemplates: [],
+  templatesByType: [],
   currentTemplate: null,
   loading: false,
   error: null,
@@ -75,7 +89,7 @@ const templateSlice = createSlice({
       })
       .addCase(fetchUserTemplates.fulfilled, (state, action) => {
         state.loading = false;
-        state.templates = action.payload.data;
+        state.userTemplates = action.payload.data;
         state.pagination = action.payload.pagination || state.pagination;
       })
       .addCase(fetchUserTemplates.rejected, (state, action) => {
@@ -161,6 +175,18 @@ const templateSlice = createSlice({
       .addCase(deleteTemplate.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(fetchTemplatesByType.fulfilled, (state, action) => {
+        state.templatesByType = action.payload.data || [];
+      })
+      .addCase(approveTemplate.fulfilled, (state, action) => {
+        const index = state.templates.findIndex(t => t._id === action.payload.data._id);
+        if (index !== -1) {
+          state.templates[index] = action.payload.data;
+        }
+        if (state.currentTemplate?._id === action.payload.data._id) {
+          state.currentTemplate = action.payload.data;
+        }
       });
   },
 });

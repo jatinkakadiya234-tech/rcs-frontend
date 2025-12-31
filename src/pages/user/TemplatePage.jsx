@@ -29,7 +29,7 @@ import { getMessageTypeLabel } from '../../utils/messageTypes';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import RCSMessagePreview from '../../components/RCSMesagePreview';
-import { _get, _delete } from '../../helper/apiClient.jsx';
+import { getAllTemplates, deleteTemplate } from '../../redux/slices/templateSlice';
 
 const { useBreakpoint } = Grid;
 
@@ -37,32 +37,25 @@ export default function TemplatePage() {
   const { user, token } = useSelector(state => state.auth);
   const screens = useBreakpoint();
   const navigate = useNavigate();
-  const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(true);
+  const { templates, loading: templatesLoading, error: templatesError } = useSelector(state => state.templates);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState(null);
 
-  useEffect(() => {
-    if (user?._id && token) {
-      fetchTemplates();
-    }
-  }, [user, token]);
+  const dispatch = useDispatch();
 
-  const fetchTemplates = async () => {
+  useEffect(() => {
+    if (user?._id) {
+      dispatch(getAllTemplates());
+    }
+  }, [user, dispatch]);
+
+  const loadTemplates = async () => {
     try {
-      setTableLoading(true);
-      const response = await _get('templates', {}, {}, token);
-      if (response.data.success) {
-        // Update local state with fetched templates
-        setTemplates(response.data.data || []);
-        toast.success('Templates fetched successfully');
-      }
+      await dispatch(getAllTemplates()).unwrap();
+      toast.success('Templates refreshed successfully');
     } catch (err) {
-      toast.error('Failed to fetch templates');
+      toast.error('Failed to refresh templates');
       console.error(err);
-    } finally {
-      setTableLoading(false);
     }
   };
 
@@ -79,13 +72,10 @@ export default function TemplatePage() {
 
   const handleDelete = async (id) => {
     try {
-      const response = await _delete(`templates/${id}`, {}, {}, token);
-      if (response.data.success) {
-        toast.success('Template deleted successfully');
-        fetchTemplates();
-      }
+      await dispatch(deleteTemplate({ id })).unwrap();
+      toast.success('Template deleted successfully');
     } catch (err) {
-      toast.error('Failed to delete template');
+      toast.error('Failed to delete template: ' + err);
     }
   };
 
@@ -298,8 +288,8 @@ export default function TemplatePage() {
                   </Button>
                   <Button
                     icon={<ReloadOutlined />}
-                    onClick={fetchTemplates}
-                    loading={loading}
+                    onClick={loadTemplates}
+                    loading={templatesLoading}
                   >
                     Refresh
                   </Button>
@@ -340,7 +330,7 @@ export default function TemplatePage() {
             </h3>
           </div>
           <div style={{ overflowX: 'auto' }}>
-            {tableLoading ? (
+            {templatesLoading ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
                 <Spin size="large" />
                 <p style={{ marginTop: '16px', fontSize: '14px', fontWeight: 600, color: THEME_CONSTANTS.colors.textSecondary }}>

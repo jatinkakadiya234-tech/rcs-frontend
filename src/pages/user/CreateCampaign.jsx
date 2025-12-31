@@ -210,8 +210,8 @@ function CreateCampaign() {
   const [form] = Form.useForm();
 
   // Redux state
-  const { templates, loading: templatesLoading, error: templatesError } = useSelector(state => state.templates);
-  const { sendingMessage, messageError } = useSelector(state => state.campaigns);
+  const { userTemplates, loading: templatesLoading, error: templatesError } = useSelector(state => state.templates);
+  const { sendingMessage, messageError, capabilityResults } = useSelector(state => state.campaigns);
 
   // State Management
   const [currentStep, setCurrentStep] = useState(0);
@@ -244,20 +244,20 @@ function CreateCampaign() {
   // Load templates on mount
   useEffect(() => {
     if (user?._id) {
-      dispatch(fetchUserTemplates({ userId: user._id, limit: 50 }));
+      dispatch(fetchUserTemplates({ userId: user._id }));
     }
   }, [user, dispatch]);
 
   // Load Templates from Redux
   const loadTemplates = () => {
     if (user?._id) {
-      dispatch(fetchUserTemplates({ userId: user._id, limit: 50 }));
+      dispatch(fetchUserTemplates({ userId: user._id }));
     }
   };
 
   // Filter templates based on search and filter
   useEffect(() => {
-    let filtered = templates;
+    let filtered = userTemplates;
 
     // Apply search filter
     if (templateSearch) {
@@ -274,7 +274,7 @@ function CreateCampaign() {
     }
 
     setFilteredTemplates(filtered);
-  }, [templates, templateSearch, templateFilter]);
+  }, [userTemplates, templateSearch, templateFilter]);
 
   // Handle Template Selection
   const handleTemplateSelect = async (template) => {
@@ -340,14 +340,14 @@ function CreateCampaign() {
     }
   };
 
-  // Check RCS Capability for batch of numbers
+  // Check RCS Capability for batch of numbers using Redux
   const checkRcsCapability = async (numbers) => {
     try {
-      const response = await _post('checkAvablityNumber', {
+      const result = await dispatch(checkCapability({
         phoneNumbers: numbers,
         userId: user._id
-      }, {}, token);
-      return response.data;
+      })).unwrap();
+      return result;
     } catch (error) {
       console.error('Error checking capability:', error);
       throw error;
@@ -617,7 +617,7 @@ function CreateCampaign() {
     }
   };
 
-  // Send Campaign using Redux
+  // Send Campaign using Redux with optimized loading
   const handleSendCampaign = async () => {
     try {
       // Validation
@@ -647,34 +647,83 @@ function CreateCampaign() {
         return;
       }
 
-      // Build payload - include ALL recipients but only charge for RCS capable
-      const payload = {
-        name: campaignName.trim(),
-        description: `Bulk campaign with ${recipients.length} total recipients (${validRecipients.length} RCS capable) using template: ${selectedTemplate.name}`,
-        templateId: selectedTemplate._id,
-        recipients: recipients.map(r => ({
-          phoneNumber: r.number.replace('+91', ''), // Remove +91 prefix for backend
-          variables: r.variables || {},
-          isRcsCapable: r.capable === true // Flag for billing
-        })),
-        batchSize: Math.min(100, recipients.length),
-        autoStart: true,
-        estimatedCost: totalCost // Only for RCS capable numbers
-      };
+      // Show immediate success for large campaigns
+      if (recipients.length > 10000) {
+        Modal.confirm({
+          title: 'Large Campaign Detected',
+          content: `You're about to send ${recipients.length} messages (${validRecipients.length} RCS capable). This will be processed in background. You'll receive real-time updates in Reports section.`,
+          okText: 'Start Campaign',
+          cancelText: 'Cancel',
+          onOk: async () => {
+            await processCampaign();
+          }
+        });
+      } else {
+        await processCampaign();
+      }
 
-      // Dispatch Redux action to create and start campaign
-      const result = await dispatch(sendBulkMessage(payload)).unwrap();
-      
-      if (result.success) {
-        message.success(`Campaign created! Sending to ${validRecipients.length} RCS capable numbers.`);
-        // Refresh user data if needed
-        navigate('/reports');
+      async function processCampaign() {
+        // Build payload - include ALL recipients but only charge for RCS capable
+        const payload = {
+          name: campaignName.trim(),
+          description: `Bulk campaign with ${recipients.length} total recipients (${validRecipients.length} RCS capable) using template: ${selectedTemplate.name}`,
+          templateId: selectedTemplate._id,
+          recipients: recipients.map(r => ({
+            phoneNumber: r.number.replace('+91', ''), // Remove +91 prefix for backend
+            variables: r.variables || {},
+            isRcsCapable: r.capable === true // Flag for billing
+          })),
+          batchSize: Math.min(500, Math.max(100, Math.floor(recipients.length / 10))), // Dynamic batch size (max 500)
+          autoStart: true,
+          estimatedCost: totalCost // Only for RCS capable numbers
+        };
+
+        // Show loading with progress for large campaigns
+        const hideLoading = message.loading(
+          recipients.length > 10000 
+            ? `Creating campaign for ${recipients.length} contacts... This may take a moment.`
+            : 'Creating campaign...', 
+          0
+        );
+
+        try {
+          // Dispatch Redux action to create and start campaign
+          const result = await dispatch(sendBulkMessage(payload)).unwrap();
+          
+          hideLoading();
+          
+          if (result.success) {
+            // Show different success messages based on campaign size
+            if (recipients.length > 10000) {
+              Modal.success({
+                title: 'Campaign Created Successfully!',
+                content: (
+                  <div>
+                    <p>✅ Campaign "{campaignName}" has been created and started.</p>
+                    <p>📊 Total Recipients: {recipients.length}</p>
+                    <p>💰 RCS Capable: {validRecipients.length} (₹{totalCost} charged)</p>
+                    <p>🚀 Processing in background with real-time updates.</p>
+                    <p>📈 Track progress in Reports section.</p>
+                  </div>
+                ),
+                onOk: () => navigate('/reports')
+              });
+            } else {
+              message.success(`Campaign created! Sending to ${validRecipients.length} RCS capable numbers.`);
+              setTimeout(() => navigate('/reports'), 1500);
+            }
+          }
+        } catch (error) {
+          hideLoading();
+          throw error;
+        }
       }
     } catch (error) {
-      if (error.includes('Insufficient balance')) {
+      const errorMessage = typeof error === 'string' ? error : error?.message || 'Failed to send campaign';
+      if (errorMessage.includes('Insufficient balance')) {
         setShowAddMoney(true);
       }
-      message.error(error || 'Failed to send campaign');
+      message.error(errorMessage);
     }
   };
 
@@ -1077,7 +1126,7 @@ function CreateCampaign() {
                           color: THEME_CONSTANTS.colors.text,
                           fontSize: 'clamp(14px, 2.5vw, 16px)',
                           fontWeight: THEME_CONSTANTS.typography.h5.weight
-                        }}>Select a Template ({templates.length})</span>
+                        }}>Select a Template ({userTemplates.length})</span>
                         <Space size="small">
                           <Button
                             onClick={loadTemplates}
@@ -1123,7 +1172,7 @@ function CreateCampaign() {
                           fontSize: THEME_CONSTANTS.typography.body.size
                         }}>Loading templates...</p>
                       </div>
-                    ) : templates.length === 0 ? (
+                    ) : filteredTemplates.length === 0 ? (
                       <Empty
                         description={
                           <div>
@@ -1934,10 +1983,11 @@ function CreateCampaign() {
               onClick={async () => {
                 if (addAmount && parseFloat(addAmount) > 0) {
                   try {
-                    const data = await api.addWalletRequest({
+                    const response = await _post('v1/wallet/request', {
                       amount: parseFloat(addAmount),
                       userId: user._id,
-                    });
+                    }, {}, localStorage.getItem('token'));
+                    const data = response.data;
                     if (data.success) {
                       message.success('Recharge request submitted!');
                       setAddAmount('');

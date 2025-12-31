@@ -3,7 +3,7 @@ import axios from "axios";
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 const apiClient = axios.create({
-    baseURL: BASE_URL + '/v1/',
+    baseURL: BASE_URL,
     withCredentials: true,
     headers: {
         "Content-Type": "application/json",
@@ -36,12 +36,20 @@ apiClient.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             const currentPath = window.location.pathname;
-            // Only redirect if not already on auth pages and if it's a token expiration
-            if (!currentPath.includes('/login') && 
+                const errorMessage = error.response?.data?.message || '';
+            
+            // Only redirect if it's actually a token/auth issue, not a validation error
+            const isAuthError = errorMessage.toLowerCase().includes('token') || 
+                               errorMessage.toLowerCase().includes('expired') || 
+                               errorMessage.toLowerCase().includes('unauthorized') ||
+                               errorMessage.toLowerCase().includes('authentication');
+            
+            // Only redirect if not already on auth pages and if it's a real auth error
+            if (isAuthError &&
+                !currentPath.includes('/login') && 
                 !currentPath.includes('/register') && 
                 !currentPath.includes('/join') && 
-                !currentPath.includes('/reset-password') &&
-                error.response?.data?.message?.includes('expired')) {
+                !currentPath.includes('/reset-password')) {
                 // Clear any stored auth data
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
@@ -63,24 +71,29 @@ const addTokenToConfig = (config, token) => {
 
 // eslint-disable-next-line no-unused-vars
 const _get = (url, data = {}, config = {}, token = null) => {
-    return apiClient.get(url, addTokenToConfig(config, token));
+    const fullUrl = url.startsWith('realtime/') ? url : url.startsWith('v1/') || url.startsWith('wallet/') ? url : `v1/${url}`;
+    return apiClient.get(fullUrl, addTokenToConfig(config, token));
 };
 
 // eslint-disable-next-line no-unused-vars
 const _delete = (url, data = {}, config = {}, token = null) => {
-    return apiClient.delete(url, addTokenToConfig(config, token));
+    const fullUrl = url.startsWith('realtime/') ? url : url.startsWith('v1/') || url.startsWith('wallet/') ? url : `v1/${url}`;
+    return apiClient.delete(fullUrl, addTokenToConfig(config, token));
 };
 
 const _patch = (url, data = {}, config = {}, token = null) => {
-    return apiClient.patch(url, data, addTokenToConfig(config, token));
+    const fullUrl = url.startsWith('realtime/') ? url : url.startsWith('v1/') || url.startsWith('wallet/') ? url : `v1/${url}`;
+    return apiClient.patch(fullUrl, data, addTokenToConfig(config, token));
 };
 
 const _post = (url, data = {}, config = {}, token = null) => {
-    return apiClient.post(url, data, addTokenToConfig(config, token));
+    const fullUrl = url.startsWith('realtime/') ? url : url.startsWith('v1/') || url.startsWith('wallet/') ? url : `v1/${url}`;
+    return apiClient.post(fullUrl, data, addTokenToConfig(config, token));
 };
 
 const _put = (url, data = {}, config = {}, token = null) => {
-    return apiClient.put(url, data, addTokenToConfig(config, token));
+    const fullUrl = url.startsWith('realtime/') ? url : url.startsWith('v1/') || url.startsWith('wallet/') ? url : `v1/${url}`;
+    return apiClient.put(fullUrl, data, addTokenToConfig(config, token));
 };
 
 export { _delete, _get, _post, _patch, _put };

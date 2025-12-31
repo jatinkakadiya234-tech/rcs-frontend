@@ -1,45 +1,25 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import { createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunkHandler } from '../../helper/createAsyncThunkHandler.jsx';
+import { _get, _post } from '../../helper/apiClient.jsx';
 import { updateWalletBalance } from './authSlice';
 
-// Async thunks
-export const fetchDashboardStats = createAsyncThunk(
+// Async thunks using helper functions
+export const fetchDashboardStats = createAsyncThunkHandler(
   'dashboard/fetchStats',
-  async (userId, { rejectWithValue }) => {
-    try {
-        const response = await api.getMessageStats(userId);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch stats');
-    }
-  }
+  _get,
+  (payload) => `dashboard/stats/${payload.userId}`
 );
 
-export const fetchRecentOrders = createAsyncThunk(
+export const fetchRecentOrders = createAsyncThunkHandler(
   'dashboard/fetchRecentOrders',
-  async (userId, { rejectWithValue }) => {
-    try {
-      const response = await api.getrecentorders(userId);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch recent orders');
-    }
-  }
+  _get,
+  (payload) => `dashboard/recent-orders/${payload.userId}`
 );
 
-export const submitWalletRequest = createAsyncThunk(
-  'dashboard/submitWalletRequest',
-  async ({ amount, userId }, { rejectWithValue, dispatch, getState }) => {
-    try {
-      const response = await api.addWalletRequest({ amount, userId });
-      // Update wallet balance in auth state
-      const currentBalance = getState().auth.user?.wallet?.balance || 0;
-      dispatch(updateWalletBalance(currentBalance + amount));
-      return response;
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to submit wallet request');
-    }
-  }
+export const addWalletRequest = createAsyncThunkHandler(
+  'dashboard/addWalletRequest',
+  _post,
+  'dashboard/wallet-request'
 );
 
 const initialState = {
@@ -98,22 +78,22 @@ const dashboardSlice = createSlice({
       })
       .addCase(fetchRecentOrders.fulfilled, (state, action) => {
         state.loading.orders = false;
-        state.recentOrders = action.payload;
+        state.recentOrders = Array.isArray(action.payload.data) ? action.payload.data : [];
       })
       .addCase(fetchRecentOrders.rejected, (state, action) => {
         state.loading.orders = false;
         state.error.orders = action.payload;
       })
       
-    // Submit wallet request
-      .addCase(submitWalletRequest.pending, (state) => {
+    // Add wallet request
+      .addCase(addWalletRequest.pending, (state) => {
         state.loading.wallet = true;
         state.error.wallet = null;
       })
-      .addCase(submitWalletRequest.fulfilled, (state) => {
+      .addCase(addWalletRequest.fulfilled, (state) => {
         state.loading.wallet = false;
       })
-      .addCase(submitWalletRequest.rejected, (state, action) => {
+      .addCase(addWalletRequest.rejected, (state, action) => {
         state.loading.wallet = false;
         state.error.wallet = action.payload;
       });

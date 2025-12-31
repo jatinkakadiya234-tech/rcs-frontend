@@ -6,10 +6,10 @@ export const createAsyncThunkHandler = (typePrefix, apiMethod, urlResolver, isMu
     try {
       console.log(`🔹 [AsyncThunk] ${typePrefix} - Starting...`);
       const token = getState().auth.token;
-      console.log(`🔑 [AsyncThunk] ${typePrefix} - Token:`, token ? 'Present' : 'Missing');
+      // console.log(`🔑 [AsyncThunk] ${typePrefix} - Token:`, token ? 'Present' : 'Missing');
 
       const url = typeof urlResolver === "function" ? urlResolver(payload) : urlResolver;
-      console.log(`🎯 [AsyncThunk] ${typePrefix} - URL:`, url);
+      // console.log(`🎯 [AsyncThunk] ${typePrefix} - URL:`, url);
       
       // Determine request body based on payload structure
       let requestBody = {};

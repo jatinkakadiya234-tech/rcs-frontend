@@ -41,14 +41,14 @@ export const getCampaignStats = createAsyncThunkHandler(
 
 export const pauseCampaign = createAsyncThunkHandler(
   'campaigns/pause',
-  _put,
+  _post,
   (payload) => `campaigns/${payload.id}/pause`
 );
 
-export const resumeCampaign = createAsyncThunkHandler(
-  'campaigns/resume',
-  _put,
-  (payload) => `campaigns/${payload.id}/resume`
+export const startCampaign = createAsyncThunkHandler(
+  'campaigns/start',
+  _post,
+  (payload) => `campaigns/${payload.id}/start`
 );
 
 export const deleteCampaign = createAsyncThunkHandler(
@@ -182,14 +182,20 @@ const campaignSlice = createSlice({
         if (index !== -1) {
           state.campaigns[index] = action.payload.data;
         }
+        if (state.currentCampaign?._id === action.payload.data._id) {
+          state.currentCampaign = action.payload.data;
+        }
       })
 
-    // Resume Campaign
+    // Start Campaign
     builder
-      .addCase(resumeCampaign.fulfilled, (state, action) => {
+      .addCase(startCampaign.fulfilled, (state, action) => {
         const index = state.campaigns.findIndex(c => c._id === action.payload.data._id);
         if (index !== -1) {
           state.campaigns[index] = action.payload.data;
+        }
+        if (state.currentCampaign?._id === action.payload.data._id) {
+          state.currentCampaign = action.payload.data;
         }
       })
 
